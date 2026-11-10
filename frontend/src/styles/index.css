@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+/*
+  Réglages visuels de la maquette, une seule fois.
+  Le doré est un accent (filet, détail). Le petit texte sur fond clair
+  utilise le violet, l'encre ou le gris, qui restent lisibles.
+  Nunito Sans est hébergée ici : aucun chargement depuis un site externe.
+  Sous-ensemble latin, graisses 400, 600, 700 et 800.
+*/
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/nunito-sans-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/nunito-sans-600.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/nunito-sans-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/nunito-sans-800.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+  Échelle unique. 1 rem = taille choisie par le lecteur (16 px par défaut).
+  Les gros titres passent de la valeur téléphone à la valeur ordinateur
+  sans palier, entre 390 px et 1280 px de largeur.
+  À 16 px : display 34→56, page 30→42, lead 17→20, section 22→28,
+  card et article 17→18, menu et texte 16, meta 14, badge 13.
+*/
+@theme {
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --text-display: clamp(2.125rem, 1.523rem + 2.472vw, 3.5rem);
+  --text-display--line-height: 1.2;
+  --text-display--font-weight: 800;
+  --text-page: clamp(1.875rem, 1.546rem + 1.348vw, 2.625rem);
+  --text-page--line-height: 1.25;
+  --text-page--font-weight: 800;
+  --text-lead: clamp(1.0625rem, 0.98rem + 0.337vw, 1.25rem);
+  --text-lead--line-height: 1.5;
+  --text-section: clamp(1.375rem, 1.211rem + 0.674vw, 1.75rem);
+  --text-section--line-height: 1.3;
+  --text-section--font-weight: 700;
+  --text-card: clamp(1.0625rem, 1.035rem + 0.112vw, 1.125rem);
+  --text-card--line-height: 1.35;
+  --text-card--font-weight: 700;
+  --text-article: clamp(1.0625rem, 1.035rem + 0.112vw, 1.125rem);
+  --text-article--line-height: 1.6;
+  --text-menu: 1rem;
+  --text-menu--line-height: 1.4;
+  --text-menu--font-weight: 600;
+  --text-body: 1rem;
+  --text-body--line-height: 1.55;
+  --text-meta: 0.875rem;
+  --text-meta--line-height: 1.5;
+  --text-badge: 0.8125rem;
+  --text-badge--line-height: 1.4;
+  --text-badge--font-weight: 600;
+  --text-panel: 1.5625rem;
+  --text-panel--line-height: 1.25;
+  --text-panel--font-weight: 800;
+  --text-cover: 1.0625rem;
+  --text-cover--line-height: 1.35;
+  --text-cover--font-weight: 700;
+  --color-violet: #4e154f;
+  --color-violet-dark: #3a103c;
+  --color-gold: #7c5e10;
+  --color-gold-bright: #e4ae24;
+  --color-lavender: #f4f0fa;
+  --color-canvas: #f6f4f8;
+  --color-heading: #241820;
+  --color-ink: #1c1917;
+  --color-muted: #4b4b4b;
+  --color-line: #e7e2ef;
+  --color-available: #0e6a3a;
+  --color-available-soft: #e7f6ec;
+  --color-unavailable: #9f1239;
+  --color-unavailable-soft: #fde8ef;
+  --radius-card: 1rem;
+  --radius-panel: 1.125rem;
+  --radius-control: 0.75rem;
+  --shadow-card: 0 8px 24px rgb(28 16 48 / 0.06);
+  --shadow-panel: 0 10px 28px rgb(40 24 48 / 0.07);
+  --shadow-cover: 0 6px 16px rgb(28 16 48 / 0.14);
+}
+
+@layer base {
+  html {
+    scroll-behavior: auto;
+    font-size: 100%;
+  }
+
+  body {
+    margin: 0;
+    overflow-x: hidden;
+    background: #fff;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    font-weight: 400;
+    line-height: var(--text-body--line-height);
+    overflow-wrap: break-word;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  button,
+  input:not([type="checkbox"]):not([type="radio"]),
+  select {
+    min-height: 2.75rem;
+  }
+
+  h1 {
+    font-weight: 800;
+  }
+
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+  }
+
+  .grid > *,
+  .flex > * {
+    min-width: 0;
+  }
+
+  :focus {
+    outline: none;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-violet);
+    outline-offset: 3px;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    z-index: 50;
+    transform: translateY(-150%);
+    border-radius: var(--radius-control);
+    background: var(--color-violet);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+}
+
+@layer components {
+  .control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  .flex > .control,
+  .grid > .control {
+    min-width: 2.75rem;
+  }
+
+  .cover-title {
+    display: -webkit-box;
+    overflow: hidden;
+    min-height: calc(2 * 1.35em);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .excerpt {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}

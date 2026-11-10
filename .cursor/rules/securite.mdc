@@ -1,0 +1,16 @@
+---
+description: Règles de sécurité obligatoires pour tout le projet Totanga
+alwaysApply: true
+---
+
+# Sécurité Totanga
+
+Avant toute modification, lire `SECURITE.md` et s'y tenir.
+
+- Ne jamais désactiver une protection (CSRF, CORS, validation, HTTPS, permissions, `DEBUG` faux en production) pour faire passer un correctif. Si c'est le seul moyen de débloquer, s'arrêter et l'expliquer clairement avant toute modification.
+- Ne jamais écrire de secret dans le code, les tests, les journaux, ni dans un fichier suivi par Git. Les secrets restent dans `.env`.
+- Signaler tout risque de sécurité remarqué, même s'il est hors de la tâche demandée.
+- Quand une règle de `SECURITE.md` change d'état, mettre à jour la checklist dans le même travail.
+- N'ajouter aucun paquet sans expliquer pourquoi et obtenir l'accord avant.
+
+Exemple : un correctif qui exige `CORS_ALLOW_ALL_ORIGINS = True` ou `DEBUG = True` en production ne s'applique pas. On décrit le blocage et on attend.

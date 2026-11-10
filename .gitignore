@@ -1,0 +1,33 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Django
+staticfiles/
+media/
+*.sqlite3
+
+# IDE et système
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Journaux
+*.log
+
+# Jetons de vérification manuelle
+cookies.txt
+login.json
+verrou.txt
+verrou.json
+
+# Frontend
+node_modules/
+dist/
