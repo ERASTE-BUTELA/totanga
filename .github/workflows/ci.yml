@@ -57,16 +57,10 @@ jobs:
       - name: Installer les dépendances
         run: pip install -r requirements.txt
 
-      - name: Extensions PostgreSQL
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client
-          PGPASSWORD=totanga psql -h 127.0.0.1 -U totanga -d totanga -c "CREATE EXTENSION IF NOT EXISTS unaccent;"
-          PGPASSWORD=totanga psql -h 127.0.0.1 -U totanga -d totanga -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
-
       - name: Contrôle Django
         run: python manage.py check
 
+      # unaccent et pg_trgm sont créés par les migrations catalogue (pas besoin de apt/psql).
       - name: Migrations
         run: python manage.py migrate --noinput
 
