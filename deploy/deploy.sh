@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Déploie une révision Git sur le VPS avec Docker Compose production.
-# Usage : ./deploy/deploy.sh <sha>
+# Déploiement MANUEL sur le VPS avec Docker Compose production.
+# Ne jamais appeler ce script depuis GitHub Actions (pas de CD automatique).
+# Usage (sur le VPS) : ./deploy/deploy.sh <sha-ou-ref>
 # Prérequis : dépôt déjà cloné, fichier .env présent (jamais dans Git).
 
 set -euo pipefail

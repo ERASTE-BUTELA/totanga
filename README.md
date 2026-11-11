@@ -16,9 +16,9 @@ Au démarrage, le conteneur attend la base, applique les migrations, synchronise
 
 En développement, les dossiers `backend`, `frontend` et `admin` sont partagés avec les conteneurs : un fichier modifié recharge le serveur correspondant.
 
-## CI/CD et VPS
+## CI et déploiement
 
-Le déploiement depuis GitHub vers le VPS (Hostinger) est documenté dans [docs/deploiement.md](docs/deploiement.md) : workflows GitHub Actions, secrets, script `deploy/deploy.sh`, rollback.
+GitHub Actions exécute uniquement un **CI** (tests Django, tests et builds React) sur les pull requests et les pushes vers `main`. **Aucun déploiement automatique** : le VPS n’est jamais contacté par Actions. Le déploiement reste manuel ; voir [docs/deploiement.md](docs/deploiement.md).
 
 ## Production (préparation VPS)
 
