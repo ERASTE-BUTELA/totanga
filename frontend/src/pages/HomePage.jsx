@@ -12,8 +12,9 @@ import { usePageTitle } from "../lib/usePageTitle.js"
 
 function loadHome() {
   return Promise.all([getBooks(), getCategories(), getAnnouncements(), getPublications(), getEvents()]).then(
-    ([books, categories, announcements, publications, events]) => ({
-      books,
+    ([catalog, categories, announcements, publications, events]) => ({
+      books: catalog.books,
+      bookCount: catalog.count,
       categories,
       announcements,
       publications,
@@ -35,14 +36,16 @@ function bookCountLabel(count) {
 }
 
 function kindLabel(item) {
-  if (item.kind === "important") return "Important"
+  if (item.important || item.kind === "important") return "Important"
+  if (item.categoryLabel) return item.categoryLabel
   if (/horaire/i.test(item.title)) return "Horaires"
   return "Nouveauté"
 }
 
 function kindTone(item) {
-  if (item.kind === "important") return { text: "text-unavailable", bar: "bg-unavailable" }
-  if (/horaire/i.test(item.title)) return { text: "text-gold", bar: "bg-gold" }
+  if (item.important || item.kind === "important") return { text: "text-unavailable", bar: "bg-unavailable" }
+  if (item.category === "horaires" || /horaire/i.test(item.title)) return { text: "text-gold", bar: "bg-gold" }
+  if (item.category === "maintenance") return { text: "text-violet", bar: "bg-violet" }
   return { text: "text-available", bar: "bg-available" }
 }
 
@@ -90,9 +93,13 @@ export default function HomePage() {
 }
 
 function HomeContent({ data, onSearch }) {
-  const { books, categories, announcements, publications, events } = data
+  const { books, bookCount, categories, announcements, publications, events } = data
+  const upcomingEvents = events.filter((event) => {
+    const end = new Date(event.endsAt || event.startsAt)
+    return !Number.isNaN(end.getTime()) && end >= new Date()
+  })
   const shortcuts = [
-    { to: "/catalogue", title: "Consulter le catalogue", short: "Catalogue", text: bookCountLabel(books.length), icon: BookOpen, gold: true },
+    { to: "/catalogue", title: "Consulter le catalogue", short: "Catalogue", text: bookCountLabel(bookCount), icon: BookOpen, gold: true },
     { to: "/annonces", title: "Suivre les annonces", short: "Annonces", text: "Restez informé des actualités", icon: Megaphone },
     { to: "/evenements", title: "Participer aux événements", short: "Événements", text: "Conférences, ateliers, clubs de lecture", icon: CalendarDays },
     { to: "/publications", title: "Lire nos publications", short: "Publications", text: "Articles, recommandations et plus", icon: Newspaper },
@@ -211,13 +218,17 @@ function HomeContent({ data, onSearch }) {
 
         <Panel labelledBy="evenements-accueil" className="order-3 lg:order-none">
           <PanelHeading id="evenements-accueil" title="Prochains événements" to="/evenements" linkLabel="Voir tous" icon={CalendarDays} />
-          <ul className="divide-y divide-line">
-            {events.map((event) => (
-              <li key={event.id} className="py-4 first:pt-0 last:pb-0">
-                <EventCard event={event} plain />
-              </li>
-            ))}
-          </ul>
+          {upcomingEvents.length === 0 ? (
+            <p className="text-muted">Aucun événement à venir.</p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {upcomingEvents.map((event) => (
+                <li key={event.id} className="py-4 first:pt-0 last:pb-0">
+                  <EventCard event={event} plain />
+                </li>
+              ))}
+            </ul>
+          )}
         </Panel>
         </div>
 

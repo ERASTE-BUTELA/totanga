@@ -11,7 +11,9 @@ import {
   Library,
   Lock,
   LogOut,
+  Mail,
   Megaphone,
+  ScrollText,
   Settings,
   SlidersHorizontal,
   Tag,
@@ -31,6 +33,8 @@ const SUBTITLES = {
   "/publications": "Gérez les publications de la bibliothèque.",
   "/evenements": "Gérez les événements, ateliers, conférences et activités de la bibliothèque.",
   "/utilisateurs": "Gérez les comptes du personnel, leurs rôles et leurs permissions.",
+  "/journal": "Actions du personnel : qui, quoi, quel objet, quand.",
+  "/messages": "Messages envoyés par les visiteurs.",
   "/parametres": "Configurez la bibliothèque, ses fonctionnalités et son fonctionnement.",
   "/compte/profil": "Consultez et mettez à jour vos informations personnelles.",
   "/compte/mot-de-passe": "Compte du personnel",
@@ -71,6 +75,8 @@ const ICONS = {
   publications: FileText,
   events: CalendarDays,
   users: Users,
+  journal: ScrollText,
+  messages: Mail,
   settings: Settings,
 }
 
@@ -189,7 +195,7 @@ export function AdminShell() {
   const subtitle = trail?.subtitle || SUBTITLES[location.pathname] || ""
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]">
+    <div className="min-h-dvh lg:grid lg:h-dvh lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
       <a className="skip-link" href="#contenu">Aller au contenu</a>
       <div className="flex items-center bg-violet-dark px-4 py-4">
         <img
@@ -300,7 +306,7 @@ export function AdminShell() {
           </div>
         </div>
       </header>
-      <aside className="sidebar flex flex-col bg-violet-dark text-white">
+      <aside className="sidebar flex flex-col bg-violet-dark text-white lg:min-h-0 lg:overflow-y-auto">
         <p className="px-5 pt-4 font-semibold tracking-wide text-white/70">Espace d'administration</p>
         <nav aria-label="Administration" className="grid flex-1 content-start gap-1 px-3 py-3">
           {nav.map((entry) => {
@@ -358,7 +364,7 @@ export function AdminShell() {
           <path fill="currentColor" d="M38 12c8.5-4.2 18.2-5.2 30-2.2v26c-11.2-2.6-21-1.4-30 3.2V12z" />
         </svg>
       </aside>
-      <div id="contenu" className="bg-lavender px-4 py-4 sm:px-6 sm:pb-8">
+      <div id="contenu" className="bg-lavender px-4 py-4 sm:px-6 sm:pb-8 lg:min-h-0 lg:overflow-y-auto">
         <Outlet />
       </div>
     </div>

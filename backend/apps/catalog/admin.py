@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.db import models
 from django.utils.html import format_html
 
-from .models import Author, Book, Category, Copy, CopyStatus
+from .models import Author, Book, BookState, Category, Copy, CopyStatus, RegisterRow
 
 
 class CatalogImageAdmin(admin.ModelAdmin):
@@ -34,7 +34,7 @@ class CopyStatusFilter(admin.SimpleListFilter):
 class CopyInline(admin.TabularInline):
     model = Copy
     extra = 1
-    fields = ("call_number", "section", "shelf", "status", "acquired_on")
+    fields = ("inventory_number", "call_number", "fonds", "secondary_call_number", "acquisition_price", "section", "shelf", "status", "acquired_on")
 
 
 @admin.register(Author)
@@ -56,9 +56,9 @@ class AuthorAdmin(CatalogImageAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug")
+    list_display = ("name", "parent", "slug")
     search_fields = ("name",)
-    fields = ("name", "slug", "description")
+    fields = ("name", "parent", "slug", "description")
     readonly_fields = ("slug",)
 
 
@@ -72,9 +72,9 @@ class BookAdmin(CatalogImageAdmin):
         "language",
         "copy_count_display",
         "available_copy_count_display",
-        "archived",
+        "state",
     )
-    list_filter = ("category", "archived", CopyStatusFilter)
+    list_filter = ("category", "state", CopyStatusFilter)
     search_fields = ("title", "authors__name", "isbn", "copies__call_number")
     search_help_text = "Titre, auteur, ISBN ou cote."
     filter_horizontal = ("authors",)
@@ -100,13 +100,13 @@ class BookAdmin(CatalogImageAdmin):
                 )
             },
         ),
-        ("Présentation", {"fields": ("summary", "cover", "cover_preview")}),
+        ("Présentation", {"fields": ("summary", "cover_image", "cover_preview")}),
         ("Édition", {"fields": ("publisher", "isbn")}),
         (
             "Suivi",
             {
                 "fields": (
-                    "archived",
+                    "state",
                     "copy_count_display",
                     "available_copy_count_display",
                     "created_at",
@@ -137,7 +137,7 @@ class BookAdmin(CatalogImageAdmin):
 
     @admin.action(description="Archiver les livres sélectionnés")
     def archive_books(self, request, queryset):
-        count = queryset.update(archived=True)
+        count = queryset.update(state=BookState.ARCHIVED)
         self.message_user(request, f"{count} livre(s) archivé(s).")
 
     @admin.display(description="Auteurs")
@@ -159,9 +159,26 @@ class BookAdmin(CatalogImageAdmin):
 
     @admin.display(description="Aperçu")
     def cover_preview(self, obj):
-        if not obj.cover:
+        if not obj.cover_image_id:
             return "Aucune couverture"
         return format_html(
             '<img src="{}" alt="" style="max-height: 120px;">',
-            obj.cover.url,
+            obj.cover_image.file.url,
         )
+
+
+@admin.register(RegisterRow)
+class RegisterRowAdmin(admin.ModelAdmin):
+    list_display = ("source_line", "status", "inventory_number", "title")
+    ordering = ("source_line",)
+    readonly_fields = [field.name for field in RegisterRow._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+

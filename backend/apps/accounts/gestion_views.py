@@ -259,3 +259,51 @@ class StaffUserListView(APIView):
             target_id=user.pk,
         )
         return Response(_staff_row(user, password), status=201)
+
+
+class StaffJournalView(APIView):
+    authentication_classes = [CsrfEnforcedAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.has_perm("accounts.view_staffaction"):
+            return Response({"detail": "Vous n'avez pas l'autorisation d'effectuer cette action."}, status=403)
+        from .models import StaffAction
+
+        rows = []
+        for action in StaffAction.objects.select_related("actor").order_by("-created_at")[:100]:
+            rows.append(
+                {
+                    "id": action.pk,
+                    "action": action.action,
+                    "target_type": action.target_type,
+                    "target_id": action.target_id,
+                    "created_at": action.created_at.isoformat(),
+                    "actor": action.actor.get_username() if action.actor_id else "",
+                }
+            )
+        return Response(rows)
+
+
+class StaffMessageListView(APIView):
+    authentication_classes = [CsrfEnforcedAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.has_perm("visitor_messages.view_visitormessage"):
+            return Response({"detail": "Vous n'avez pas l'autorisation d'effectuer cette action."}, status=403)
+        from apps.visitor_messages.models import VisitorMessage
+
+        rows = []
+        for message in VisitorMessage.objects.order_by("-created_at")[:100]:
+            rows.append(
+                {
+                    "id": message.pk,
+                    "name": message.name,
+                    "email": message.email,
+                    "subject": message.get_subject_display(),
+                    "body": message.body,
+                    "created_at": message.created_at.isoformat(),
+                }
+            )
+        return Response(rows)

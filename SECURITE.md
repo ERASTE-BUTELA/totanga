@@ -2,7 +2,7 @@
 
 Règles du portail de la bibliothèque Totanga. Elles s'appuient sur l'OWASP Top 10 (contrôle d'accès, secrets, injection, configuration, dépendances, authentification, journaux) et sur la checklist de déploiement de Django.
 
-Chaque point de la checklist est **Appliqué**, **À faire**, ou **Non applicable**. État au 9 novembre 2026. Le conteneur actuel lance les réglages de développement : `DEBUG` y est vrai, et c'est voulu. Les protections de production sont dans `config.settings.production`.
+Chaque point de la checklist est **Appliqué**, **À faire**, ou **Non applicable**. État au 11 novembre 2026. Le compose de développement lance `config.settings.development` (`DEBUG` vrai). Le compose de production (`docker-compose.production.yml`) lance `config.settings.production`.
 
 ## Principes
 
@@ -70,10 +70,21 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Type de contenu forcé (`nosniff`) en production | Appliqué |
 | Politique de référent `same-origin` | Appliqué |
 | Mots de passe contrôlés par les validateurs Django | Appliqué |
-| Images limitées au JPG, PNG, WebP et à 2 Mo | Appliqué |
-| Aucune requête SQL écrite à la main | Appliqué |
+| Images limitées au JPG, PNG, WebP et à 2 Mo, redimensionnées et sans données d'appareil photo | Appliqué |
+| API publique de consultation des livres | Appliqué |
+| API publique des annonces et des événements | Appliqué |
+| API publique des publications | À faire |
+| Limitation du nombre de lectures du catalogue | Appliqué |
+| Limitation du nombre de lectures des annonces et des événements (`content_read`, 120 par minute, adresse de connexion) | Appliqué |
+| Limitation générale du nombre de requêtes, au-delà du catalogue, des annonces, des événements, de la connexion et des messages | À faire |
+| Utilisateur PostgreSQL aux droits limités | À faire. `deploy/postgres/init-extensions.sql` crée `unaccent` et `pg_trgm` à l'init du volume. En développement le compte reste super-utilisateur. En production, après le premier migrate réussi, retirer le super-utilisateur du rôle applicatif (`ALTER ROLE … NOSUPERUSER`). |
+| Aucune requête SQL écrite à la main dans les vues | Appliqué. Les verrous et les extensions sont du SQL de schéma, dans les migrations. La remise à zéro du catalogue d'exemple est une commande de développement qui désactive le verrou le temps de l'effacement, et elle refuse la production. |
 | Aucun secret dans les journaux de la commande d'administrateur | Appliqué |
 | Compte administrateur du quotidien dans le groupe, sans privilège technique de super-utilisateur | Appliqué |
+| Super-administrateur technique, sans groupe : tous les menus et toutes les actions, journal compris | Appliqué |
+| Dernier administrateur impossible à désactiver, à retirer du groupe ou à supprimer | Appliqué |
+| Annonce et événement : pas de suppression, archivage seulement. Le brouillon et l'archivé restent hors de l'API publique | Appliqué |
+| Prix d'acquisition et registre d'import absents de l'API publique | Appliqué |
 | Session du personnel : 30 minutes d'inactivité, 10 heures au maximum, cookie de session illisible par un script | Appliqué |
 | Limitation des tentatives de connexion : 5 échecs, puis 15 minutes, même réponse si le compte n'existe pas | Appliqué |
 | Journal des actions du personnel : qui, quoi, quel objet, quand, sans mot de passe, clé, adresse ni message | Appliqué |
@@ -87,15 +98,12 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Message public : création seulement, texte sans balise, 8 envois par heure sur l'adresse de connexion | Appliqué |
 | Aucune ressource chargée depuis un site externe | Appliqué |
 | Politique de contenu CSP | À faire |
-| Dire à Django qu'un reverse proxy termine le HTTPS (`SECURE_PROXY_SSL_HEADER`) | À faire |
-| Origine CORS et `ALLOWED_HOSTS` du vrai domaine de production | À faire |
-| API publique de consultation (livres, annonces, événements, publications) | À faire |
-| Limitation générale du nombre de requêtes, au-delà de la connexion et des messages | À faire |
-| Utilisateur PostgreSQL aux droits limités | À faire |
+| Dire à Django qu'un reverse proxy termine le HTTPS (`SECURE_PROXY_SSL_HEADER`) | Appliqué |
+| Origine CORS et `ALLOWED_HOSTS` du vrai domaine de production | À faire. Les placeholders et l'exemple `bibtotanga.com` sont dans `.env.example` ; les vrais sous-domaines restent à renseigner avant la mise en ligne. |
 | Sauvegardes régulières, avec un essai de restauration | À faire |
 | Application d'administration séparée, sans lien depuis le site public, non référencée | Appliqué |
 | Session d'administration : cookie HttpOnly seulement, jeton CSRF relu à chaque envoi, rien dans localStorage | Appliqué |
-| Comptes d'essai des trois rôles : commande de développement, refusée lorsque DEBUG est faux | Appliqué |
+| Comptes d'essai des trois rôles et du super-administrateur : commande de développement, refusée lorsque DEBUG est faux | Appliqué |
 | Conteneur frontend lancé sans être administrateur | Appliqué |
 | Conteneur de l'administration lancé sans être administrateur | Appliqué |
 | Conteneurs backend et base lancés sans être administrateur | À faire |

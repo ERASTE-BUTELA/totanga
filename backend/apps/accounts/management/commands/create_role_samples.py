@@ -20,6 +20,8 @@ SAMPLES = (
     ("essai-redacteur", "Totanga-Essai-Redac-2026", ROLE_EDITOR),
 )
 
+SUPER_SAMPLE = ("essai-superadmin", "Totanga-Essai-Super-2026")
+
 
 class Command(BaseCommand):
     help = (
@@ -51,3 +53,20 @@ class Command(BaseCommand):
             user.save()
             user.groups.set([group])
             self.stdout.write(f"Compte d'essai « {username} » prêt, rôle {role}.")
+
+        username, password = SUPER_SAMPLE
+        user = User.objects.filter(username=username).first()
+        if user is None:
+            validate_password(password, user=User(username=username))
+            user = User.objects.create_user(username=username, password=password)
+        else:
+            user.set_password(password)
+        user.first_name = "Essai"
+        user.last_name = "Super-administrateur"
+        user.email = ""
+        user.is_staff = False
+        user.is_superuser = True
+        user.is_active = True
+        user.save()
+        user.groups.clear()
+        self.stdout.write(f"Compte d'essai « {username} » prêt, super-utilisateur sans groupe.")

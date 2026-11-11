@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { ArrowLeft, Pencil, Save, Tag } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
-import { getCategory, saveCategory } from "../api/catalog.js"
+import { getCategory, listCategories, saveCategory } from "../api/catalog.js"
 
 const fieldClass = "w-full rounded-control border border-line bg-white px-3"
 
@@ -10,22 +10,31 @@ export function CategoryFormPage({ mode = "create" }) {
   const navigate = useNavigate()
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
+  const [parentId, setParentId] = useState("")
+  const [classes, setClasses] = useState([])
   const [problems, setProblems] = useState([])
-  const [ready, setReady] = useState(mode === "create")
+  const [ready, setReady] = useState(false)
   const viewing = mode === "view"
 
   useEffect(() => {
-    if (mode === "create") return undefined
     let gone = false
-    getCategory(categoryId).then((result) => {
+    Promise.all([
+      listCategories(),
+      mode === "create" ? Promise.resolve({ ok: true, data: null }) : getCategory(categoryId),
+    ]).then(([list, result]) => {
       if (gone) return
-      if (!result.ok) {
-        setProblems([result.error])
+      if (!list.ok || !result.ok) {
+        setProblems([list.error || result.error])
         setReady(true)
         return
       }
-      setName(result.data.name)
-      setDescription(result.data.description)
+      const currentId = mode === "create" ? null : Number(categoryId)
+      setClasses(list.data.filter((item) => !item.parent_id && item.id !== currentId))
+      if (result.data) {
+        setName(result.data.name)
+        setDescription(result.data.description || "")
+        setParentId(result.data.parent_id ? String(result.data.parent_id) : "")
+      }
       setReady(true)
     })
     return () => {
@@ -42,6 +51,7 @@ export function CategoryFormPage({ mode = "create" }) {
     const result = await saveCategory(mode === "edit" ? categoryId : null, {
       name: name.trim(),
       description: description.trim(),
+      parent_id: parentId || null,
     })
     if (!result.ok) {
       setProblems([result.error])
@@ -64,12 +74,20 @@ export function CategoryFormPage({ mode = "create" }) {
           <Tag aria-hidden="true" className="text-violet" size={24} />
           Informations de la catégorie
         </h2>
+        <p className="mt-2 text-muted">Obligatoire : le nom. Sans classe, c'est une classe. Une sous-classe ne contient pas d'autre sous-classe.</p>
         <label className="mt-4 grid gap-1">
-          <span className="font-semibold text-heading">Nom de la catégorie *</span>
-          <input className={fieldClass} value={name} onChange={(event) => setName(event.target.value)} required disabled={viewing} />
+          <span className="font-semibold text-heading">Classe (facultatif)</span>
+          <select className={fieldClass} value={parentId} onChange={(event) => setParentId(event.target.value)} disabled={viewing}>
+            <option value="">Aucune : c'est une classe</option>
+            {classes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </label>
+        <label className="mt-4 grid gap-1">
+          <span className="font-semibold text-heading">Nom *</span>
+          <input className={fieldClass} value={name} onChange={(event) => setName(event.target.value)} maxLength={120} required disabled={viewing} />
         </label>
         <label className="mt-3 grid gap-1">
-          <span className="font-semibold text-heading">Description</span>
+          <span className="font-semibold text-heading">Description (facultatif)</span>
           <textarea className="min-h-32 w-full rounded-control border border-line px-3 py-2" value={description} onChange={(event) => setDescription(event.target.value)} disabled={viewing} />
         </label>
       </article>

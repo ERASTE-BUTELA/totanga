@@ -9,7 +9,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from PIL import Image
 
-from apps.catalog.models import Author, Book, BookLanguage, Category, Copy, CopyStatus
+from apps.catalog.models import Author, Book, BookLanguage, BookState, Category, Copy, CopyStatus, StoredImage
 
 
 CATEGORIES = (
@@ -251,6 +251,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not settings.DEBUG:
             raise CommandError("Cette commande est réservée au développement.")
+        from apps.catalog.repertoire import repertoire_path
+
+        if repertoire_path().is_file():
+            raise CommandError(
+                "Le répertoire réel est présent. Le catalogue d'exemple n'est pas chargé."
+            )
         if Book.objects.exists():
             raise CommandError(
                 "Des livres existent déjà. Le catalogue d'exemple n'a pas été modifié."
@@ -285,6 +291,11 @@ class Command(BaseCommand):
                     summary,
                     copies,
                 ) = book_data
+                cover = StoredImage(alt_text=title[:200], size=1)
+                content = _jpeg(COVER_COLORS[index], (80, 120))
+                cover.file.save("couverture.jpg", content, save=False)
+                cover.size = content.size
+                cover.save()
                 book = Book(
                     title=title,
                     category=categories[category_name],
@@ -292,12 +303,8 @@ class Command(BaseCommand):
                     language=language,
                     publisher=publisher,
                     summary=summary,
-                    archived=archived,
-                )
-                book.cover.save(
-                    "couverture.jpg",
-                    _jpeg(COVER_COLORS[index], (80, 120)),
-                    save=False,
+                    state=BookState.ARCHIVED if archived else BookState.PUBLISHED,
+                    cover_image=cover,
                 )
                 book.save()
                 book.authors.add(authors[author_name])

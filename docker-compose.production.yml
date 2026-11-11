@@ -1,0 +1,97 @@
+# Production locale ou VPS. Ne publie PostgreSQL que sur le réseau Docker.
+# Les ports HTTP sont liés à 127.0.0.1 : le Nginx de l'hôte (HTTPS) s'y branchera.
+#
+# Lancer :
+#   docker compose -f docker-compose.production.yml --env-file .env up --build -d
+
+name: totanga
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - internal
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      DJANGO_SECURE_SSL_REDIRECT: ${DJANGO_SECURE_SSL_REDIRECT:-true}
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+      - ./data/import:/data/import:ro
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/api/sante/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    restart: unless-stopped
+    volumes:
+      - media_data:/var/www/media:ro
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+
+  admin:
+    build:
+      context: ./admin
+      target: production
+    restart: unless-stopped
+    volumes:
+      - media_data:/var/www/media:ro
+    ports:
+      - "127.0.0.1:8081:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+  media_data:
+  static_data:
+
+networks:
+  internal:
+    driver: bridge

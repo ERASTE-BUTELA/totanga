@@ -12,7 +12,7 @@ import {
   MapPin,
   User,
 } from "lucide-react"
-import { getBookBySlug, getBooks } from "../api/client.js"
+import { getBookBySlug } from "../api/client.js"
 import { BookCard } from "../components/cards/BookCard.jsx"
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
 import { QueryState } from "../components/ui/QueryState.jsx"
@@ -22,26 +22,26 @@ import { useAsync } from "../lib/useAsync.js"
 import { usePageTitle } from "../lib/usePageTitle.js"
 
 function loadBook(slug) {
-  return Promise.all([getBookBySlug(slug), getBooks()]).then(([book, books]) => ({ book, books }))
+  return getBookBySlug(slug)
 }
 
 export default function BookPage() {
   const { slug } = useParams()
   const state = useAsync(() => loadBook(slug), [slug])
-  const book = state.data?.book
+  const book = state.data
   usePageTitle(book ? book.title : "Livre introuvable")
 
   return (
     <div className="bg-canvas px-4 py-6 sm:px-8 lg:px-14">
       <QueryState status={state.status} error={state.error}>
-        {state.data ? <BookContent book={book} books={state.data.books} /> : null}
+        <BookContent book={book} />
       </QueryState>
     </div>
   )
 }
 
-function BookContent({ book, books }) {
-  const [tab, setTab] = useState("resume")
+function BookContent({ book }) {
+  const [tab, setTab] = useState(book.summary.trim() ? "resume" : "infos")
 
   if (!book) {
     return (
@@ -58,7 +58,7 @@ function BookContent({ book, books }) {
   const available = isBookAvailable(book)
   const availableCount = book.copies.filter((copy) => copy.status === "available").length
   const place = book.copies.find((copy) => copy.status === "available") || book.copies[0]
-  const similar = books.filter((item) => item.slug !== book.slug && item.category?.slug === book.category?.slug).slice(0, 4)
+  const similar = book.similar || []
   const authors = authorNames(book.authors)
 
   return (
@@ -74,7 +74,11 @@ function BookContent({ book, books }) {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)_18rem] lg:items-start">
         <div className="rounded-2xl bg-white p-4 shadow-card">
-          <img src={book.cover} alt="" className="mx-auto aspect-[3/4] w-full rounded-lg object-cover shadow-cover" />
+          {book.cover ? (
+            <img src={book.cover} alt="" className="mx-auto aspect-[3/4] w-full rounded-lg object-cover shadow-cover" />
+          ) : (
+            <span className="mx-auto grid aspect-[3/4] w-full place-items-center rounded-lg bg-violet text-white">{book.title.slice(0, 1)}</span>
+          )}
         </div>
 
         <div className="min-w-0">
@@ -92,7 +96,7 @@ function BookContent({ book, books }) {
                   to={`/catalogue?categorie=${encodeURIComponent(book.category.slug)}`}
                   className="inline-flex rounded-full bg-lavender px-3 py-1 text-badge text-violet"
                 >
-                  {book.category.name}
+                  {book.category.parentName ? `${book.category.parentName} — ${book.category.name}` : book.category.name}
                 </Link>
               ) : (
                 "Non précisée"
@@ -181,10 +185,10 @@ function Fact({ icon: Icon, label, children }) {
 
 function BookTabs({ book, authors, tab, setTab }) {
   const tabs = [
-    ["resume", "Résumé", BookOpen],
     ["infos", "Informations complémentaires", Info],
     ["exemplaires", "Exemplaires", Library],
   ]
+  if (book.summary.trim()) tabs.unshift(["resume", "Résumé", BookOpen])
 
   return (
     <section className="mt-8">
@@ -212,7 +216,7 @@ function BookTabs({ book, authors, tab, setTab }) {
 
       {tab === "resume" ? (
         <p role="tabpanel" id="panneau-resume" aria-labelledby="onglet-resume" className="mt-5 max-w-4xl text-body text-ink">
-          {book.summary || "Aucun résumé n'est disponible."}
+          {book.summary}
         </p>
       ) : null}
 
@@ -241,7 +245,10 @@ function BookTabs({ book, authors, tab, setTab }) {
             <ul className="grid gap-3 md:grid-cols-2">
               {book.copies.map((copy) => (
                 <li key={copy.id} className="rounded-2xl border border-line bg-white px-4 py-3 shadow-card">
+                  <p className="text-meta text-muted">{copy.inventoryNumber ? `N. e. ${copy.inventoryNumber}` : "Numéro non précisé"}</p>
                   <p className="text-body font-semibold text-ink">{copy.callNumber || "Sans cote"}</p>
+                  {copy.secondaryCallNumber ? <p className="mt-1 text-meta text-muted">Cote secondaire : {copy.secondaryCallNumber}</p> : null}
+                  {copy.fonds ? <p className="mt-1 text-meta text-muted">Fonds : {copy.fonds}</p> : null}
                   <p className="mt-1 text-meta text-muted">{placeLabel(copy) || "Emplacement non précisé"}</p>
                   <p className="mt-2 text-badge text-violet">{copyStatusLabel(copy.status)}</p>
                 </li>

@@ -164,7 +164,7 @@ export function DashboardPage() {
         <article className="rounded-panel border border-line bg-white p-6 shadow-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-section text-heading">Activité récente</h2>
-            <p className="font-semibold text-violet">Voir le journal des actions →</p>
+            <Link to="/journal" className="font-semibold text-violet">Voir le journal des actions →</Link>
           </div>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[36rem] text-left">

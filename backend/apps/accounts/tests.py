@@ -11,6 +11,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps.accounts.guards import LastAdministratorError
 from apps.accounts.models import StaffAction
 from apps.accounts.management.commands.create_role_samples import SAMPLES
 from apps.accounts.roles import ROLE_ADMIN, ROLE_EDITOR, ROLE_LIBRARIAN, sync_roles
@@ -123,7 +124,12 @@ class RolePermissionTests(TestCase):
         self.assertFalse(librarian.has_perm("visitor_messages.view_visitormessage"))
         self.assertFalse(editor.has_perm("catalog.view_book"))
         self.assertFalse(editor.has_perm("accounts.view_user"))
-        self.assertEqual(editor.groups.get().permissions.count(), 0)
+        self.assertTrue(editor.has_perm("announcements.add_announcement"))
+        self.assertTrue(editor.has_perm("events.change_event"))
+        self.assertFalse(editor.has_perm("announcements.delete_announcement"))
+        self.assertFalse(librarian.has_perm("announcements.view_announcement"))
+        self.assertTrue(admin.has_perm("events.add_event"))
+        self.assertEqual(editor.groups.get().permissions.count(), 6)
 
 
 class StaffSessionApiTests(TestCase):
@@ -433,7 +439,7 @@ class StaffSessionApiTests(TestCase):
 
 class PublicSurfaceTests(TestCase):
     def test_public_api_hides_accounts_emails_and_unpublished_routes(self):
-        """Aucun brouillon n'existe encore : les routes du catalogue ne sont pas publiées."""
+        """Les anciennes adresses restent fermées. Le catalogue public ne montre ni compte ni adresse e-mail."""
 
         User.objects.create_user("compte-cache-du-personnel", password=PASSWORD)
         VisitorMessage.objects.create(
@@ -453,11 +459,19 @@ class PublicSurfaceTests(TestCase):
         for path in (
             "/api/livres/",
             "/api/books/",
-            "/api/annonces/",
             "/api/publications/",
-            "/api/evenements/",
         ):
             self.assertEqual(client.get(path).status_code, 404)
+        catalog = client.get("/api/catalogue/livres/")
+        self.assertEqual(catalog.status_code, 200)
+        self.assertNotIn("email", catalog.content.decode())
+        notices = client.get("/api/annonces/")
+        events = client.get("/api/evenements/")
+        self.assertEqual(notices.status_code, 200)
+        self.assertEqual(events.status_code, 200)
+        self.assertNotIn("email", notices.content.decode())
+        self.assertNotIn("email", events.content.decode())
+        self.assertEqual(client.get("/api/publications/").status_code, 404)
         self.assertEqual(client.get("/api/gestion/utilisateurs/").status_code, 401)
         self.assertEqual(client.get("/api/gestion/compte/").status_code, 401)
 
@@ -469,6 +483,86 @@ class PublicSurfaceTests(TestCase):
         self.assertNotIn("admin/", routes(django_admin=False, debug=True))
         self.assertIn("api/gestion/", closed)
         self.assertIn("api/messages/", closed)
+
+
+class LastAdministratorTests(TestCase):
+    def test_the_last_administrator_cannot_be_removed(self):
+        sync_roles()
+        keeper = User.objects.create_user("seul-admin", password=PASSWORD)
+        keeper.groups.add(Group.objects.get(name=ROLE_ADMIN))
+        other = User.objects.create_user("autre-admin", password=PASSWORD)
+        other.groups.add(Group.objects.get(name=ROLE_ADMIN))
+        other.is_active = False
+        other.save(update_fields=["is_active"])
+
+        with self.assertRaises(LastAdministratorError):
+            keeper.is_active = False
+            keeper.save(update_fields=["is_active"])
+        keeper.refresh_from_db()
+        self.assertTrue(keeper.is_active)
+
+    def test_the_last_administrator_cannot_leave_the_group(self):
+        sync_roles()
+        keeper = User.objects.create_user("seul-admin-groupe", password=PASSWORD)
+        keeper.groups.add(Group.objects.get(name=ROLE_ADMIN))
+        with self.assertRaises(LastAdministratorError):
+            keeper.groups.remove(Group.objects.get(name=ROLE_ADMIN))
+
+    def test_the_last_administrator_cannot_be_deleted(self):
+        sync_roles()
+        keeper = User.objects.create_user("seul-admin-suppression", password=PASSWORD)
+        keeper.groups.add(Group.objects.get(name=ROLE_ADMIN))
+        with self.assertRaises(LastAdministratorError):
+            keeper.delete()
+        self.assertTrue(User.objects.filter(pk=keeper.pk, is_active=True).exists())
+
+
+class SuperuserAccessTests(TestCase):
+    def setUp(self):
+        sync_roles()
+        self.client = APIClient(enforce_csrf_checks=True)
+        self.superuser = User.objects.create_user("essai-super-test", password=PASSWORD)
+        self.superuser.is_superuser = True
+        self.superuser.is_staff = False
+        self.superuser.save()
+        self.superuser.groups.clear()
+
+    def token(self):
+        response = self.client.get("/api/gestion/session/")
+        return response.cookies["csrftoken"].value
+
+    def test_superuser_without_a_group_can_open_staff_areas_and_is_audited(self):
+        signed = self.client.post(
+            "/api/gestion/session/",
+            {"username": self.superuser.username, "password": PASSWORD},
+            format="json",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(signed.status_code, 200)
+        self.assertEqual(signed.json()["role"], "depannage")
+        self.assertEqual(signed.json()["role_label"], "Super-administrateur")
+        self.assertNotIn("email", signed.json())
+        self.assertIn("announcements.add_announcement", signed.json()["permissions"])
+        for path in (
+            "/api/gestion/catalogue/livres/",
+            "/api/gestion/annonces/",
+            "/api/gestion/evenements/",
+            "/api/gestion/utilisateurs/",
+            "/api/gestion/journal/",
+            "/api/gestion/messages/",
+        ):
+            self.assertEqual(self.client.get(path).status_code, 200, path)
+        self.assertTrue(StaffAction.objects.filter(action="connexion", actor=self.superuser).exists())
+        from apps.catalog.models import Book, Category
+
+        category = Category.objects.create(name="Romans du super")
+        book = Book.objects.create(title="Livre protégé", category=category, state="published")
+        removed = self.client.delete(
+            f"/api/gestion/catalogue/livres/{book.pk}/",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(removed.status_code, 405)
+        self.assertTrue(Book.objects.filter(pk=book.pk).exists())
 
 
 class RoleSampleCommandTests(TestCase):
@@ -487,7 +581,7 @@ class RoleSampleCommandTests(TestCase):
             call_command("create_role_samples", stdout=output)
             call_command("create_role_samples", stdout=output)
 
-        self.assertEqual(User.objects.count(), 3)
+        self.assertEqual(User.objects.count(), 4)
         for username, password, role in SAMPLES:
             user = User.objects.get(username=username)
             self.assertFalse(user.is_superuser)
@@ -496,3 +590,12 @@ class RoleSampleCommandTests(TestCase):
             self.assertEqual(list(user.groups.values_list("name", flat=True)), [role])
             self.assertNotIn(password, output.getvalue())
             self.assertNotIn("@", user.email)
+        from apps.accounts.management.commands.create_role_samples import SUPER_SAMPLE
+
+        username, password = SUPER_SAMPLE
+        superuser = User.objects.get(username=username)
+        self.assertTrue(superuser.is_superuser)
+        self.assertFalse(superuser.is_staff)
+        self.assertFalse(superuser.groups.exists())
+        self.assertTrue(superuser.check_password(password))
+        self.assertNotIn(password, output.getvalue())

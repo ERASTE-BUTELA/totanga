@@ -20,10 +20,10 @@ const numberFormat = new Intl.NumberFormat("fr-FR")
 
 function loadAbout() {
   return Promise.all([getLibraryInfo(), getBooks(), getEvents(), getAnnouncements(), getPublications()]).then(
-    ([library, books, events, announcements, publications]) => ({
+    ([library, catalog, events, announcements, publications]) => ({
       library,
       counts: [
-        { label: "Livres", value: books.length, icon: BookOpen },
+        { label: "Livres", value: catalog.count, icon: BookOpen },
         { label: "Événements", value: events.length, icon: CalendarDays },
         { label: "Annonces", value: announcements.length, icon: Megaphone },
         { label: "Publications", value: publications.length, icon: Newspaper },

@@ -44,6 +44,8 @@ function serverRoles() {
       grants: withGrants({
         dashboard: ["view"],
         catalog: ["view", "add", "change"],
+        announcements: ["view", "add", "change"],
+        events: ["view", "add", "change"],
         users: ["view", "add", "change"],
       }),
     },
@@ -60,9 +62,13 @@ function serverRoles() {
     {
       code: "redacteur",
       label: "Rédacteur",
-      description: "Gestion des annonces, publications et événements.",
+      description: "Annonces et événements. Les publications viendront ensuite.",
       icon: "pen",
-      grants: withGrants({ dashboard: ["view"] }),
+      grants: withGrants({
+        dashboard: ["view"],
+        announcements: ["view", "add", "change"],
+        events: ["view", "add", "change"],
+      }),
     },
   ]
 }

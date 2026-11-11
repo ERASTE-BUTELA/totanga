@@ -1,15 +1,18 @@
-import { useEffect, useId, useRef, useState } from "react"
+import { Fragment, useEffect, useId, useRef, useState } from "react"
 import { Archive, ArrowLeft, BookOpen, Check, Eye, Layers, Pencil, Plus, Save } from "lucide-react"
-import { Link, useNavigate, useParams } from "react-router"
-import { getBook, listAuthors, listCategories, saveBook } from "../api/catalog.js"
+import { Link, useLocation, useNavigate, useParams } from "react-router"
+import { archiveBook, getBook, listAuthors, listCategories, saveBook } from "../api/catalog.js"
+import { bookNotices } from "./texts.js"
 
 const LANGUAGES = [
   ["fr", "Français"],
   ["en", "Anglais"],
+  ["it", "Italien"],
   ["ln", "Lingala"],
   ["kg", "Kikongo"],
   ["lua", "Tshiluba"],
   ["sw", "Swahili"],
+  ["other", "Autre"],
 ]
 const COPY_STATUSES = ["Disponible", "Emprunté", "Réservé", "En réparation", "Perdu"]
 const MAX_IMAGE = 2 * 1024 * 1024
@@ -46,7 +49,7 @@ function starting(book) {
   return {
     id: book.id,
     title: book.title,
-    authors: book.author_ids,
+    authors: book.author_choices || [],
     category: String(book.category_id),
     year: book.year,
     publisher: book.publisher,
@@ -55,13 +58,20 @@ function starting(book) {
     pages: book.pages ? String(book.pages) : "",
     keywords: book.keywords || [],
     summary: book.summary,
-    archived: book.archived,
+    archived: book.state === "archived",
     cover: book.cover || "",
     copies: (book.copies || []).map((copy) => ({
       id: copy.id,
       callNumber: copy.call_number,
-      place: copy.place,
+      inventoryNumber: copy.inventory_number || "",
+      fonds: copy.fonds || "",
+      secondaryCallNumber: copy.secondary_call_number || "",
+      price: copy.price || "",
+      section: copy.section || "",
+      shelf: copy.shelf || "",
+      acquiredOn: copy.acquired_on || "",
       status: copy.status,
+      register: copy.register || null,
     })),
   }
 }
@@ -79,16 +89,15 @@ export function BookFormPage({ mode }) {
   useEffect(() => {
     let gone = false
     Promise.all([
-      listAuthors(),
       listCategories(),
       mode === "create" ? Promise.resolve({ ok: true, data: null }) : getBook(bookId),
-    ]).then(([people, categories, book]) => {
+    ]).then(([categories, book]) => {
       if (gone) return
-      if (!people.ok || !categories.ok || !book.ok) {
-        setError(book.error || people.error || categories.error)
+      if (!categories.ok || !book.ok) {
+        setError(book.error || categories.error)
         return
       }
-      setState({ people: people.data, categories: categories.data, book: book.data })
+      setState({ categories: categories.data, book: book.data })
     })
     return () => {
       gone = true
@@ -101,7 +110,6 @@ export function BookFormPage({ mode }) {
     <BookForm
       key={`${mode}-${bookId || "nouveau"}`}
       initial={starting(state.book)}
-      people={state.people}
       categories={state.categories}
       creating={mode === "create"}
       viewing={mode === "view"}
@@ -109,11 +117,12 @@ export function BookFormPage({ mode }) {
   )
 }
 
-function BookForm({ initial, people, categories, creating, viewing }) {
+function BookForm({ initial, categories, creating, viewing }) {
   const coverInput = useId()
   const [title, setTitle] = useState(initial.title)
   const [authors, setAuthors] = useState(initial.authors)
-  const [authorPick, setAuthorPick] = useState("")
+  const [authorQuery, setAuthorQuery] = useState("")
+  const [authorHits, setAuthorHits] = useState([])
   const [category, setCategory] = useState(initial.category)
   const [year, setYear] = useState(initial.year)
   const [publisher, setPublisher] = useState(initial.publisher)
@@ -126,13 +135,16 @@ function BookForm({ initial, people, categories, creating, viewing }) {
   const [archived, setArchived] = useState(initial.archived)
   const [copies, setCopies] = useState(initial.copies)
   const [adding, setAdding] = useState(false)
-  const [draft, setDraft] = useState({ callNumber: "", place: "", status: "Disponible" })
+  const emptyCopy = { callNumber: "", inventoryNumber: "", fonds: "", secondaryCallNumber: "", price: "", section: "", shelf: "", acquiredOn: "", status: "Disponible" }
+  const [draft, setDraft] = useState(emptyCopy)
+  const [copyError, setCopyError] = useState("")
   const [editingId, setEditingId] = useState(null)
   const navigate = useNavigate()
+  const location = useLocation()
+  const [notice, setNotice] = useState(location.state?.notice || "")
   const publish = useRef(true)
   const [coverUrl, setCoverUrl] = useState("")
   const [coverFile, setCoverFile] = useState(null)
-  const [coverReady, setCoverReady] = useState(Boolean(initial.cover))
   const [coverError, setCoverError] = useState("")
   const [problems, setProblems] = useState([])
 
@@ -140,16 +152,37 @@ function BookForm({ initial, people, categories, creating, viewing }) {
     if (coverUrl) URL.revokeObjectURL(coverUrl)
   }, [coverUrl])
 
-  function addAuthor(id) {
-    const number = Number(id)
-    if (number && !authors.includes(number)) setAuthors((current) => [...current, number])
-    setAuthorPick("")
+  useEffect(() => {
+    const text = authorQuery.trim()
+    if (text.length < 2) {
+      setAuthorHits([])
+      return undefined
+    }
+    let gone = false
+    const timer = setTimeout(() => {
+      listAuthors({ q: text, page: 1, pageSize: 8 }).then((result) => {
+        if (gone || !result.ok) return
+        const chosen = new Set(authors.map((item) => item.id))
+        setAuthorHits((result.data.results || []).filter((item) => !chosen.has(item.id)))
+      })
+    }, 250)
+    return () => {
+      gone = true
+      clearTimeout(timer)
+    }
+  }, [authorQuery, authors])
+
+  function addAuthor(person) {
+    if (!person || authors.some((item) => item.id === person.id)) return
+    setAuthors((current) => [...current, { id: person.id, name: person.name }])
+    setAuthorQuery("")
+    setAuthorHits([])
   }
 
   function addKeyword(event) {
     if (event.key !== "Enter") return
     event.preventDefault()
-    const value = keyword.trim()
+    const value = keyword.trim().slice(0, 200)
     if (value && !keywords.includes(value)) setKeywords((current) => [...current, value])
     setKeyword("")
   }
@@ -169,7 +202,6 @@ function BookForm({ initial, people, categories, creating, viewing }) {
     }
     setCoverError("")
     setCoverFile(file)
-    setCoverReady(true)
     setCoverUrl((current) => {
       if (current) URL.revokeObjectURL(current)
       return URL.createObjectURL(file)
@@ -178,10 +210,30 @@ function BookForm({ initial, people, categories, creating, viewing }) {
 
   function addCopy() {
     const callNumber = draft.callNumber.trim()
-    if (!callNumber || !draft.place.trim()) return
-    if (copies.some((copy) => copy.callNumber === callNumber)) return
-    setCopies((current) => [...current, { id: `n${Date.now()}`, callNumber, place: draft.place.trim(), status: draft.status }])
-    setDraft({ callNumber: "", place: "", status: "Disponible" })
+    const inventoryNumber = draft.inventoryNumber.trim()
+    if (!callNumber) {
+      setCopyError("Chaque exemplaire a besoin d'une cote.")
+      return
+    }
+    if (inventoryNumber && copies.some((copy) => copy.inventoryNumber === inventoryNumber)) {
+      setCopyError("Ce numéro d'inventaire est déjà utilisé.")
+      return
+    }
+    setCopyError("")
+    setCopies((current) => [...current, {
+      id: `n${Date.now()}`,
+      callNumber,
+      inventoryNumber,
+      fonds: draft.fonds.trim(),
+      secondaryCallNumber: draft.secondaryCallNumber.trim(),
+      price: draft.price.trim(),
+      section: draft.section.trim(),
+      shelf: draft.shelf.trim(),
+      acquiredOn: draft.acquiredOn,
+      status: draft.status,
+      register: null,
+    }])
+    setDraft(emptyCopy)
     setAdding(false)
   }
 
@@ -193,28 +245,37 @@ function BookForm({ initial, people, categories, creating, viewing }) {
     if (authors.length === 0) next.push("Indiquez au moins un auteur.")
     if (!category) next.push("La catégorie est obligatoire.")
     const yearNumber = Number(year)
-    if (!year || yearNumber < 1000 || yearNumber > 2100) next.push("L'année de publication doit être comprise entre 1000 et 2100.")
-    if (!language) next.push("La langue est obligatoire.")
-    if (!summary.trim()) next.push("Le résumé est obligatoire.")
-    if (creating && !coverFile) next.push("La couverture est obligatoire.")
+    if (year && (!Number.isInteger(yearNumber) || yearNumber < 1000 || yearNumber > 2100)) {
+      next.push("L'année de publication doit être comprise entre 1000 et 2100.")
+    }
+    const pageNumber = Number(pages)
+    if (pages && (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > 20000)) {
+      next.push("Le nombre de pages n'est pas valide.")
+    }
     setProblems(next)
     if (next.length > 0) return
     const body = new FormData()
     body.set("title", title.trim())
     body.set("summary", summary.trim())
     body.set("category_id", category)
-    body.set("author_ids", JSON.stringify(authors))
+    body.set("author_ids", JSON.stringify(authors.map((person) => person.id)))
     body.set("year", year)
     body.set("language", language)
     body.set("publisher", publisher.trim())
     body.set("isbn", isbn.trim())
     body.set("pages", pages)
     body.set("keywords", JSON.stringify(keywords))
-    body.set("published", publish.current ? "true" : "false")
-    body.set("archived", archived ? "true" : "false")
+    body.set("state", publish.current ? "published" : "draft")
     body.set("copies", JSON.stringify(copies.map((copy) => ({
+      id: typeof copy.id === "number" ? copy.id : undefined,
       call_number: copy.callNumber,
-      place: copy.place,
+      inventory_number: copy.inventoryNumber,
+      fonds: copy.fonds,
+      secondary_call_number: copy.secondaryCallNumber,
+      price: copy.price,
+      section: copy.section,
+      shelf: copy.shelf,
+      acquired_on: copy.acquiredOn,
       status: copy.status,
     }))))
     if (coverFile) body.set("cover", coverFile)
@@ -223,11 +284,17 @@ function BookForm({ initial, people, categories, creating, viewing }) {
       setProblems([result.error])
       return
     }
-    navigate("/catalogue/livres")
+    const message = publish.current ? bookNotices.published : bookNotices.draft
+    if (creating) {
+      navigate(`/catalogue/livres/${result.data.id}/modifier`, { state: { notice: message } })
+      return
+    }
+    setNotice(message)
   }
 
   return (
     <form className="grid gap-4" onSubmit={save}>
+      {notice ? <p role="status" className="rounded-panel border border-available bg-available-soft p-4 text-available">{notice}</p> : null}
       {problems.length > 0 ? (
         <div role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
           {problems.map((problem) => <p key={problem}>{problem}</p>)}
@@ -239,84 +306,98 @@ function BookForm({ initial, people, categories, creating, viewing }) {
             <BookOpen aria-hidden="true" className="text-violet" size={24} />
             Informations du livre
           </h2>
+          <p className="mt-2 text-muted">Obligatoires : le titre, au moins un auteur et la catégorie. Les autres champs peuvent rester vides.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1">
               <span className="font-semibold text-heading">Titre *</span>
-              <input className={fieldClass} value={title} onChange={(event) => setTitle(event.target.value)} required disabled={viewing} />
+              <input className={fieldClass} value={title} onChange={(event) => setTitle(event.target.value)} maxLength={400} required disabled={viewing} />
             </label>
-            <label className="grid gap-1">
+            <div className="grid gap-1">
               <span className="font-semibold text-heading">Auteurs *</span>
-              <span className="flex min-h-11 flex-wrap items-center gap-2 rounded-control border border-line px-2">
-                {authors.map((id) => {
-                  const person = people.find((item) => item.id === id)
-                  const name = person ? person.name : "Auteur"
-                  return (
-                    <span key={id} className="inline-flex items-center gap-1 rounded-full bg-lavender px-2 py-1 font-semibold text-violet">
-                      {name}
-                      {viewing ? null : <button type="button" aria-label={`Retirer ${name}`} onClick={() => setAuthors(authors.filter((item) => item !== id))}>×</button>}
-                    </span>
-                  )
-                })}
+              <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-control border border-line px-2">
+                {authors.map((person) => (
+                  <span key={person.id} className="inline-flex items-center gap-1 rounded-full bg-lavender px-2 py-1 font-semibold text-violet">
+                    {person.name}
+                    {viewing ? null : <button type="button" aria-label={`Retirer ${person.name}`} onClick={() => setAuthors(authors.filter((item) => item.id !== person.id))}>×</button>}
+                  </span>
+                ))}
                 {viewing ? null : (
-                  <select className="min-w-8 flex-1 border-0 bg-transparent" value={authorPick} aria-label="Ajouter un auteur" onChange={(event) => addAuthor(event.target.value)}>
-                    <option value="">Ajouter</option>
-                    {people.filter((person) => !authors.includes(person.id)).map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
-                  </select>
+                  <input
+                    className="min-w-40 flex-1 border-0 bg-transparent py-2"
+                    value={authorQuery}
+                    aria-label="Rechercher un auteur"
+                    placeholder="Rechercher un auteur"
+                    onChange={(event) => setAuthorQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") event.preventDefault()
+                    }}
+                  />
                 )}
-              </span>
-            </label>
+              </div>
+              {authorHits.length > 0 ? (
+                <ul className="rounded-control border border-line bg-white">
+                  {authorHits.map((person) => (
+                    <li key={person.id}>
+                      <button type="button" className="w-full px-3 py-2 text-left hover:bg-lavender" onClick={() => addAuthor(person)}>
+                        {person.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <label className="grid gap-1">
               <span className="font-semibold text-heading">Catégorie *</span>
               <select className={fieldClass} value={category} onChange={(event) => setCategory(event.target.value)} required disabled={viewing}>
                 <option value="">Choisir</option>
-                {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                {categories.map((item) => <option key={item.id} value={item.id}>{item.parent_name ? `${item.parent_name} — ${item.name}` : item.name}</option>)}
               </select>
             </label>
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Année de publication *</span>
-              <input className={fieldClass} inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} required disabled={viewing} />
+              <span className="font-semibold text-heading">Année de publication (facultatif)</span>
+              <input className={fieldClass} inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} maxLength={4} disabled={viewing} />
             </label>
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Éditeur</span>
-              <input className={fieldClass} value={publisher} onChange={(event) => setPublisher(event.target.value)} disabled={viewing} />
+              <span className="font-semibold text-heading">Éditeur (facultatif)</span>
+              <input className={fieldClass} value={publisher} onChange={(event) => setPublisher(event.target.value)} maxLength={200} disabled={viewing} />
             </label>
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">ISBN</span>
-              <input className={fieldClass} value={isbn} onChange={(event) => setIsbn(event.target.value)} disabled={viewing} />
+              <span className="font-semibold text-heading">ISBN (facultatif)</span>
+              <input className={fieldClass} value={isbn} onChange={(event) => setIsbn(event.target.value)} maxLength={24} disabled={viewing} />
             </label>
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Langue *</span>
-              <select className={fieldClass} value={language} onChange={(event) => setLanguage(event.target.value)} required disabled={viewing}>
+              <span className="font-semibold text-heading">Langue</span>
+              <select className={fieldClass} value={language} onChange={(event) => setLanguage(event.target.value)} disabled={viewing}>
                 {LANGUAGES.map(([code, label]) => <option key={code} value={code}>{label}</option>)}
               </select>
             </label>
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Nombre de pages</span>
+              <span className="font-semibold text-heading">Nombre de pages (facultatif)</span>
               <input className={fieldClass} inputMode="numeric" value={pages} onChange={(event) => setPages(event.target.value)} disabled={viewing} />
             </label>
           </div>
           <label className="mt-3 grid gap-1">
-            <span className="font-semibold text-heading">Mots-clés</span>
+            <span className="font-semibold text-heading">Mots-clés (facultatif)</span>
             <span className="flex min-h-11 flex-wrap items-center gap-2 rounded-control border border-line px-2">
               {keywords.map((item) => (
                 <span key={item} className="inline-flex items-center gap-1 rounded-full bg-lavender px-2 py-1 font-semibold text-violet">
                   {item}
-                  <button type="button" aria-label={`Retirer ${item}`} onClick={() => setKeywords(keywords.filter((word) => word !== item))}>×</button>
+                  {viewing ? null : <button type="button" aria-label={`Retirer ${item}`} onClick={() => setKeywords(keywords.filter((word) => word !== item))}>×</button>}
                 </span>
               ))}
-              {viewing ? null : <input className="min-w-40 flex-1 border-0 bg-transparent py-2" value={keyword} placeholder="Ajouter un mot-clé" onChange={(event) => setKeyword(event.target.value)} onKeyDown={addKeyword} />}
+              {viewing ? null : <input className="min-w-40 flex-1 border-0 bg-transparent py-2" value={keyword} maxLength={200} placeholder="Ajouter un mot-clé" onChange={(event) => setKeyword(event.target.value)} onKeyDown={addKeyword} />}
             </span>
           </label>
           <label className="mt-3 grid gap-1">
-            <span className="font-semibold text-heading">Résumé *</span>
-            <textarea className="min-h-32 w-full rounded-control border border-line px-3 py-2" value={summary} onChange={(event) => setSummary(event.target.value)} required disabled={viewing} />
+            <span className="font-semibold text-heading">Résumé (facultatif)</span>
+            <textarea className="min-h-32 w-full rounded-control border border-line px-3 py-2" value={summary} onChange={(event) => setSummary(event.target.value)} disabled={viewing} />
           </label>
         </article>
 
         <article className="rounded-panel border border-line bg-white p-5 shadow-card">
-          <h2 className="text-section text-heading">Couverture du livre</h2>
+          <h2 className="text-section text-heading">Couverture (facultatif)</h2>
           <div className="mt-4 flex items-start gap-4">
             {coverUrl || initial.cover ? (
               <img src={coverUrl || initial.cover} alt="" className="h-44 w-32 rounded-md object-cover" />
@@ -335,22 +416,30 @@ function BookForm({ initial, people, categories, creating, viewing }) {
               {coverError ? <p role="alert" className="mt-2 text-unavailable">{coverError}</p> : null}
             </div>
           </div>
-          <div className="mt-6 flex items-start justify-between gap-3 border-t border-line pt-4">
+          <div className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-4">
             <div>
-              <p className="font-semibold text-heading">Livre archivé</p>
-              <p className="text-muted">Le livre reste dans le catalogue, mais n'est plus mis en avant.</p>
+              <p className="font-semibold text-heading">Archivage</p>
+              <p className="text-muted">{archived ? "Ce livre est archivé. Il n'apparaît pas sur le site public." : "Un livre archivé reste dans le catalogue et disparaît du site public."}</p>
             </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={archived}
-              aria-label="Livre archivé"
-              className={`relative h-8 w-14 shrink-0 rounded-full ${archived ? "bg-violet" : "bg-line"}`}
-              disabled={viewing}
-              onClick={() => setArchived((current) => !current)}
-            >
-              <span className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white ${archived ? "translate-x-6" : ""}`} />
-            </button>
+            {initial.id && !viewing ? (
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line px-4 font-semibold text-heading"
+                onClick={async () => {
+                  if (!window.confirm(bookNotices.confirmArchive)) return
+                  const result = await archiveBook(initial.id, true)
+                  if (!result.ok) {
+                    setProblems([result.error])
+                    return
+                  }
+                  setArchived(true)
+                  setNotice(bookNotices.archived)
+                }}
+              >
+                <Archive aria-hidden="true" size={18} />
+                Archiver
+              </button>
+            ) : null}
           </div>
         </article>
       </div>
@@ -369,13 +458,20 @@ function BookForm({ initial, people, categories, creating, viewing }) {
           )}
         </div>
         {adding ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_2fr_1fr_auto]">
-            <input className={fieldClass} placeholder="Cote" aria-label="Cote" value={draft.callNumber} onChange={(event) => setDraft({ ...draft, callNumber: event.target.value })} />
-            <input className={fieldClass} placeholder="Emplacement" aria-label="Emplacement" value={draft.place} onChange={(event) => setDraft({ ...draft, place: event.target.value })} />
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <input className={fieldClass} placeholder="Cote *" aria-label="Cote" maxLength={80} value={draft.callNumber} onChange={(event) => setDraft({ ...draft, callNumber: event.target.value })} />
+            <input className={fieldClass} placeholder="N. e. (facultatif)" aria-label="Numéro d'inventaire" maxLength={32} value={draft.inventoryNumber} onChange={(event) => setDraft({ ...draft, inventoryNumber: event.target.value })} />
+            <input className={fieldClass} placeholder="Fonds (facultatif)" aria-label="Fonds" maxLength={32} value={draft.fonds} onChange={(event) => setDraft({ ...draft, fonds: event.target.value })} />
+            <input className={fieldClass} placeholder="Cote secondaire (facultatif)" aria-label="Cote secondaire" maxLength={40} value={draft.secondaryCallNumber} onChange={(event) => setDraft({ ...draft, secondaryCallNumber: event.target.value })} />
+            <input className={fieldClass} placeholder="Prix d'acquisition (facultatif)" aria-label="Prix d'acquisition" value={draft.price} onChange={(event) => setDraft({ ...draft, price: event.target.value })} />
+            <input className={fieldClass} placeholder="Rayon (facultatif)" aria-label="Rayon" maxLength={80} value={draft.section} onChange={(event) => setDraft({ ...draft, section: event.target.value })} />
+            <input className={fieldClass} placeholder="Étagère (facultatif)" aria-label="Étagère" maxLength={80} value={draft.shelf} onChange={(event) => setDraft({ ...draft, shelf: event.target.value })} />
+            <input className={fieldClass} type="date" aria-label="Date d'acquisition" value={draft.acquiredOn} onChange={(event) => setDraft({ ...draft, acquiredOn: event.target.value })} />
             <select className={fieldClass} aria-label="Statut de l'exemplaire" value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>
               {COPY_STATUSES.map((status) => <option key={status}>{status}</option>)}
             </select>
             <button type="button" className="inline-flex min-h-11 items-center rounded-control bg-violet px-4 font-semibold text-white" onClick={addCopy}>Ajouter</button>
+            {copyError ? <p role="alert" className="text-unavailable md:col-span-3">{copyError}</p> : null}
           </div>
         ) : null}
         <div className="mt-4 overflow-x-auto">
@@ -383,27 +479,59 @@ function BookForm({ initial, people, categories, creating, viewing }) {
             <thead>
               <tr className="border-b border-line text-muted">
                 <th className="px-3 py-3 font-semibold">#</th>
+                <th className="px-3 py-3 font-semibold">N. e.</th>
                 <th className="px-3 py-3 font-semibold">Cote</th>
-                <th className="px-3 py-3 font-semibold">Emplacement</th>
+                <th className="px-3 py-3 font-semibold">Fonds</th>
+                <th className="px-3 py-3 font-semibold">Prix</th>
+                <th className="px-3 py-3 font-semibold">Rayon</th>
                 <th className="px-3 py-3 font-semibold">Statut</th>
                 <th className="px-3 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {copies.length === 0 ? (
-                <tr><td colSpan={5} className="px-3 py-6 text-muted">Aucun exemplaire.</td></tr>
+                <tr><td colSpan={8} className="px-3 py-6 text-muted">Aucun exemplaire.</td></tr>
               ) : copies.map((copy, index) => (
-                <tr key={copy.id} className="border-b border-line">
+                <Fragment key={copy.id}>
+                <tr className="border-b border-line">
                   <td className="px-3 py-3">{index + 1}</td>
+                  <td className="px-3 py-3">
+                    {editingId === copy.id ? (
+                      <input className={fieldClass} aria-label="Numéro d'inventaire" maxLength={32} value={copy.inventoryNumber} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, inventoryNumber: event.target.value } : item))} />
+                    ) : (copy.inventoryNumber || "—")}
+                  </td>
                   <td className="px-3 py-3 font-semibold text-heading">
                     {editingId === copy.id ? (
-                      <input className={fieldClass} aria-label="Cote" value={copy.callNumber} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, callNumber: event.target.value } : item))} />
+                      <span className="grid gap-1">
+                        <input className={fieldClass} aria-label="Cote" maxLength={80} value={copy.callNumber} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, callNumber: event.target.value } : item))} />
+                        <input className={fieldClass} aria-label="Cote secondaire" maxLength={40} value={copy.secondaryCallNumber} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, secondaryCallNumber: event.target.value } : item))} />
+                      </span>
                     ) : copy.callNumber}
+                    {editingId === copy.id || !copy.secondaryCallNumber ? null : <span className="mt-1 block text-meta font-normal text-muted">Cote secondaire : {copy.secondaryCallNumber}</span>}
                   </td>
                   <td className="px-3 py-3">
                     {editingId === copy.id ? (
-                      <input className={fieldClass} aria-label="Emplacement" value={copy.place} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, place: event.target.value } : item))} />
-                    ) : copy.place}
+                      <input className={fieldClass} aria-label="Fonds" maxLength={32} value={copy.fonds} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, fonds: event.target.value } : item))} />
+                    ) : (copy.fonds || "—")}
+                  </td>
+                  <td className="px-3 py-3">
+                    {editingId === copy.id ? (
+                      <input className={fieldClass} aria-label="Prix d'acquisition" value={copy.price} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, price: event.target.value } : item))} />
+                    ) : (copy.price || "—")}
+                  </td>
+                  <td className="px-3 py-3">
+                    {editingId === copy.id ? (
+                      <span className="grid gap-1">
+                        <input className={fieldClass} aria-label="Rayon" maxLength={80} value={copy.section} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, section: event.target.value } : item))} />
+                        <input className={fieldClass} aria-label="Étagère" maxLength={80} value={copy.shelf} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, shelf: event.target.value } : item))} />
+                        <input className={fieldClass} type="date" aria-label="Date d'acquisition" value={copy.acquiredOn} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, acquiredOn: event.target.value } : item))} />
+                      </span>
+                    ) : (
+                      <>
+                        {[copy.section, copy.shelf].filter(Boolean).join(" – ") || "—"}
+                        {copy.acquiredOn ? <span className="mt-1 block text-meta text-muted">{copy.acquiredOn}</span> : null}
+                      </>
+                    )}
                   </td>
                   <td className="px-3 py-3">
                     {editingId === copy.id ? (
@@ -427,6 +555,23 @@ function BookForm({ initial, people, categories, creating, viewing }) {
                     )}
                   </td>
                 </tr>
+                {copy.register ? (
+                  <tr className="border-b border-line bg-paper">
+                    <td colSpan={8} className="px-3 py-3">
+                      <p className="font-semibold text-heading">Ligne du registre d'origine</p>
+                      <p className="text-meta text-muted">Ligne {copy.register.source_line} — {copy.register.status}</p>
+                      <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+                        {copy.register.cells.map((cell) => (
+                          <div key={cell.name}>
+                            <dt className="text-meta text-muted">{cell.name}</dt>
+                            <dd className="whitespace-pre-wrap text-body text-ink">{cell.value || "—"}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </td>
+                  </tr>
+                ) : null}
+                </Fragment>
               ))}
             </tbody>
           </table>

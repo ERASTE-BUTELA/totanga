@@ -21,6 +21,13 @@ def env_list(name):
     return [item.strip() for item in os.environ.get(name, "").split(",") if item.strip()]
 
 
+def env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 SECRET_KEY = required_env("DJANGO_SECRET_KEY")
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
@@ -34,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "rest_framework",
     "django_filters",
     "corsheaders",
@@ -143,6 +151,8 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_RATES": {
         "visitor_messages": "8/hour",
+        "catalog_read": "120/minute",
+        "content_read": "120/minute",
     },
 }
 

@@ -11,6 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -29,6 +30,7 @@ services:
       POSTGRES_PORT: "5432"
     volumes:
       - ./backend:/app
+      - ./data/import:/data/import
     ports:
       - "8000:8000"
     depends_on:
@@ -40,8 +42,9 @@ services:
   frontend:
     build:
       context: ./frontend
+      target: development
     environment:
-      VITE_USE_FIXTURES: "true"
+      VITE_USE_FIXTURES: "false"
       VITE_API_URL: http://localhost:8000
       CHOKIDAR_USEPOLLING: "true"
     volumes:
@@ -53,6 +56,7 @@ services:
   admin:
     build:
       context: ./admin
+      target: development
     environment:
       CHOKIDAR_USEPOLLING: "true"
       VITE_PROXY_TARGET: http://backend:8000

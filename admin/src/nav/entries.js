@@ -7,6 +7,8 @@ export const PAGES = [
   { id: "publications", label: "Publications", to: "/publications", permission: "posts.view_post" },
   { id: "events", label: "Événements", to: "/evenements", permission: "events.view_event" },
   { id: "users", label: "Utilisateurs et rôles", to: "/utilisateurs", permission: "accounts.view_user" },
+  { id: "journal", label: "Journal", to: "/journal", permission: "accounts.view_staffaction" },
+  { id: "messages", label: "Messages", to: "/messages", permission: "visitor_messages.view_visitormessage" },
   { id: "settings", label: "Paramètres", to: "/parametres", permission: "library_info.view_librarypage" },
 ]
 

@@ -1,14 +1,31 @@
-# Base de données — plan
+# Base de données
 
-Ce document décrit la base **avant** toute construction. Il ne crée aucune table et aucune migration.
+Ce document décrit les données de Totanga. Les décisions du 10 novembre 2026, ci-dessous, l'emportent sur les propositions plus anciennes de ce fichier, en particulier les tables de traduction italienne et les champs qui y étaient marqués obligatoires.
 
-Il sert à valider ensemble ce qui sera enregistré, ce qui sera calculé, et ce qui ne sera pas enregistré. Les noms techniques entre parenthèses sont ceux que le code Django utilise déjà, ou ceux proposés pour la suite. Les textes visibles par le public restent en français dans l'interface ; l'italien est une traduction facultative.
+## Décisions validées
 
-Ce qui existe déjà et doit continuer de fonctionner : les comptes du personnel, les auteurs, les catégories, les livres, les exemplaires, les messages des visiteurs, le journal des actions. On les adapte. On ne les remplace pas.
+1. Le site et l'administration restent en français seulement. L'italien est reporté : aucune table de traduction, aucun sélecteur de langue, aucun réglage de recherche italien, aucun préfixe de langue dans les adresses. Les nouveaux textes d'interface vont dans un fichier de textes central.
+2. Un livre exige un titre, au moins un auteur et une catégorie. L'année, le résumé, la couverture, l'éditeur, l'ISBN et le nombre de pages sont facultatifs. Sans couverture, le site montre la couverture de remplacement. Sans résumé, la section est masquée. L'année n'est contrôlée (1000 à 2100) que si elle est renseignée.
+3. La langue de l'ouvrage ajoute l'italien (`it`) et Autre (`other`) à la liste déjà en place. Ce n'est pas la langue du site.
+4. L'état d'un livre est un seul champ : brouillon, publié ou archivé. Un livre ne se supprime jamais, même par un accès direct à la base.
+5. Un message de visiteur aura un statut (nouveau, traité) et une date de traitement, avec une purge des messages traités après 12 mois. Cette partie est prévue à la phase 5.
+6. Les horaires auront une seule plage par jour. Ils sont prévus à la phase 4.
+7. Le programme d'un événement est un seul texte long, un point par ligne. C'est ainsi qu'il est enregistré depuis la phase 2. Pas de table de points.
+8. Un réseau social est choisi dans une liste fermée : Facebook, X, YouTube, LinkedIn, Instagram, WhatsApp. Une image ne se supprime pas tant qu'une fiche l'utilise. Les réseaux sont prévus à la phase 4. La table Image et ce verrou commencent avec les couvertures, en phase 1.
+9. L'écran « Rôles et permissions » est en lecture seule dans cette version. Il sera figé à la phase 5. Il n'écrit pas les droits du serveur.
+10. Les pages fixes (règlement, FAQ, mentions légales, confidentialité, conditions) restent hors de la base. La page de confidentialité est à écrire avant la mise en ligne. Voir `docs/taches.md`.
+11. Pas de comptes lecteurs, de prêts, de favoris, de réservations, de compteur de vues ni de notifications.
+12. Le répertoire réel est recopié tel quel dans la table Registre, puis le catalogue est construit à partir de ce registre. Le prix d'acquisition et le registre ne sortent jamais dans l'API publique. La cote n'est pas unique. Le numéro d'inventaire l'est. Une catégorie a au plus une classe parente : filtrer la classe inclut ses sous-classes.
+
+La phase 1 construit le catalogue : état du livre, champs facultatifs, ISBN unique seulement s'il est renseigné, mots-clés en lignes, image commune pour la couverture, recherche en français (accents et fautes de frappe), verrou de suppression.
+
+La phase 2 construit les annonces et les événements. Une annonce a une catégorie fermée, une case Important et des dates. Un événement a un type fermé, un programme en texte et de zéro à cinq intervenants. Ni l'un ni l'autre ne se supprime : on les archive.
+
+Le schéma plus bas a été dessiné avant ces décisions. Les cadres « IT », la table des points de programme et la seconde plage horaire ne sont pas à créer.
 
 ## 1. Schéma des relations
 
-Le français est porté par la fiche elle-même. Chaque cadre « IT » est une traduction italienne facultative : s'il n'y a pas de ligne, le site affiche le français.
+Le français est porté par la fiche elle-même. Les cadres « IT » du dessin ne sont pas retenus.
 
 ```mermaid
 erDiagram
@@ -97,7 +114,7 @@ Déjà en place. La photo deviendra un lien vers Image, dans une étape à part,
 
 | Champ | Type | Obligatoire | Contraintes |
 | --- | --- | --- | --- |
-| nom | texte, 200 | oui | non traduit |
+| nom | texte, 300 | oui | non traduit |
 | biographie | texte long | non | français ; l'italien est dans Auteur IT |
 | photo | fichier, puis lien vers Image | non | JPG, PNG ou WebP, 2 Mo |
 
@@ -116,14 +133,13 @@ Rôle : biographie italienne facultative.
 
 ### Catégorie du catalogue (`catalog_category`)
 
-Rôle : Roman, Jeunesse, Histoire, et les suivantes saisies par le personnel. Ce n'est pas la catégorie d'une annonce ni d'une publication.
-
-Déjà en place.
+Rôle : une classe (Roman, Sciences sociales) ou une sous-classe rangée sous une classe. Le livre est rangé dans la sous-classe lorsqu'elle existe, sinon dans la classe. Filtrer une classe inclut ses sous-classes. Deux sous-classes de classes différentes peuvent porter le même nom. Une sous-classe ne contient pas d'autre sous-classe.
 
 | Champ | Type | Obligatoire | Contraintes |
 | --- | --- | --- | --- |
-| nom | texte, 120 | oui | unique, français, non confondu avec le nom d'une annonce |
-| adresse (`slug`) | texte, 255 | oui | unique, générée depuis le nom français |
+| nom | texte, 120 | oui | unique dans une même classe ; deux classes ne portent pas le même nom |
+| classe (`parent`) | lien vers une catégorie | non | vide pour une classe ; une sous-classe ne peut pas servir de classe |
+| adresse (`slug`) | texte, 255 | oui | unique, générée depuis le nom |
 | description | texte long | non | français |
 
 Lien : une catégorie classe plusieurs livres. Déjà protégée : on ne peut pas la supprimer tant qu'un livre la cite.
@@ -146,7 +162,7 @@ Adaptation proposée : remplacer les deux cases par un seul état. Le nombre de 
 
 | Champ | Type | Obligatoire | Contraintes |
 | --- | --- | --- | --- |
-| titre | texte, 255 | oui | non traduit |
+| titre | texte, 400 | oui | non traduit |
 | adresse (`slug`) | texte, 255 | oui | unique, générée depuis le titre |
 | catégorie | lien | oui | |
 | année de publication | nombre entier | oui | entre 1000 et 2100, dans la base |
@@ -158,6 +174,7 @@ Adaptation proposée : remplacer les deux cases par un seul état. Le nombre de 
 | nombre de pages | nombre entier | non | de 1 à 20 000 |
 | état | texte | oui | `brouillon`, `publie`, `archive` |
 | créé le, modifié le | instant | oui | |
+| importé le | instant | non | posé par l'import ; une modification du personnel le dépasse et protège la fiche |
 
 Liens : auteurs, exemplaires, mots-clés, traduction du résumé.
 
@@ -187,7 +204,7 @@ Aujourd'hui ils sont une liste dans un seul champ (`keywords`). On la remplace p
 | Champ | Type | Obligatoire | Contraintes |
 | --- | --- | --- | --- |
 | livre | lien | oui | |
-| libellé | texte, 80 | oui | unique pour un même livre, espaces resserrés |
+| libellé | texte, 200 | oui | unique pour un même livre ; une cellule « SOUS-DIVISION 1 » devient un mot-clé, sans découpage |
 
 ### Exemplaire (`catalog_copy`)
 
@@ -198,15 +215,31 @@ Déjà en place. On ne le relie pas encore à un prêt.
 | Champ | Type | Obligatoire | Contraintes |
 | --- | --- | --- | --- |
 | livre | lien | oui | supprimer le livre est déjà refusé tant qu'un exemplaire existe |
-| cote | texte, 50 | oui | unique |
-| rayon | texte, 80 | oui | |
-| étagère | texte, 80 | oui | |
+| numéro d'inventaire | texte, 32 | non | unique ; colonne « N.  e. » du répertoire |
+| cote | texte, 80 | oui | non unique ; `code1`, point, `code2` s'il existe, espace, trois lettres Dewey |
+| fonds | texte, 32 | non | colonne « F.N. » |
+| cote secondaire | texte, 40 | non | `code3` et `code4` |
+| prix d'acquisition | décimal | non | interne ; absent de l'API publique ; 0 signifie inconnu |
+| rayon | texte, 80 | non | |
+| étagère | texte, 80 | non | |
 | statut | texte, 20 | oui | `available`, `borrowed`, `reserved`, `in_repair`, `lost` |
 | date d'acquisition | date | non | |
+| importé le, modifié le | instant | le second oui | une modification du personnel protège l'exemplaire lors d'un nouvel import |
 
-Le public, sur une carte, ne voit pas ces statuts un par un. Il voit Disponible ou Indisponible, calculé. Le détail (y compris Emprunté) n'apparaît que dans l'onglet des exemplaires.
+Le public, sur une carte, ne voit pas ces statuts un par un. Il voit Disponible ou Indisponible, calculé. Le détail (y compris Emprunté) n'apparaît que dans l'onglet des exemplaires. Le prix d'acquisition n'y figure pas.
 
 Ces statuts restent saisis par le personnel tant qu'il n'y a pas de prêts. Le jour où les prêts existeront, ils citeront l'identifiant de l'exemplaire. Rien dans ce schéma ne l'empêche. On ne crée pas la table des prêts, ni des réservations, ni des favoris, ni un compteur de vues.
+
+### Registre (`catalog_registerrow`)
+
+Rôle : miroir exact du fichier `data/import/repertoire.csv`. Une ligne du fichier, rien de converti, rien de nettoyé, y compris la ligne de test `99999 / ABC`. Le catalogue est construit ensuite à partir de ce registre. Le registre n'est pas dans l'API publique. L'administration l'affiche en lecture seule sur la fiche d'un exemplaire, sous le titre « Ligne du registre d'origine ».
+
+| Champ | Type | Obligatoire | Contraintes |
+| --- | --- | --- | --- |
+| ligne d'origine | entier | oui | unique, numéro de ligne du fichier |
+| statut d'import | texte | oui | `importée`, `ignorée`, `anomalie` |
+| exemplaire | lien | non | l'exemplaire créé à partir de cette ligne, s'il y en a un |
+| les 18 colonnes du fichier | texte | non | mêmes noms : « N.  e. », « F.N. », Auteur, Titre, Editeur, code1, code2, code3, code4, Dewey, « Date publ. », Prix, CLASSE, SOUS-CLASSE, SOUS-DIVISION 1 à 3, Resumé |
 
 ### Image
 
@@ -403,7 +436,7 @@ Le visiteur peut créer un message. Il ne peut ni le lire en liste, ni le modifi
 | Catalogue | « 1 024 livres » ou « des milliers » | pas prévu : c'était un chiffre de maquette |
 | Fiche livre | titre, auteurs, année, résumé, éditeur, ISBN, pages, langue, mots-clés | Livre, Auteur, Mot-clé |
 | Fiche livre | Disponible / Indisponible | calculé |
-| Fiche livre | onglet exemplaires, dont Emprunté | Exemplaire |
+| Fiche livre | onglet exemplaires, dont Emprunté, numéro, cote, fonds | Exemplaire ; pas le prix, pas le registre |
 | Fiche livre | Réserver, Favoris | pas prévu : pas de compte lecteur |
 | Annonces | titre, catégorie, important, dates, image, texte | Annonce |
 | Publications | titre, catégorie, signature, résumé, contenu, à la une | Publication |
@@ -427,7 +460,7 @@ Le visiteur peut créer un message. Il ne peut ni le lire en liste, ni le modifi
 | Connexion | identifiant, mot de passe | Compte ; le mot de passe n'est pas stocké en clair |
 | Tableau de bord | nombres de livres, exemplaires, annonces, événements | calculés |
 | Tableau de bord | 12 846 livres, graphiques et pourcentages de la maquette | pas prévu : ce ne sont pas les données réelles |
-| Livres, auteurs, catégories | champs des formulaires | Livre, Auteur, Catégorie, Exemplaire, Mot-clé, Image |
+| Livres, auteurs, catégories | champs des formulaires ; classe et sous-classe ; ligne du registre en lecture seule | Livre, Auteur, Catégorie, Exemplaire, Mot-clé, Image, Registre |
 | Annonces | formulaire | Annonce ; pas les types supplémentaires de la maquette visuelle |
 | Publications | formulaire, rédacteur affiché | signature en texte libre ; le compte réel est seulement dans le journal |
 | Publications | contenu riche | champ `contenu`, format laissé ouvert |
@@ -528,7 +561,7 @@ On n'enregistre que ceci de personnel :
 - le message d'un visiteur : nom, adresse électronique, texte ;
 - le compte du personnel : identifiant, nom, empreinte du mot de passe, adresse électronique si elle a été posée à la création du compte Django.
 
-L'adresse d'un visiteur et le corps de son message ne sortent pas vers le site public et n'entrent pas dans le journal. L'adresse d'un compte du personnel ne figure pas dans la liste des comptes. Aucune adresse IP. Pas de compteur de vues. Pas de téléphone ni d'adresse de domicile du personnel.
+L'adresse d'un visiteur et le corps de son message ne sortent pas vers le site public et n'entrent pas dans le journal. L'adresse d'un compte du personnel ne figure pas dans la liste des comptes. Le prix d'acquisition des exemplaires et le registre d'import ne sortent pas dans l'API publique. Aucune adresse IP. Pas de compteur de vues. Pas de téléphone ni d'adresse de domicile du personnel.
 
 Le contact public de la bibliothèque (téléphone, adresse, courriel de la fiche) est un contenu affiché, pas une donnée de compte.
 

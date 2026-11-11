@@ -7,6 +7,7 @@ const COPY_STATUS_LABELS = {
 }
 
 export function isBookAvailable(book) {
+  if (typeof book?.available === "boolean") return book.available
   return Array.isArray(book?.copies) && book.copies.some((copy) => copy.status === "available")
 }
 

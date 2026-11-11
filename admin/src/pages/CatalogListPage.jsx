@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight, Plus, RotateCcw, Search } from "lucide-react"
 import { Link } from "react-router"
 
@@ -16,10 +16,15 @@ export function CatalogListPage({
   rows,
   columns,
   filters,
+  oneLine = false,
   searchOf,
   sortOf,
   showSort = true,
   period,
+  onPageRequest,
+  totalCount = 0,
+  pageCount = 1,
+  loading = false,
 }) {
   const [query, setQuery] = useState("")
   const [chosen, setChosen] = useState({})
@@ -28,8 +33,20 @@ export function CatalogListPage({
   const [sort, setSort] = useState("az")
   const [pageSize, setPageSize] = useState(10)
   const [page, setPage] = useState(1)
+  const [sentQuery, setSentQuery] = useState("")
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSentQuery(query), 250)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  useEffect(() => {
+    if (!onPageRequest) return undefined
+    onPageRequest({ query: sentQuery, chosen, from, to, sort, page, pageSize })
+  }, [onPageRequest, sentQuery, chosen, from, to, sort, page, pageSize])
 
   const visible = useMemo(() => {
+    if (onPageRequest) return rows
     const needle = query.trim().toLocaleLowerCase("fr")
     const next = rows.filter((row) => {
       if (needle && !searchOf(row).toLocaleLowerCase("fr").includes(needle)) return false
@@ -44,13 +61,14 @@ export function CatalogListPage({
       return sort === "za" ? -order : order
     })
     return next
-  }, [rows, query, chosen, sort, filters, searchOf, sortOf, period, from, to])
+  }, [onPageRequest, rows, query, chosen, sort, filters, searchOf, sortOf, period, from, to])
 
-  const countLabel = `${visible.length.toLocaleString("fr-FR")} ${visible.length === 1 ? one : noun}`
-  const pages = Math.max(1, Math.ceil(visible.length / pageSize))
+  const total = onPageRequest ? totalCount : visible.length
+  const countLabel = `${total.toLocaleString("fr-FR")} ${total === 1 ? one : noun}`
+  const pages = onPageRequest ? Math.max(1, pageCount) : Math.max(1, Math.ceil(visible.length / pageSize))
   const current = Math.min(page, pages)
   const start = (current - 1) * pageSize
-  const slice = visible.slice(start, start + pageSize)
+  const slice = onPageRequest ? rows : visible.slice(start, start + pageSize)
 
   function reset() {
     setQuery("")
@@ -101,8 +119,8 @@ export function CatalogListPage({
           ) : null}
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <label className="relative min-w-60 flex-1">
+        <div className={oneLine ? "mt-4 flex min-w-0 flex-nowrap items-center gap-2" : "mt-4 flex flex-wrap items-center gap-3"}>
+          <label className={oneLine ? "relative min-w-0 flex-1" : "relative min-w-60 flex-1"}>
             <span className="sr-only">{placeholder}</span>
             <Search aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
             <input
@@ -116,24 +134,27 @@ export function CatalogListPage({
             />
           </label>
           {filters.map((filter) => (
-            <label key={filter.id} className="grid gap-1">
-              <span className="font-semibold text-heading">{filter.label}</span>
+            <label key={filter.id} className={oneLine ? "flex shrink-0 items-center" : "grid gap-1"}>
+              <span className="sr-only">{filter.label}</span>
               <select
+                aria-label={filter.label}
                 value={chosen[filter.id] || ""}
                 onChange={(event) => {
                   setChosen((current) => ({ ...current, [filter.id]: event.target.value }))
                   setPage(1)
                 }}
-                className="rounded-control border border-line bg-white px-3"
+                className={oneLine ? "w-28 max-w-28 rounded-control border border-line bg-white px-2" : "rounded-control border border-line bg-white px-3"}
               >
                 {filter.options.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value}>
+                    {oneLine && option.value === "" ? filter.label : option.label}
+                  </option>
                 ))}
               </select>
             </label>
           ))}
           {period ? (
-            <fieldset className="grid gap-1">
+            <fieldset className={oneLine ? "flex shrink-0 items-center gap-2" : "grid gap-1"}>
               <legend className="font-semibold text-heading">Période</legend>
               <div className="flex items-center gap-2">
                 <input
@@ -161,19 +182,20 @@ export function CatalogListPage({
             </fieldset>
           ) : null}
           {showSort ? (
-            <label className="grid gap-1">
-              <span className="font-semibold text-heading">Ordre</span>
+            <label className={oneLine ? "flex shrink-0 items-center" : "grid gap-1"}>
+              <span className="sr-only">Ordre</span>
               <select
+                aria-label="Ordre"
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className="rounded-control border border-line bg-white px-3"
+                className={oneLine ? "w-32 max-w-32 rounded-control border border-line bg-white px-2" : "rounded-control border border-line bg-white px-3"}
               >
                 <option value="az">Nom (A → Z)</option>
                 <option value="za">Nom (Z → A)</option>
               </select>
             </label>
           ) : null}
-          <button type="button" onClick={reset} className="inline-flex items-center gap-2 self-end rounded-control border border-line px-3 font-semibold text-violet">
+          <button type="button" onClick={reset} aria-label="Réinitialiser" className="inline-flex shrink-0 items-center gap-2 self-end rounded-control border border-line px-3 font-semibold text-violet">
             <RotateCcw aria-hidden="true" size={18} />
             Réinitialiser
           </button>
@@ -191,7 +213,7 @@ export function CatalogListPage({
             <tbody>
               {slice.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-3 py-8 text-muted">Aucun résultat.</td>
+                  <td colSpan={columns.length} className="px-3 py-8 text-muted">{loading ? "Chargement…" : "Aucun résultat."}</td>
                 </tr>
               ) : slice.map((row, index) => (
                 <tr key={row.id} className="border-b border-line">
@@ -225,7 +247,7 @@ export function CatalogListPage({
             éléments par page
           </label>
           <p className="text-muted">
-            {visible.length === 0 ? "0" : `${start + 1} – ${start + slice.length}`} sur {countLabel}
+            {total === 0 ? "0" : `${start + 1} – ${start + slice.length}`} sur {countLabel}
           </p>
           <div className="flex items-center gap-2">
             <button

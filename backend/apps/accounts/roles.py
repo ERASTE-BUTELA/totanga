@@ -33,9 +33,16 @@ LIBRARIAN_PERMISSIONS = (
     ("catalog", "delete_copy"),
 )
 
-# Les annonces, publications et événements n'ont pas encore de modèle.
-# Leurs droits s'ajouteront dans la tranche qui crée chaque modèle.
-EDITOR_PERMISSIONS = ()
+# Le rédacteur prépare les annonces et les événements. Il ne les supprime pas :
+# il les archive. Les publications viendront avec leur tranche.
+EDITOR_PERMISSIONS = (
+    ("announcements", "view_announcement"),
+    ("announcements", "add_announcement"),
+    ("announcements", "change_announcement"),
+    ("events", "view_event"),
+    ("events", "add_event"),
+    ("events", "change_event"),
+)
 
 ADMIN_PERMISSIONS = (
     ("accounts", "view_user"),
@@ -79,7 +86,7 @@ def role_of(user):
     """Retourne (code, libellé). Le dépannage prime, puis le groupe le plus élevé."""
 
     if getattr(user, "is_superuser", False):
-        return "depannage", "Dépannage"
+        return "depannage", "Super-administrateur"
     names = set(user.groups.values_list("name", flat=True))
     for code in ROLE_PRIORITY:
         if code in names:

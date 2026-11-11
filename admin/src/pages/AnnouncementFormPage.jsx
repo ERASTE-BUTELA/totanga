@@ -1,74 +1,137 @@
-import { useId, useState } from "react"
+import { useEffect, useId, useState } from "react"
 import { ArrowLeft, Check, Eye, ImagePlus, Info, Megaphone, Pencil, Save, Trash2 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
-import { readAnnouncement, saveAnnouncement } from "./contentStore.js"
+import { getAnnouncement, saveAnnouncement } from "../api/content.js"
+import { contentNotices } from "./texts.js"
 
-const TYPES = ["Horaires", "Nouveauté", "Important", "Information", "Règlement", "Appel à contribution", "Événement", "Sondage"]
-const CATEGORIES = ["Vie de la bibliothèque", "Catalogue", "Information générale", "Services", "Accès et services", "Partenariat", "Animation culturelle", "Amélioration des services", "Services numériques", "Événements externes"]
-const STATUSES = ["Publié", "Brouillon", "Archivé"]
+const CATEGORIES = [
+  ["informations", "Informations générales"],
+  ["acquisitions", "Nouvelles acquisitions"],
+  ["horaires", "Horaires et services"],
+  ["maintenance", "Maintenance et travaux"],
+]
 const MAX_IMAGE = 2 * 1024 * 1024
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "min-h-11 w-full rounded-control border border-line bg-white px-3"
+
+function localStamp(value) {
+  const date = value ? new Date(value) : new Date()
+  if (Number.isNaN(date.getTime())) return ""
+  const pad = (part) => String(part).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
 
 const EMPTY = {
   title: "",
-  type: "Horaires",
-  category: "Vie de la bibliothèque",
-  starts: "",
-  ends: "",
-  pinned: false,
-  status: "Brouillon",
-  content: "",
+  category: "informations",
+  important: false,
+  publishedAt: localStamp(),
+  effectiveOn: "",
+  displayUntil: "",
+  body: "",
+  image: "",
+  state: "draft",
 }
 
 export function AnnouncementFormPage({ mode }) {
   const { announcementId } = useParams()
   const navigate = useNavigate()
   const imageInput = useId()
-  const existing = mode === "create" ? null : readAnnouncement(announcementId)
   const viewing = mode === "view"
-  const [form, setForm] = useState(existing || EMPTY)
+  const [form, setForm] = useState(EMPTY)
+  const [file, setFile] = useState(null)
   const [preview, setPreview] = useState("")
+  const [removeImage, setRemoveImage] = useState(false)
   const [imageError, setImageError] = useState("")
-  const [problems, setProblems] = useState(existing || mode === "create" ? [] : ["Cette annonce n'existe pas."])
+  const [problems, setProblems] = useState([])
+  const [loading, setLoading] = useState(mode !== "create")
+  const [missing, setMissing] = useState(false)
+
+  useEffect(() => {
+    if (mode === "create") return undefined
+    let alive = true
+    getAnnouncement(announcementId).then((result) => {
+      if (!alive) return
+      if (!result.ok) {
+        setMissing(true)
+        setLoading(false)
+        return
+      }
+      const item = result.data
+      setForm({
+        title: item.title,
+        category: item.category,
+        important: item.important,
+        publishedAt: localStamp(item.published_at),
+        effectiveOn: item.effective_on || "",
+        displayUntil: item.display_until || "",
+        body: item.body,
+        image: item.image,
+        state: item.state,
+      })
+      setLoading(false)
+    })
+    return () => {
+      alive = false
+    }
+  }, [announcementId, mode])
 
   function set(key, value) {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
   function onImage(event) {
-    const file = event.target.files?.[0]
+    const next = event.target.files?.[0]
     event.target.value = ""
-    if (!file) return
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    if (!next) return
+    if (!["image/jpeg", "image/png", "image/webp"].includes(next.type)) {
       setImageError("Seuls les fichiers JPG, PNG ou WebP sont acceptés.")
       return
     }
-    if (file.size > MAX_IMAGE) {
+    if (next.size > MAX_IMAGE) {
       setImageError("L'image ne doit pas dépasser 2 Mo.")
       return
     }
     setImageError("")
+    setFile(next)
+    setRemoveImage(false)
     setPreview((current) => {
       if (current.startsWith("blob:")) URL.revokeObjectURL(current)
-      return URL.createObjectURL(file)
+      return URL.createObjectURL(next)
     })
   }
 
-  function save(event, status) {
+  async function save(event, state) {
     event.preventDefault()
     const next = []
     if (!form.title.trim()) next.push("Le titre est obligatoire.")
-    if (!form.starts || !form.ends) next.push("Les dates d'affichage sont obligatoires.")
-    if (form.starts && form.ends && form.ends < form.starts) next.push("La fin d'affichage ne peut pas précéder le début.")
-    if (!form.content.trim()) next.push("Le contenu est obligatoire.")
+    if (!form.body.trim()) next.push("Le texte est obligatoire.")
+    if (!form.publishedAt) next.push("La date de publication est obligatoire.")
+    if (form.displayUntil && form.publishedAt && form.displayUntil < form.publishedAt.slice(0, 10)) {
+      next.push("La fin d'affichage ne peut pas précéder le jour de publication.")
+    }
     setProblems(next)
     if (next.length > 0) return
-    const id = saveAnnouncement({ ...form, id: existing?.id, status, title: form.title.trim(), content: form.content.trim() })
+    const body = new FormData()
+    body.set("title", form.title.trim())
+    body.set("body", form.body.trim())
+    body.set("category", form.category)
+    body.set("important", form.important ? "true" : "false")
+    body.set("published_at", new Date(form.publishedAt).toISOString())
+    body.set("effective_on", form.effectiveOn)
+    body.set("display_until", form.displayUntil)
+    body.set("state", form.state === "archived" ? "archived" : state)
+    if (file) body.set("image", file)
+    if (removeImage) body.set("remove_image", "true")
+    const result = await saveAnnouncement(mode === "create" ? null : announcementId, body)
+    if (!result.ok) {
+      setProblems([result.error])
+      return
+    }
     navigate("/annonces")
-    return id
   }
 
-  if (!existing && mode !== "create") {
+  if (loading) return <p>Chargement…</p>
+  if (missing) {
     return (
       <section className="rounded-panel border border-line bg-white p-6 shadow-card">
         <p>Cette annonce n'existe pas.</p>
@@ -77,12 +140,17 @@ export function AnnouncementFormPage({ mode }) {
     )
   }
 
+  const shown = preview || (!removeImage && form.image)
+
   return (
-    <form className="grid gap-4" onSubmit={(event) => (viewing ? event.preventDefault() : save(event, "Publié"))}>
+    <form className="grid gap-4" onSubmit={(event) => (viewing ? event.preventDefault() : save(event, "published"))}>
       {problems.length > 0 ? (
         <div role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
           {problems.map((problem) => <p key={problem}>{problem}</p>)}
         </div>
+      ) : null}
+      {form.state === "archived" ? (
+        <p className="rounded-panel border border-line bg-canvas p-4">{contentNotices.archivedStays}</p>
       ) : null}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <article className="rounded-panel border border-line bg-white p-5 shadow-card">
@@ -96,46 +164,32 @@ export function AnnouncementFormPage({ mode }) {
           </label>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Type *</span>
-              <select className={fieldClass} value={form.type} onChange={(event) => set("type", event.target.value)} disabled={viewing}>
-                {TYPES.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </label>
-            <label className="grid gap-1">
               <span className="font-semibold text-heading">Catégorie *</span>
               <select className={fieldClass} value={form.category} onChange={(event) => set("category", event.target.value)} disabled={viewing}>
-                {CATEGORIES.map((item) => <option key={item}>{item}</option>)}
+                {CATEGORIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
-            <label className="grid gap-1">
-              <span className="font-semibold text-heading">Date de début d'affichage *</span>
-              <input className={fieldClass} type="date" value={form.starts} onChange={(event) => set("starts", event.target.value)} disabled={viewing} required />
+            <label className="flex min-h-11 items-center gap-3 self-end">
+              <input type="checkbox" checked={form.important} onChange={(event) => set("important", event.target.checked)} disabled={viewing} />
+              <span className="font-semibold text-heading">Important</span>
             </label>
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Date de fin d'affichage *</span>
-              <input className={fieldClass} type="date" value={form.ends} onChange={(event) => set("ends", event.target.value)} disabled={viewing} required />
+              <span className="font-semibold text-heading">Date de publication *</span>
+              <input className={fieldClass} type="datetime-local" value={form.publishedAt} onChange={(event) => set("publishedAt", event.target.value)} disabled={viewing} required />
             </label>
-          </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-semibold text-heading">Épingler cette annonce</p>
-                <p className="text-muted">L'annonce sera mise en évidence en haut de la liste.</p>
-              </div>
-              <button type="button" role="switch" aria-checked={form.pinned} aria-label="Épingler cette annonce" disabled={viewing} className={`relative h-8 w-14 shrink-0 rounded-full ${form.pinned ? "bg-violet" : "bg-line"}`} onClick={() => set("pinned", !form.pinned)}>
-                <span className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white ${form.pinned ? "translate-x-6" : ""}`} />
-              </button>
-            </div>
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Statut *</span>
-              <select className={fieldClass} value={form.status} onChange={(event) => set("status", event.target.value)} disabled={viewing}>
-                {STATUSES.map((item) => <option key={item}>{item}</option>)}
-              </select>
+              <span className="font-semibold text-heading">Date d'effet</span>
+              <input className={fieldClass} type="date" value={form.effectiveOn} onChange={(event) => set("effectiveOn", event.target.value)} disabled={viewing} />
+            </label>
+            <label className="grid gap-1 sm:col-span-2">
+              <span className="font-semibold text-heading">Fin d'affichage</span>
+              <input className={fieldClass} type="date" value={form.displayUntil} onChange={(event) => set("displayUntil", event.target.value)} disabled={viewing} />
             </label>
           </div>
+          <p className="mt-2 text-muted">Les heures sont celles de Kinshasa. La fin d'affichage, si elle est indiquée, est le dernier jour visible.</p>
           <label className="mt-4 grid gap-1">
-            <span className="font-semibold text-heading">Contenu de l'annonce *</span>
-            <textarea className="min-h-56 w-full rounded-control border border-line px-3 py-2" value={form.content} onChange={(event) => set("content", event.target.value)} disabled={viewing} required />
+            <span className="font-semibold text-heading">Texte *</span>
+            <textarea className="min-h-56 w-full rounded-control border border-line px-3 py-2" value={form.body} onChange={(event) => set("body", event.target.value)} disabled={viewing} required />
           </label>
         </article>
         <div className="grid content-start gap-4">
@@ -144,8 +198,8 @@ export function AnnouncementFormPage({ mode }) {
               <ImagePlus aria-hidden="true" className="text-violet" size={22} />
               Image de l'annonce
             </h2>
-            {preview || form.image ? (
-              <img src={preview || form.image} alt="" className="mt-4 h-40 w-full rounded-md object-cover" />
+            {shown ? (
+              <img src={shown} alt="" className="mt-4 h-40 w-full rounded-md object-cover" />
             ) : (
               <div className="mt-4 flex h-40 items-center justify-center rounded-md bg-canvas text-muted">Aucune image</div>
             )}
@@ -156,9 +210,9 @@ export function AnnouncementFormPage({ mode }) {
                   <ImagePlus aria-hidden="true" size={18} />
                   Changer l'image
                 </label>
-                <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable" onClick={() => { setPreview(""); set("image", "") }}>
+                <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable" onClick={() => { setPreview(""); setFile(null); setRemoveImage(true) }}>
                   <Trash2 aria-hidden="true" size={18} />
-                  Supprimer
+                  Retirer
                 </button>
               </div>
             )}
@@ -172,9 +226,9 @@ export function AnnouncementFormPage({ mode }) {
             </h2>
             <ul className="mt-3 grid list-disc gap-2 pl-5 text-muted">
               <li>Choisissez un titre clair et concis.</li>
-              <li>Utilisez une image en lien avec l'annonce.</li>
-              <li>Définissez une période d'affichage cohérente.</li>
-              <li>Épinglez l'annonce si elle est prioritaire.</li>
+              <li>Cochez Important seulement si l'annonce doit passer devant les autres.</li>
+              <li>La fin d'affichage est facultative.</li>
+              <li>Une annonce ne se supprime pas : elle s'archive.</li>
             </ul>
           </article>
         </div>
@@ -185,20 +239,15 @@ export function AnnouncementFormPage({ mode }) {
           Retour à la liste
         </Link>
         <div className="flex flex-wrap gap-2">
-          {existing ? (
-            <Link to={`/annonces/${existing.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-[#1d4ed8]">
-              <Eye aria-hidden="true" size={18} />
-              Aperçu
+          {mode !== "create" ? (
+            <Link to={viewing ? `/annonces/${announcementId}/modifier` : `/annonces/${announcementId}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-[#1d4ed8]">
+              {viewing ? <Pencil aria-hidden="true" size={18} /> : <Eye aria-hidden="true" size={18} />}
+              {viewing ? "Modifier" : "Aperçu"}
             </Link>
           ) : null}
-          {viewing ? (
-            <Link to={`/annonces/${existing.id}/modifier`} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
-              <Pencil aria-hidden="true" size={18} />
-              Modifier
-            </Link>
-          ) : (
+          {viewing ? null : (
             <>
-              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" onClick={(event) => save(event, "Brouillon")}>
+              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" onClick={(event) => save(event, "draft")}>
                 <Save aria-hidden="true" size={18} />
                 Enregistrer en brouillon
               </button>

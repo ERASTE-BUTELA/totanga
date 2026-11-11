@@ -6,3 +6,8 @@ class AccountsConfig(AppConfig):
     name = "apps.accounts"
     label = "accounts"
     verbose_name = "Comptes"
+
+    def ready(self):
+        from apps.accounts.guards import connect_guards
+
+        connect_guards()

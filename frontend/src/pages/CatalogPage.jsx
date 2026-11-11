@@ -1,19 +1,11 @@
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RotateCcw, Search, SlidersHorizontal } from "lucide-react"
+import { RotateCcw, Search } from "lucide-react"
+import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router"
-import { getBooks, getCategories } from "../api/client.js"
+import { getCatalog } from "../api/client.js"
 import { BookCard } from "../components/cards/BookCard.jsx"
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
 import { QueryState } from "../components/ui/QueryState.jsx"
-import { isBookAvailable } from "../features/catalog/availability.js"
-import { queryBooks } from "../features/catalog/queryBooks.js"
-import { useAsync } from "../lib/useAsync.js"
 import { usePageTitle } from "../lib/usePageTitle.js"
-
-const PAGE_SIZE = 8
-
-function loadCatalog() {
-  return Promise.all([getBooks(), getCategories()]).then(([books, categories]) => ({ books, categories }))
-}
 
 function countLabel(count) {
   const formatted = count.toLocaleString("fr-FR")
@@ -29,10 +21,9 @@ function pageNumber(value) {
 export default function CatalogPage() {
   usePageTitle("Catalogue")
   const [searchParams, setSearchParams] = useSearchParams()
-  const state = useAsync(loadCatalog, [])
+  const [state, setState] = useState({ status: "loading", data: null, error: "" })
   const criteria = {
     q: searchParams.get("q") || "",
-    category: searchParams.get("categorie") || "",
     availability: searchParams.get("dispo") || "",
     yearMin: searchParams.get("anneeMin") || "",
     yearMax: searchParams.get("anneeMax") || "",
@@ -44,25 +35,37 @@ export default function CatalogPage() {
     const data = new FormData(event.currentTarget)
     const params = new URLSearchParams()
     const q = String(data.get("q") || "").trim()
-    const categories = data.getAll("categorie").map(String).filter(Boolean)
-    const dispo = data.getAll("dispo").map(String).filter(Boolean)
+    const dispo = String(data.get("dispo") || "")
     const anneeMin = String(data.get("anneeMin") || "").trim()
     const anneeMax = String(data.get("anneeMax") || "").trim()
     const tri = String(data.get("tri") || "")
     if (q) params.set("q", q)
-    if (categories.length) params.set("categorie", categories.join(","))
-    if (dispo.length === 1) params.set("dispo", dispo[0])
+    if (dispo) params.set("dispo", dispo)
     if (anneeMin) params.set("anneeMin", anneeMin)
     if (anneeMax) params.set("anneeMax", anneeMax)
     if (tri) params.set("tri", tri)
     setSearchParams(params)
   }
 
-  const selectedCategories = criteria.category.split(",").filter(Boolean)
-  const books = state.data ? queryBooks(state.data.books, criteria) : []
-  const pageCount = Math.max(1, Math.ceil(books.length / PAGE_SIZE))
+  useEffect(() => {
+    let active = true
+    setState((current) => ({ status: "loading", data: current.data, error: "" }))
+    getCatalog(searchParams.toString())
+      .then((data) => {
+        if (active) setState({ status: "ready", data, error: "" })
+      })
+      .catch(() => {
+        if (active) setState({ status: "error", data: null, error: "Le catalogue n'a pas pu être chargé. Réessayez." })
+      })
+    return () => {
+      active = false
+    }
+  }, [searchParams])
+
+  const books = state.data?.books || []
+  const pageCount = state.data?.pages || 1
   const page = Math.min(pageNumber(searchParams.get("page")), pageCount)
-  const visible = books.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const visible = books
 
   function goToPage(next) {
     const params = new URLSearchParams(searchParams)
@@ -85,73 +88,91 @@ export default function CatalogPage() {
 
       <div className="px-4 py-6 sm:px-8 lg:px-14">
         <Breadcrumb withHome items={[{ label: "Accueil", to: "/" }, { label: "Catalogue" }]} />
-        <QueryState status={state.status} error={state.error}>
+        <QueryState status={state.data ? "ready" : state.status} error={state.error}>
           {state.data ? (
-            <form key={searchParams.toString()} onSubmit={onSubmit} className="mt-6 grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
-              <FilterPanel
-                categories={state.data.categories}
-                books={state.data.books}
-                selectedCategories={selectedCategories}
-                availability={criteria.availability}
-                yearMin={criteria.yearMin}
-                yearMax={criteria.yearMax}
-                onReset={() => setSearchParams(new URLSearchParams())}
-              />
-
-              <div className="min-w-0">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <label htmlFor="recherche-catalogue" className="sr-only">
-                    Rechercher un livre
-                  </label>
-                  <div className="relative min-w-0 flex-1">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" aria-hidden="true" />
-                    <input
-                      id="recherche-catalogue"
-                      name="q"
-                      type="search"
-                      defaultValue={criteria.q}
-                      placeholder="Rechercher un livre (titre, auteur, mot-clé...)"
-                      className="w-full rounded-full border border-line bg-white py-3 pl-12 pr-4"
-                    />
-                  </div>
-                  <button type="submit" className="rounded-xl bg-violet px-6 font-semibold text-white">
-                    Rechercher
-                  </button>
+            <form key={searchParams.toString()} onSubmit={onSubmit} className="mt-6">
+              <div className="flex min-w-0 flex-nowrap items-center gap-2">
+                <label htmlFor="recherche-catalogue" className="sr-only">
+                  Rechercher un livre
+                </label>
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" aria-hidden="true" />
+                  <input
+                    id="recherche-catalogue"
+                    name="q"
+                    type="search"
+                    defaultValue={criteria.q}
+                    placeholder="Rechercher un livre (titre, auteur, mot-clé...)"
+                    className="w-full rounded-full border border-line bg-white py-3 pl-12 pr-4"
+                  />
                 </div>
-
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-body font-semibold text-ink" aria-live="polite">
-                    {countLabel(books.length)}
-                  </p>
-                  <label className="flex items-center gap-2 text-meta text-muted">
-                    Trier par :
-                    <select
-                      name="tri"
-                      defaultValue={criteria.sort}
-                      className="rounded-xl border border-line bg-white px-3 py-2 text-body text-ink"
-                      onChange={(event) => event.currentTarget.form?.requestSubmit()}
-                    >
-                      <option value="">Pertinence</option>
-                      <option value="titre">Titre</option>
-                      <option value="annee">Année</option>
-                    </select>
-                  </label>
-                </div>
-
-                {visible.length === 0 ? (
-                  <p className="mt-6 text-muted">Aucun livre ne correspond à cette recherche.</p>
-                ) : (
-                  <ul className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {visible.map((book) => (
-                      <li key={book.id}>
-                        <BookCard book={book} catalog />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <Pagination page={page} pageCount={pageCount} onPage={goToPage} />
+                <select
+                  name="dispo"
+                  aria-label="Disponibilité"
+                  defaultValue={criteria.availability}
+                  className="w-32 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
+                >
+                  <option value="">Disponibilité</option>
+                  <option value="disponible">Disponible</option>
+                  <option value="indisponible">Indisponible</option>
+                </select>
+                <input
+                  name="anneeMin"
+                  aria-label="Année de début"
+                  inputMode="numeric"
+                  defaultValue={criteria.yearMin}
+                  placeholder="De"
+                  className="w-16 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
+                />
+                <input
+                  name="anneeMax"
+                  aria-label="Année de fin"
+                  inputMode="numeric"
+                  defaultValue={criteria.yearMax}
+                  placeholder="À"
+                  className="w-16 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
+                />
+                <select
+                  name="tri"
+                  aria-label="Trier par"
+                  defaultValue={criteria.sort}
+                  className="w-32 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
+                  onChange={(event) => event.currentTarget.form?.requestSubmit()}
+                >
+                  <option value="">Pertinence</option>
+                  <option value="titre">Titre</option>
+                  <option value="annee">Année</option>
+                </select>
+                <button type="submit" className="shrink-0 rounded-xl bg-violet px-4 font-semibold text-white">
+                  Rechercher
+                </button>
+                <button
+                  type="button"
+                  aria-label="Réinitialiser"
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-line bg-white px-3 text-ink"
+                  onClick={() => setSearchParams(new URLSearchParams())}
+                >
+                  <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                </button>
               </div>
+
+              <p className="mt-5 text-body font-semibold text-ink" aria-live="polite">
+                {state.status === "loading" ? "Chargement…" : countLabel(state.data.count)}
+              </p>
+
+              {visible.length === 0 ? (
+                <p className="mt-6 text-muted">Aucun livre ne correspond à cette recherche.</p>
+              ) : (
+                <ul className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  {visible.map((book) => (
+                    <li key={book.id}>
+                      <BookCard book={book} dense />
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <PageField page={page} pageCount={pageCount} onPage={goToPage} />
             </form>
           ) : null}
         </QueryState>
@@ -160,159 +181,34 @@ export default function CatalogPage() {
   )
 }
 
-function FilterPanel({ categories, books, selectedCategories, availability, yearMin, yearMax, onReset }) {
-  const counts = new Map()
-  for (const book of books) {
-    const slug = book.category?.slug
-    if (slug) counts.set(slug, (counts.get(slug) || 0) + 1)
-  }
-  const available = books.filter((book) => isBookAvailable(book)).length
-
-  return (
-    <aside className="h-fit rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="filtres-catalogue">
-      <h2 id="filtres-catalogue" className="flex items-center gap-2 text-card text-ink">
-        <SlidersHorizontal className="h-5 w-5 text-violet" aria-hidden="true" />
-        Filtrer les résultats
-      </h2>
-
-      <fieldset className="mt-6">
-        <legend className="text-body font-semibold text-ink">Catégories</legend>
-        <ul className="mt-3 space-y-2">
-          {categories.map((category) => (
-            <li key={category.id}>
-              <label className="flex items-center gap-2 text-body text-ink">
-                <input
-                  type="checkbox"
-                  name="categorie"
-                  value={category.slug}
-                  defaultChecked={selectedCategories.includes(category.slug)}
-                  className="h-4 w-4 accent-violet"
-                />
-                <span className="min-w-0 flex-1">{category.name}</span>
-                <span className="text-meta text-muted">({(counts.get(category.slug) || 0).toLocaleString("fr-FR")})</span>
-              </label>
-            </li>
-          ))}
-        </ul>
-      </fieldset>
-
-      <fieldset className="mt-6">
-        <legend className="text-body font-semibold text-ink">Disponibilité</legend>
-        <ul className="mt-3 space-y-2">
-          <li>
-            <label className="flex items-center gap-2 text-body text-ink">
-              <input type="checkbox" name="dispo" value="disponible" defaultChecked={availability === "disponible"} className="h-4 w-4 accent-violet" />
-              <span className="min-w-0 flex-1">Disponible</span>
-              <span className="text-meta text-muted">({available.toLocaleString("fr-FR")})</span>
-            </label>
-          </li>
-          <li>
-            <label className="flex items-center gap-2 text-body text-ink">
-              <input type="checkbox" name="dispo" value="indisponible" defaultChecked={availability === "indisponible"} className="h-4 w-4 accent-violet" />
-              <span className="min-w-0 flex-1">Indisponible</span>
-              <span className="text-meta text-muted">({(books.length - available).toLocaleString("fr-FR")})</span>
-            </label>
-          </li>
-        </ul>
-      </fieldset>
-
-      <fieldset className="mt-6">
-        <legend className="text-body font-semibold text-ink">Année de publication</legend>
-        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2">
-          <label className="text-meta text-muted" htmlFor="annee-min">
-            De
-            <input
-              id="annee-min"
-              name="anneeMin"
-              inputMode="numeric"
-              defaultValue={yearMin}
-              className="mt-1 w-full rounded-xl border border-line px-3 py-2 text-body text-ink"
-            />
-          </label>
-          <span className="pb-3 text-muted" aria-hidden="true">
-            —
-          </span>
-          <label className="text-meta text-muted" htmlFor="annee-max">
-            À
-            <input
-              id="annee-max"
-              name="anneeMax"
-              inputMode="numeric"
-              defaultValue={yearMax}
-              className="mt-1 w-full rounded-xl border border-line px-3 py-2 text-body text-ink"
-            />
-          </label>
-        </div>
-      </fieldset>
-
-      <button type="submit" className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-4 font-semibold text-white">
-        <Search className="h-4 w-4" aria-hidden="true" />
-        Appliquer les filtres
-      </button>
-      <button
-        type="button"
-        className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-canvas px-4 font-semibold text-ink"
-        onClick={onReset}
-      >
-        <RotateCcw className="h-4 w-4" aria-hidden="true" />
-        Réinitialiser
-      </button>
-    </aside>
-  )
-}
-
-function Pagination({ page, pageCount, onPage }) {
+function PageField({ page, pageCount, onPage }) {
   if (pageCount <= 1) return null
-  const items = []
-  for (let number = 1; number <= pageCount; number += 1) items.push(number)
+
+  function jump(raw) {
+    const typed = Number(String(raw).trim())
+    if (!Number.isInteger(typed) || typed < 1) return
+    onPage(Math.min(pageCount, typed))
+  }
 
   return (
-    <nav aria-label="Pages du catalogue" className="mt-8 flex justify-center">
-      <ul className="flex flex-wrap items-center justify-center gap-2">
-        <PageButton label="Première page" disabled={page === 1} onClick={() => onPage(1)}>
-          <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
-        </PageButton>
-        <PageButton label="Page précédente" disabled={page === 1} onClick={() => onPage(page - 1)}>
-          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-        </PageButton>
-        {items.map((number) => (
-          <li key={number}>
-            <button
-              type="button"
-              aria-label={`Page ${number}`}
-              aria-current={number === page ? "page" : undefined}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-xl text-body font-semibold ${
-                number === page ? "bg-violet text-white" : "bg-white text-ink hover:bg-lavender"
-              }`}
-              onClick={() => onPage(number)}
-            >
-              {number}
-            </button>
-          </li>
-        ))}
-        <PageButton label="Page suivante" disabled={page === pageCount} onClick={() => onPage(page + 1)}>
-          <ChevronRight className="h-4 w-4" aria-hidden="true" />
-        </PageButton>
-        <PageButton label="Dernière page" disabled={page === pageCount} onClick={() => onPage(pageCount)}>
-          <ChevronsRight className="h-4 w-4" aria-hidden="true" />
-        </PageButton>
-      </ul>
-    </nav>
-  )
-}
-
-function PageButton({ label, disabled, onClick, children }) {
-  return (
-    <li>
-      <button
-        type="button"
-        aria-label={label}
-        disabled={disabled}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white text-ink hover:bg-lavender disabled:text-muted"
-        onClick={onClick}
-      >
-        {children}
-      </button>
-    </li>
+    <div className="mt-8 flex items-center justify-center gap-3 text-body text-ink">
+      <label htmlFor="page-catalogue" className="font-semibold">
+        Page
+      </label>
+      <input
+        id="page-catalogue"
+        type="text"
+        inputMode="numeric"
+        defaultValue={String(page)}
+        aria-describedby="page-catalogue-total"
+        className="w-24 rounded-xl border border-line bg-white px-3 py-2 text-center"
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return
+          event.preventDefault()
+          jump(event.currentTarget.value)
+        }}
+      />
+      <span id="page-catalogue-total">sur {pageCount.toLocaleString("fr-FR")}</span>
+    </div>
   )
 }

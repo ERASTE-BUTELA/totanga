@@ -96,17 +96,18 @@ export function AuthorFormPage({ mode = "create" }) {
             <UserRound aria-hidden="true" className="text-violet" size={24} />
             Informations de l'auteur
           </h2>
+          <p className="mt-2 text-muted">Obligatoire : le nom. La biographie et la photo peuvent rester vides.</p>
           <label className="mt-4 grid gap-1">
-            <span className="font-semibold text-heading">Nom et prénom *</span>
-            <input className={fieldClass} value={name} onChange={(event) => setName(event.target.value)} required disabled={viewing} />
+            <span className="font-semibold text-heading">Nom *</span>
+            <input className={fieldClass} value={name} onChange={(event) => setName(event.target.value)} maxLength={300} required disabled={viewing} />
           </label>
           <label className="mt-3 grid gap-1">
-            <span className="font-semibold text-heading">Biographie</span>
+            <span className="font-semibold text-heading">Biographie (facultatif)</span>
             <textarea className="min-h-40 w-full rounded-control border border-line px-3 py-2" value={biography} onChange={(event) => setBiography(event.target.value)} disabled={viewing} />
           </label>
         </article>
         <article className="rounded-panel border border-line bg-white p-5 shadow-card">
-          <h2 className="text-section text-heading">Photo</h2>
+          <h2 className="text-section text-heading">Photo (facultatif)</h2>
           <div className="mt-4">
             {photoUrl ? (
               <img src={photoUrl} alt="" className="h-40 w-40 rounded-full object-cover" />

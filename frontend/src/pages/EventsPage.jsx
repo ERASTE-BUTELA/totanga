@@ -245,6 +245,7 @@ function EventListCard({ event }) {
             {event.title}
           </Link>
         </h2>
+        {event.typeLabel ? <p className="mt-1 font-semibold text-violet">{event.typeLabel}</p> : null}
         <ul className="mt-2 space-y-1 text-meta text-muted">
           <li className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />

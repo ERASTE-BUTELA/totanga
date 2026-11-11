@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router"
-import { BookOpen, ChevronRight, Clock, Filter, Info, LayoutGrid, Megaphone } from "lucide-react"
+import { BookOpen, ChevronRight, Clock, Filter, Info, LayoutGrid, Megaphone, Wrench } from "lucide-react"
 import { getAnnouncements } from "../api/client.js"
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
 import { QueryState } from "../components/ui/QueryState.jsx"
@@ -12,9 +12,10 @@ import { usePageTitle } from "../lib/usePageTitle.js"
 
 const FILTERS = [
   ["toutes", "Toutes les annonces", LayoutGrid],
-  ["important", "Important", Megaphone],
+  ["informations", "Informations générales", Info],
   ["acquisitions", "Nouvelles acquisitions", BookOpen],
-  ["horaires", "Horaires", Clock],
+  ["horaires", "Horaires et services", Clock],
+  ["maintenance", "Maintenance et travaux", Wrench],
 ]
 
 function featuredAnnouncement(items) {

@@ -1,10 +1,12 @@
 const LANGUAGES = {
   fr: "Français",
   en: "Anglais",
+  it: "Italien",
   ln: "Lingala",
   kg: "Kikongo",
   lua: "Tshiluba",
   sw: "Swahili",
+  other: "Autre",
 }
 
 function dateParts(value) {
@@ -58,7 +60,7 @@ export function formatTimeRange(startsAt, endsAt) {
 }
 
 export function languageLabel(code) {
-  return LANGUAGES[code] || "Français"
+  return LANGUAGES[code] || "Autre"
 }
 
 export function authorNames(authors) {

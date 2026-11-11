@@ -8,6 +8,7 @@ export const STAFF_ROLES = [
       "Voir, ajouter et modifier les comptes du personnel.",
       "Lire les messages des visiteurs.",
       "Consulter le journal des actions.",
+      "Voir, ajouter et modifier les annonces et les événements.",
     ],
   },
   {
@@ -25,16 +26,18 @@ export const STAFF_ROLES = [
     label: "Rédacteur",
     chip: "bg-[#e7eefc] text-[#1d4ed8]",
     permissions: [
-      "Les droits sur les annonces, les publications et les événements seront ajoutés avec ces contenus.",
-      "Aucun droit n'est accordé pour le moment.",
+      "Voir, ajouter et modifier les annonces et les événements.",
+      "Les publications seront ajoutées plus tard.",
     ],
   },
   {
     code: "depannage",
-    label: "Dépannage",
+    label: "Super-administrateur",
     chip: "bg-[#fde7c7] text-[#9a3412]",
     permissions: [
-      "Compte technique. Il ne sert pas au travail quotidien de la bibliothèque.",
+      "Accès à tous les menus et à toutes les actions, sans groupe.",
+      "Un livre ne se supprime pas : il s'archive.",
+      "Le dernier administrateur ne peut être ni désactivé ni supprimé.",
     ],
   },
 ]

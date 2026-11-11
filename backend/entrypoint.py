@@ -29,14 +29,23 @@ def main():
     import django
 
     django.setup()
+    from django.conf import settings
     from django.core.management import call_command
 
     wait_for_database()
     call_command("migrate", interactive=False)
     call_command("sync_roles")
     call_command("create_admin")
+    call_command("import_repertoire", si_vide=True)
+    if not settings.DEBUG:
+        call_command("collectstatic", interactive=False, verbosity=0)
 
-    command = sys.argv[1:] or ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    command = sys.argv[1:] or [
+        "gunicorn",
+        "config.wsgi:application",
+        "--bind",
+        "0.0.0.0:8000",
+    ]
     os.execvp(command[0], command)
 
 

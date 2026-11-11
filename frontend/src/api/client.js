@@ -10,16 +10,14 @@ import {
 } from "./map.js"
 
 /**
- * Seul accès aux données du site.
- * VITE_USE_FIXTURES=true : exemples fictifs.
- * VITE_USE_FIXTURES=false : API publique (VITE_API_URL).
- * En développement, sans réglage, les exemples fictifs sont utilisés.
+ * Le catalogue, les annonces et les événements lisent l'API.
+ * Les exemples fictifs ne servent que si VITE_USE_FIXTURES=true,
+ * et jamais dans une construction de production.
+ * Les publications et la fiche de la bibliothèque restent des exemples.
  */
-function useFixtures() {
-  const flag = import.meta.env.VITE_USE_FIXTURES
-  if (flag === "true") return true
-  if (flag === "false") return false
-  return import.meta.env.DEV
+function catalogUsesFixtures() {
+  if (import.meta.env.PROD) return false
+  return import.meta.env.VITE_USE_FIXTURES === "true"
 }
 
 function asList(payload) {
@@ -28,11 +26,9 @@ function asList(payload) {
   throw userFacingError()
 }
 
-async function request(path, { allowMissing = false } = {}) {
-  const base = import.meta.env.VITE_API_URL
-  if (typeof base !== "string" || !base.trim()) throw userFacingError()
+async function catalogRequest(path, { allowMissing = false } = {}) {
   try {
-    const response = await fetch(new URL(path, base.endsWith("/") ? base : `${base}/`))
+    const response = await fetch(path, { credentials: "same-origin" })
     if (allowMissing && response.status === 404) return null
     if (!response.ok) throw userFacingError()
     return await response.json()
@@ -45,72 +41,134 @@ async function request(path, { allowMissing = false } = {}) {
   }
 }
 
+function mapPublicBook(raw) {
+  return { ...mapBook(raw), available: Boolean(raw.available) }
+}
+
 export async function getLibraryInfo() {
-  const payload = useFixtures() ? fixtures.library : await request("/api/library/")
-  return mapLibraryInfo(payload)
+  return mapLibraryInfo(fixtures.library)
 }
 
 export async function getCategories() {
-  const payload = useFixtures() ? fixtures.categories : await request("/api/categories/")
+  if (catalogUsesFixtures()) return fixtures.categories.map(mapCategory)
+  const payload = await catalogRequest("/api/catalogue/categories/")
   return asList(payload).map(mapCategory)
 }
 
 export async function getBooks() {
-  const payload = useFixtures() ? fixtures.books : await request("/api/books/")
-  return asList(payload)
-    .map(mapBook)
-    .filter((book) => !book.archived)
+  if (catalogUsesFixtures()) {
+    const books = fixtures.books.map(mapBook).filter((book) => !book.archived)
+    return { books, count: books.length }
+  }
+  const payload = await catalogRequest("/api/catalogue/livres/?page_size=8&tri=recent")
+  return {
+    books: asList(payload).map(mapPublicBook),
+    count: Number(payload.count) || 0,
+  }
+}
+
+export async function getCatalog(search) {
+  if (catalogUsesFixtures()) {
+    const books = fixtures.books.map(mapBook).filter((book) => !book.archived)
+    return {
+      books,
+      categories: fixtures.categories.map(mapCategory),
+      count: books.length,
+      pages: 1,
+      availability: {
+        disponible: books.filter((book) => book.copies?.some((copy) => copy.status === "available")).length,
+        indisponible: books.filter((book) => !book.copies?.some((copy) => copy.status === "available")).length,
+      },
+    }
+  }
+  const incoming = new URLSearchParams(search)
+  const params = new URLSearchParams()
+  const query = incoming.get("q")
+  const category = incoming.get("categorie")
+  const availability = incoming.get("dispo")
+  const yearMin = incoming.get("anneeMin")
+  const yearMax = incoming.get("anneeMax")
+  const sort = incoming.get("tri")
+  if (query) params.set("q", query)
+  if (category) params.set("categorie", category)
+  if (availability) params.set("disponibilite", availability)
+  if (yearMin) params.set("annee_min", yearMin)
+  if (yearMax) params.set("annee_max", yearMax)
+  if (sort) params.set("tri", sort)
+  params.set("page", incoming.get("page") || "1")
+  params.set("page_size", "25")
+  const payload = await catalogRequest(`/api/catalogue/livres/?${params}`)
+  return {
+    books: asList(payload).map(mapPublicBook),
+    categories: Array.isArray(payload.categories) ? payload.categories.map((item) => ({ ...mapCategory(item), count: Number(item.count) || 0 })) : [],
+    count: Number(payload.count) || 0,
+    pages: Number(payload.pages) || 1,
+    availability: payload.availability || { disponible: 0, indisponible: 0 },
+  }
 }
 
 export async function getBookBySlug(slug) {
-  if (useFixtures()) {
+  if (catalogUsesFixtures()) {
     const book = fixtures.books
       .map(mapBook)
       .find((item) => item.slug === slug && !item.archived)
     return book ?? null
   }
-  const payload = await request(`/api/books/${encodeURIComponent(slug)}/`, { allowMissing: true })
+  const payload = await catalogRequest(`/api/catalogue/livres/${encodeURIComponent(slug)}/`, { allowMissing: true })
   if (!payload) return null
-  const book = mapBook(payload)
-  return book.archived ? null : book
+  const book = mapPublicBook(payload)
+  book.similar = Array.isArray(payload.similar) ? payload.similar.map(mapPublicBook) : []
+  return book
+}
+
+async function listPages(path) {
+  const first = await catalogRequest(`${path}?page_size=100`)
+  const rows = [...asList(first)]
+  const pages = Number(first.pages) || 1
+  for (let page = 2; page <= pages; page += 1) {
+    const next = await catalogRequest(`${path}?page_size=100&page=${page}`)
+    rows.push(...asList(next))
+  }
+  return rows
 }
 
 export async function getAnnouncements() {
-  const payload = useFixtures() ? fixtures.announcements : await request("/api/announcements/")
-  return asList(payload).map(mapAnnouncement)
+  if (catalogUsesFixtures()) return fixtures.announcements.map(mapAnnouncement)
+  const rows = await listPages("/api/annonces/")
+  return rows.map(mapAnnouncement)
 }
 
 export async function getAnnouncementBySlug(slug) {
-  if (useFixtures()) {
+  if (catalogUsesFixtures()) {
     const item = fixtures.announcements.map(mapAnnouncement).find((entry) => entry.slug === slug)
     return item ?? null
   }
-  const payload = await request(`/api/announcements/${encodeURIComponent(slug)}/`, { allowMissing: true })
+  const payload = await catalogRequest(`/api/annonces/${encodeURIComponent(slug)}/`, { allowMissing: true })
   return payload ? mapAnnouncement(payload) : null
 }
 
 export async function getPublications() {
-  const payload = useFixtures() ? fixtures.publications : await request("/api/publications/")
-  return asList(payload).map(mapPublication)
+  return fixtures.publications.map(mapPublication)
 }
 
 export async function getPublicationBySlug(slug) {
-  if (useFixtures()) {
-    const item = fixtures.publications.map(mapPublication).find((entry) => entry.slug === slug)
-    return item ?? null
-  }
-  const payload = await request(`/api/publications/${encodeURIComponent(slug)}/`, { allowMissing: true })
-  return payload ? mapPublication(payload) : null
+  const item = fixtures.publications.map(mapPublication).find((entry) => entry.slug === slug)
+  return item ?? null
 }
 
 export async function getEvents() {
-  const payload = useFixtures() ? fixtures.events : await request("/api/events/")
-  return asList(payload).map(mapEvent)
+  if (catalogUsesFixtures()) return fixtures.events.map(mapEvent)
+  const rows = await listPages("/api/evenements/")
+  return rows.map(mapEvent)
 }
 
 export async function getEventBySlug(slug) {
-  const events = await getEvents()
-  return events.find((event) => event.slug === slug) ?? null
+  if (catalogUsesFixtures()) {
+    const events = fixtures.events.map(mapEvent)
+    return events.find((event) => event.slug === slug) ?? null
+  }
+  const payload = await catalogRequest(`/api/evenements/${encodeURIComponent(slug)}/`, { allowMissing: true })
+  return payload ? mapEvent(payload) : null
 }
 
 function csrfToken() {

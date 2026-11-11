@@ -5,6 +5,7 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, TestCase, override_settings
+from django.db import IntegrityError, connection, transaction
 from django.urls import reverse
 from PIL import Image
 from rest_framework.test import APIClient
@@ -15,9 +16,11 @@ from apps.catalog.models import (
     Author,
     Book,
     BookCannotBeDeleted,
+    BookState,
     Category,
     Copy,
     CopyStatus,
+    StoredImage,
 )
 from apps.catalog.validators import validate_catalog_image
 
@@ -59,14 +62,20 @@ class BookCatalogTests(TestCase):
 
     def make_book(self, **overrides):
         author = overrides.pop("author", self.author)
+        archived = overrides.pop("archived", False)
+        cover = overrides.pop("cover", image_upload("couverture.jpg", "JPEG"))
         values = {
             "title": "La Vie et demie",
             "category": self.category,
             "publication_year": 1979,
             "summary": "Un roman.",
-            "cover": image_upload("couverture.jpg", "JPEG"),
+            "state": BookState.ARCHIVED if archived else BookState.PUBLISHED,
         }
         values.update(overrides)
+        if cover is not None:
+            image = StoredImage(alt_text=values["title"][:200], size=cover.size, uploaded_by=None)
+            image.file.save(cover.name, cover, save=True)
+            values["cover_image"] = image
         book = Book.objects.create(**values)
         book.authors.add(author)
         return book
@@ -158,7 +167,7 @@ class BookCatalogTests(TestCase):
             {"action": "archive_books", "_selected_action": [str(book.pk)]},
         )
         book.refresh_from_db()
-        self.assertTrue(book.archived)
+        self.assertEqual(book.state, BookState.ARCHIVED)
 
 
 @override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
@@ -240,7 +249,7 @@ class StaffCatalogApiTests(TestCase):
             category=self.category,
             publication_year=2005,
             summary="Un roman.",
-            cover=image_upload("couverture.jpg", "JPEG"),
+            state=BookState.PUBLISHED,
         )
         book.authors.add(self.author)
         response = self.client.delete(
@@ -249,3 +258,150 @@ class StaffCatalogApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 409)
         self.assertTrue(Category.objects.filter(pk=self.category.pk).exists())
+
+    def test_editor_cannot_publish_a_book(self):
+        self.login(self.editor)
+        book = Book.objects.create(
+            title="Brouillon du rédacteur",
+            category=self.category,
+            state=BookState.DRAFT,
+        )
+        book.authors.add(self.author)
+        response = self.client.post(
+            f"/api/gestion/catalogue/livres/{book.pk}/publier/",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(response.status_code, 403)
+        book.refresh_from_db()
+        self.assertEqual(book.state, BookState.DRAFT)
+
+    def test_lists_return_one_page_and_keep_the_full_choice_lists(self):
+        self.login(self.librarian)
+        Book.objects.create(title="Premier titre", category=self.category, state=BookState.PUBLISHED, summary="Un resume long")
+        Book.objects.create(title="Second titre", category=self.category, state=BookState.DRAFT)
+        Author.objects.create(name="Autre Auteur")
+
+        books = self.client.get("/api/gestion/catalogue/livres/?page=1&page_size=1")
+        self.assertEqual(books.status_code, 200)
+        body = books.json()
+        self.assertEqual(len(body["results"]), 1)
+        self.assertGreaterEqual(body["count"], 2)
+        self.assertNotIn("summary", body["results"][0])
+        self.assertNotIn("author_ids", body["results"][0])
+        self.assertGreaterEqual(body["stats"]["books"], 2)
+        self.assertEqual(body["categories"][0]["label"], "Roman africain")
+
+        drafts = self.client.get("/api/gestion/catalogue/livres/?etat=draft&page_size=50")
+        self.assertIn("Second titre", [item["title"] for item in drafts.json()["results"]])
+        self.assertNotIn("Premier titre", [item["title"] for item in drafts.json()["results"]])
+
+        authors = self.client.get("/api/gestion/catalogue/auteurs/?page=1&page_size=1")
+        self.assertEqual(len(authors.json()["results"]), 1)
+        self.assertGreaterEqual(authors.json()["count"], 2)
+        self.assertIn("total", authors.json()["stats"])
+        self.assertIsInstance(self.client.get("/api/gestion/catalogue/auteurs/").json(), list)
+
+        categories = self.client.get("/api/gestion/catalogue/categories/?page=1&page_size=1&q=Roman")
+        self.assertEqual(categories.status_code, 200)
+        self.assertEqual(categories.json()["results"][0]["name"], "Roman africain")
+        self.assertGreaterEqual(categories.json()["results"][0]["books"], 2)
+        self.assertIsInstance(self.client.get("/api/gestion/catalogue/categories/").json(), list)
+
+    def test_saved_book_keeps_the_lengths_and_copy_fields_of_the_database(self):
+        self.login(self.librarian)
+        title = "T" * 300
+        created = self.client.post(
+            "/api/gestion/catalogue/livres/",
+            {
+                "title": title,
+                "category_id": self.category.pk,
+                "author_ids": f"[{self.author.pk}]",
+                "keywords": '["mot-cle-de-notice"]',
+                "published": "false",
+                "copies": '[{"call_number":"301 FOU","section":"Romans","shelf":"A1","status":"Disponible","inventory_number":"NE-FORM-1"}]',
+            },
+            format="multipart",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        body = created.json()
+        self.assertEqual(body["title"], title)
+        self.assertEqual(body["author_choices"][0]["name"], self.author.name)
+        self.assertEqual(body["keywords"], ["mot-cle-de-notice"])
+        self.assertEqual(body["copies"][0]["section"], "Romans")
+        self.assertEqual(body["copies"][0]["shelf"], "A1")
+
+
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
+class CatalogConstraintTests(BookCatalogTests):
+    def test_database_refuses_a_direct_book_delete(self):
+        book = self.make_book()
+        with self.assertRaises(Exception):
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("DELETE FROM catalog_book WHERE id = %s", [book.pk])
+        self.assertTrue(Book.objects.filter(pk=book.pk).exists())
+
+    def test_database_refuses_to_delete_a_linked_author(self):
+        self.make_book()
+        with self.assertRaises(Exception):
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("DELETE FROM catalog_author WHERE id = %s", [self.author.pk])
+        self.assertTrue(Author.objects.filter(pk=self.author.pk).exists())
+
+    def test_empty_isbns_repeat_and_a_filled_isbn_does_not(self):
+        self.make_book(title="Sans un", isbn=None)
+        self.make_book(title="Sans deux", isbn="")
+        self.assertEqual(Book.objects.filter(isbn__isnull=True).count(), 2)
+        self.make_book(title="Avec isbn", isbn="978-2-07-036822-8")
+        self.assertEqual(Book.objects.get(title="Avec isbn").isbn, "9782070368228")
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                self.make_book(title="Doublon", isbn="9782070368228")
+
+    def test_year_is_optional_and_rejected_outside_the_range(self):
+        self.make_book(title="Sans année", publication_year=None)
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                self.make_book(title="Trop tôt", publication_year=999)
+
+
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
+class PublicCatalogApiTests(BookCatalogTests):
+    def setUp(self):
+        super().setUp()
+        self.api = APIClient()
+
+    def test_public_catalog_shows_only_published_books(self):
+        published = self.make_book(title="Roman public")
+        Copy.objects.create(
+            book=published,
+            call_number="PUB-1",
+            section="Romans",
+            shelf="A1",
+            status=CopyStatus.AVAILABLE,
+        )
+        self.make_book(title="Brouillon secret", state=BookState.DRAFT)
+        self.make_book(title="Archivé secret", state=BookState.ARCHIVED)
+        listing = self.api.get("/api/catalogue/livres/")
+        self.assertEqual(listing.status_code, 200)
+        body = listing.content.decode()
+        self.assertIn("Roman public", body)
+        self.assertNotIn("Brouillon secret", body)
+        self.assertNotIn("Archivé secret", body)
+        self.assertNotIn("email", body)
+        self.assertEqual(listing.json()["count"], 1)
+        hidden = self.api.get("/api/catalogue/livres/brouillon-secret/")
+        self.assertEqual(hidden.status_code, 404)
+        shown = self.api.get(f"/api/catalogue/livres/{published.slug}/")
+        self.assertEqual(shown.status_code, 200)
+        self.assertTrue(shown.json()["available"])
+        self.assertNotIn("email", shown.json())
+        self.assertEqual(shown.json()["copies"][0]["status"], "available")
+
+    def test_search_ignores_accents(self):
+        self.make_book(title="L'Été au village")
+        found = self.api.get("/api/catalogue/livres/", {"q": "ete"})
+        self.assertEqual(found.status_code, 200)
+        self.assertEqual(found.json()["count"], 1)

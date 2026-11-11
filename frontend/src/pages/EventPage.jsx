@@ -50,6 +50,10 @@ export default function EventPage() {
   )
 }
 
+function programmeLines(value) {
+  return String(value || "").split("\n").map((line) => line.trim()).filter(Boolean)
+}
+
 function EventContent({ item }) {
   if (!item) {
     return (
@@ -109,6 +113,37 @@ function EventContent({ item }) {
                 Description
               </h2>
               <p className="mt-3 text-article text-ink">{item.summary}</p>
+            </section>
+          ) : null}
+          {item.typeLabel ? <p className="mt-4 font-semibold text-violet">{item.typeLabel}</p> : null}
+          {programmeLines(item.programme).length > 0 ? (
+            <section className="mt-6" aria-labelledby="programme-evenement">
+              <h2 id="programme-evenement" className="flex items-center gap-2 text-card text-heading">
+                <span className="h-5 w-1 rounded-full bg-violet" aria-hidden="true" />
+                Programme
+              </h2>
+              <ul className="mt-3 grid list-disc gap-2 pl-5 text-article text-ink">
+                {programmeLines(item.programme).map((line) => <li key={line}>{line}</li>)}
+              </ul>
+            </section>
+          ) : null}
+          {item.speakers?.length ? (
+            <section className="mt-6" aria-labelledby="intervenants-evenement">
+              <h2 id="intervenants-evenement" className="flex items-center gap-2 text-card text-heading">
+                <span className="h-5 w-1 rounded-full bg-violet" aria-hidden="true" />
+                Intervenants
+              </h2>
+              <ul className="mt-3 grid gap-3">
+                {item.speakers.map((speaker) => (
+                  <li key={`${speaker.position}-${speaker.name}`} className="flex items-center gap-3">
+                    {speaker.photo ? <img src={speaker.photo} alt="" className="h-14 w-14 rounded-full object-cover" /> : null}
+                    <span>
+                      <span className="block font-semibold text-heading">{speaker.name}</span>
+                      {speaker.title ? <span className="text-muted">{speaker.title}</span> : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </section>
           ) : null}
           <Link to="/evenements" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full border border-violet px-4 font-semibold text-violet">

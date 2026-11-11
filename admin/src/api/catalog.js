@@ -26,8 +26,18 @@ async function finish(response) {
   return { ok: false, error: detail || "L'enregistrement n'a pas abouti. Réessayez." }
 }
 
-export function listAuthors() {
-  return request("/api/gestion/catalogue/auteurs/").then(finish)
+function pageQuery(params) {
+  const search = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value) !== "") search.set(key, String(value))
+  })
+  const text = search.toString()
+  return text ? `?${text}` : ""
+}
+
+export function listAuthors(params) {
+  const suffix = params ? pageQuery({ page: params.page || 1, page_size: params.pageSize || 10, q: params.q, tri: params.sort }) : ""
+  return request(`/api/gestion/catalogue/auteurs/${suffix}`).then(finish)
 }
 
 export function getAuthor(id) {
@@ -43,8 +53,9 @@ export function deleteAuthor(id) {
   return request(`/api/gestion/catalogue/auteurs/${id}/`, { method: "DELETE" }).then(finish)
 }
 
-export function listCategories() {
-  return request("/api/gestion/catalogue/categories/").then(finish)
+export function listCategories(params) {
+  const suffix = params ? pageQuery({ page: params.page || 1, page_size: params.pageSize || 10, q: params.q, tri: params.sort }) : ""
+  return request(`/api/gestion/catalogue/categories/${suffix}`).then(finish)
 }
 
 export function getCategory(id) {
@@ -60,8 +71,17 @@ export function deleteCategory(id) {
   return request(`/api/gestion/catalogue/categories/${id}/`, { method: "DELETE" }).then(finish)
 }
 
-export function listBooks() {
-  return request("/api/gestion/catalogue/livres/").then(finish)
+export function listBooks(params = {}) {
+  const suffix = pageQuery({
+    page: params.page || 1,
+    page_size: params.pageSize || 10,
+    q: params.q,
+    categorie: params.category,
+    etat: params.state,
+    archivage: params.archive,
+    tri: params.sort,
+  })
+  return request(`/api/gestion/catalogue/livres/${suffix}`).then(finish)
 }
 
 export function getBook(id) {
@@ -76,6 +96,6 @@ export function saveBook(id, body) {
 export function archiveBook(id, archived) {
   return request(`/api/gestion/catalogue/livres/${id}/`, {
     method: "PATCH",
-    body: JSON.stringify({ archived }),
+    body: JSON.stringify({ state: archived ? "archived" : "published" }),
   }).then(finish)
 }

@@ -37,6 +37,14 @@ test("administrator sees accounts when the server grants the right", () => {
   )
 })
 
+test("editor with content rights sees announcements and events", () => {
+  const nav = visibleNav(["announcements.view_announcement", "events.view_event"])
+  assert.deepEqual(
+    nav.map((entry) => entry.label),
+    ["Tableau de bord", "Annonces", "Événements"],
+  )
+})
+
 test("the administrator role sees the whole menu from the mockup", () => {
   const labels = visibleNav([], "administrateur").map((entry) => entry.label)
   assert.deepEqual(labels, [
@@ -46,6 +54,8 @@ test("the administrator role sees the whole menu from the mockup", () => {
     "Publications",
     "Événements",
     "Utilisateurs et rôles",
+    "Journal",
+    "Messages",
     "Paramètres",
   ])
 })

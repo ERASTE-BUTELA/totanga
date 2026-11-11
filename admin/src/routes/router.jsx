@@ -14,7 +14,9 @@ import { DashboardPage } from "../pages/DashboardPage.jsx"
 import { EventFormPage } from "../pages/EventFormPage.jsx"
 import { EventsPage } from "../pages/EventsPage.jsx"
 import { ForbiddenPage } from "../pages/ForbiddenPage.jsx"
+import { JournalPage } from "../pages/JournalPage.jsx"
 import { LoginPage } from "../pages/LoginPage.jsx"
+import { MessagesPage } from "../pages/MessagesPage.jsx"
 import { NotFoundPage } from "../pages/NotFoundPage.jsx"
 import { NotificationsPage } from "../pages/NotificationsPage.jsx"
 import { PreferencesPage } from "../pages/PreferencesPage.jsx"
@@ -53,6 +55,8 @@ function GuardedPage() {
   if (page.to === "/publications") return <PublicationsPage />
   if (page.to === "/evenements") return <EventsPage />
   if (page.to === "/utilisateurs") return <UsersPage />
+  if (page.to === "/journal") return <JournalPage />
+  if (page.to === "/messages") return <MessagesPage />
   if (page.to === "/parametres") return <SettingsPage />
   return <SoonPage />
 }
