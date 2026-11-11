@@ -1,6 +1,7 @@
 import { createBrowserRouter, useLocation } from "react-router"
 import { AdminShell } from "../components/AdminShell.jsx"
 import { RequireAuth } from "../components/RequireAuth.jsx"
+import { ADMIN_BASENAME, normalizeAdminPath } from "../lib/paths.js"
 import { canOpen, PAGES } from "../nav/entries.js"
 import { AuthorFormPage } from "../pages/AuthorFormPage.jsx"
 import { AnnouncementFormPage } from "../pages/AnnouncementFormPage.jsx"
@@ -41,8 +42,8 @@ function Allowed({ permission, children }) {
 
 function GuardedPage() {
   const session = useSession()
-  const { pathname } = useLocation()
-  const page = PAGES.find((item) => item.to === pathname)
+  const path = normalizeAdminPath(useLocation().pathname)
+  const page = PAGES.find((item) => item.to === path)
   if (!page) return <NotFoundPage />
   if (!canOpen(session.account?.permissions ?? [], page.permission, session.account?.role)) {
     return <ForbiddenPage />
@@ -61,12 +62,6 @@ function GuardedPage() {
   return <SoonPage />
 }
 
-function routerBasename() {
-  const base = import.meta.env.BASE_URL || "/"
-  if (base === "/") return undefined
-  return base.replace(/\/$/, "")
-}
-
 export const router = createBrowserRouter(
   [
     { path: "/connexion", element: <LoginPage /> },
@@ -76,11 +71,12 @@ export const router = createBrowserRouter(
         {
           element: <AdminShell />,
           children: [
-            ...PAGES.map((page) =>
-              page.to === "/"
-                ? { index: true, element: <GuardedPage page={page} /> }
-                : { path: page.to.slice(1), element: <GuardedPage page={page} /> },
-            ),
+            // Tableau de bord = https://bibtotanga.com/admin/
+            { index: true, element: <DashboardPage /> },
+            ...PAGES.filter((page) => page.to !== "/").map((page) => ({
+              path: page.to.slice(1),
+              element: <GuardedPage />,
+            })),
             { path: "catalogue/livres/nouveau", element: <Allowed permission="catalog.add_book"><BookFormPage mode="create" /></Allowed> },
             { path: "catalogue/livres/:bookId/modifier", element: <Allowed permission="catalog.change_book"><BookFormPage mode="edit" /></Allowed> },
             { path: "catalogue/livres/:bookId", element: <Allowed permission="catalog.view_book"><BookFormPage mode="view" /></Allowed> },
@@ -115,5 +111,5 @@ export const router = createBrowserRouter(
     },
     { path: "*", element: <NotFoundPage /> },
   ],
-  { basename: routerBasename() },
+  { basename: ADMIN_BASENAME },
 )

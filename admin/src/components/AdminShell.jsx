@@ -21,6 +21,7 @@ import {
   Users,
 } from "lucide-react"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router"
+import { normalizeAdminPath } from "../lib/paths.js"
 import { PAGES, visibleNav } from "../nav/entries.js"
 import { useSession } from "../session/SessionContext.jsx"
 
@@ -186,13 +187,14 @@ export function AdminShell() {
     navigate("/connexion", { replace: true })
   }
 
-  const page = PAGES.find((item) => item.to === location.pathname)
+  const path = normalizeAdminPath(location.pathname)
+  const page = PAGES.find((item) => item.to === path)
   const title = page?.label
-    || ACCOUNT_TITLES[location.pathname]
-    || (location.pathname === "/acces-refuse" ? "Accès refusé" : "")
+    || ACCOUNT_TITLES[path]
+    || (path === "/acces-refuse" ? "Accès refusé" : "")
     || "Introuvable"
-  const trail = trailFor(location.pathname)
-  const subtitle = trail?.subtitle || SUBTITLES[location.pathname] || ""
+  const trail = trailFor(path)
+  const subtitle = trail?.subtitle || SUBTITLES[path] || ""
 
   return (
     <div className="min-h-dvh lg:grid lg:h-dvh lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
