@@ -76,17 +76,18 @@ docker compose -f docker-compose.production.yml --env-file .env up --build -d
 curl -fsS http://127.0.0.1:8000/api/sante/
 ```
 
-5. Nginx de l’hôte : le site public sur `8080`, l’admin sur `8081`. L’admin doit rester sous `/admin/` même après un rafraîchissement (ne pas renvoyer vers le site public) :
+5. Nginx de l’hôte — admin en direct sur `8081`, **avec** le slash final
+   (`proxy_pass …8081/;`). Ne pas l’enlever (page blanche). Ne pas faire
+   passer `/admin/` par le frontend public `8080`.
 
 ```nginx
-location = /admin {
-    return 301 /admin/;
-}
+location = /admin { return 301 /admin/; }
 location /admin/ {
-    proxy_pass http://127.0.0.1:8081;   # conserver le préfixe /admin/
+    proxy_pass http://127.0.0.1:8081/;
     proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
 }
 location /api/ {
     proxy_pass http://127.0.0.1:8000;
@@ -95,6 +96,11 @@ location /api/ {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 }
 ```
+
+Le conteneur admin sert la SPA à la racine (le slash retire `/admin`).
+Vite `base: "/admin/"` + React `basename: "/admin"` gardent les URLs
+navigateur sous `/admin/…` et le F5 sur une route admin.
+
 
 Ports Docker production :
 

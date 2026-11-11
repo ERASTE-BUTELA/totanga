@@ -2,6 +2,7 @@ import { useState } from "react"
 import { ArrowRight, Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react"
 import { Navigate } from "react-router"
 import { LOGIN_FAILED, SESSION_EXPIRED } from "../api/messages.js"
+import { DASHBOARD_PATH } from "../lib/paths.js"
 import { useSession } from "../session/SessionContext.jsx"
 
 const asset = (path) => `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`
@@ -18,7 +19,8 @@ export function LoginPage() {
   if (session.status === "loading") {
     return <p className="px-6 py-10 text-heading">Chargement…</p>
   }
-  if (session.account) return <Navigate to="/" replace />
+  // basename /admin → /admin/ (tableau de bord), jamais le site public
+  if (session.account) return <Navigate to={DASHBOARD_PATH} replace />
 
   async function onSubmit(event) {
     event.preventDefault()

@@ -21,7 +21,7 @@ import {
   Users,
 } from "lucide-react"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router"
-import { normalizeAdminPath } from "../lib/paths.js"
+import { LOGIN_PATH, normalizeAdminPath } from "../lib/paths.js"
 import { PAGES, visibleNav } from "../nav/entries.js"
 import { useSession } from "../session/SessionContext.jsx"
 
@@ -184,7 +184,7 @@ export function AdminShell() {
 
   async function onLogout() {
     await session.signOut()
-    navigate("/connexion", { replace: true })
+    navigate(LOGIN_PATH, { replace: true })
   }
 
   const path = normalizeAdminPath(location.pathname)

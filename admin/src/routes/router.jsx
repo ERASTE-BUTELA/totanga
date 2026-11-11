@@ -1,7 +1,14 @@
-import { createBrowserRouter, useLocation } from "react-router"
+import { Navigate, createBrowserRouter, useLocation } from "react-router"
 import { AdminShell } from "../components/AdminShell.jsx"
 import { RequireAuth } from "../components/RequireAuth.jsx"
-import { ADMIN_BASENAME, normalizeAdminPath } from "../lib/paths.js"
+import {
+  ADMIN_BASENAME,
+  DASHBOARD_ALIAS,
+  DASHBOARD_PATH,
+  LOGIN_ALIAS,
+  LOGIN_PATH,
+  normalizeAdminPath,
+} from "../lib/paths.js"
 import { canOpen, PAGES } from "../nav/entries.js"
 import { AuthorFormPage } from "../pages/AuthorFormPage.jsx"
 import { AnnouncementFormPage } from "../pages/AnnouncementFormPage.jsx"
@@ -64,16 +71,18 @@ function GuardedPage() {
 
 export const router = createBrowserRouter(
   [
-    { path: "/connexion", element: <LoginPage /> },
+    { path: LOGIN_PATH, element: <LoginPage /> },
+    { path: LOGIN_ALIAS, element: <Navigate to={LOGIN_PATH} replace /> },
     {
       element: <RequireAuth />,
       children: [
         {
           element: <AdminShell />,
           children: [
-            // Tableau de bord = https://bibtotanga.com/admin/
+            // https://bibtotanga.com/admin/  et  /admin/dashboard
             { index: true, element: <DashboardPage /> },
-            ...PAGES.filter((page) => page.to !== "/").map((page) => ({
+            { path: DASHBOARD_ALIAS.slice(1), element: <DashboardPage /> },
+            ...PAGES.filter((page) => page.to !== DASHBOARD_PATH).map((page) => ({
               path: page.to.slice(1),
               element: <GuardedPage />,
             })),

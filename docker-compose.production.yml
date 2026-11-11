@@ -57,21 +57,6 @@ services:
     networks:
       - internal
 
-  frontend:
-    build:
-      context: ./frontend
-      target: production
-    restart: unless-stopped
-    volumes:
-      - media_data:/var/www/media:ro
-    ports:
-      - "127.0.0.1:8080:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - internal
-
   admin:
     build:
       context: ./admin
@@ -81,6 +66,21 @@ services:
       - media_data:/var/www/media:ro
     ports:
       - "127.0.0.1:8081:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    restart: unless-stopped
+    volumes:
+      - media_data:/var/www/media:ro
+    ports:
+      - "127.0.0.1:8080:80"
     depends_on:
       backend:
         condition: service_healthy

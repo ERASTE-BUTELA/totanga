@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/nav/entries.test.js src/api/messages.test.js"
+    "test": "node --test src/nav/entries.test.js src/api/messages.test.js src/lib/paths.test.js"
   },
   "dependencies": {
     "lucide-react": "^1.70.0",

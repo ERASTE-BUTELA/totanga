@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router"
 import { LOGIN_FAILED } from "../api/messages.js"
+import { LOGIN_PATH } from "../lib/paths.js"
 import { useSession } from "../session/SessionContext.jsx"
 
 export function RequireAuth() {
@@ -19,7 +20,8 @@ export function RequireAuth() {
     )
   }
   if (!session.account) {
-    return <Navigate to="/connexion" replace state={{ expired: session.expired }} />
+    // basename /admin → /admin/connexion (jamais le site public /)
+    return <Navigate to={LOGIN_PATH} replace state={{ expired: session.expired }} />
   }
   return <Outlet />
 }

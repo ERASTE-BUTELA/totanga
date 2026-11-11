@@ -1,9 +1,10 @@
 import { Link } from "react-router"
+import { DASHBOARD_PATH, LOGIN_PATH } from "../lib/paths.js"
 import { useSession } from "../session/SessionContext.jsx"
 
 export function NotFoundPage() {
   const session = useSession()
-  const home = session.account ? "/" : "/connexion"
+  const home = session.account ? DASHBOARD_PATH : LOGIN_PATH
   const label = session.account ? "Retour au tableau de bord" : "Aller à la connexion"
   return (
     <section className="rounded-panel border border-line bg-white p-6 shadow-card">
