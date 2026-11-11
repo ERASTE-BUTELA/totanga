@@ -61,50 +61,59 @@ function GuardedPage() {
   return <SoonPage />
 }
 
-export const router = createBrowserRouter([
-  { path: "/connexion", element: <LoginPage /> },
-  {
-    element: <RequireAuth />,
-    children: [
-      {
-        element: <AdminShell />,
-        children: [
-          ...PAGES.map((page) =>
-            page.to === "/"
-              ? { index: true, element: <GuardedPage page={page} /> }
-              : { path: page.to.slice(1), element: <GuardedPage page={page} /> },
-          ),
-          { path: "catalogue/livres/nouveau", element: <Allowed permission="catalog.add_book"><BookFormPage mode="create" /></Allowed> },
-          { path: "catalogue/livres/:bookId/modifier", element: <Allowed permission="catalog.change_book"><BookFormPage mode="edit" /></Allowed> },
-          { path: "catalogue/livres/:bookId", element: <Allowed permission="catalog.view_book"><BookFormPage mode="view" /></Allowed> },
-          { path: "catalogue/auteurs/nouveau", element: <Allowed permission="catalog.add_author"><AuthorFormPage mode="create" /></Allowed> },
-          { path: "catalogue/auteurs/:authorId/modifier", element: <Allowed permission="catalog.change_author"><AuthorFormPage mode="edit" /></Allowed> },
-          { path: "catalogue/auteurs/:authorId", element: <Allowed permission="catalog.view_author"><AuthorFormPage mode="view" /></Allowed> },
-          { path: "catalogue/categories/nouveau", element: <Allowed permission="catalog.add_category"><CategoryFormPage mode="create" /></Allowed> },
-          { path: "catalogue/categories/:categoryId/modifier", element: <Allowed permission="catalog.change_category"><CategoryFormPage mode="edit" /></Allowed> },
-          { path: "catalogue/categories/:categoryId", element: <Allowed permission="catalog.view_category"><CategoryFormPage mode="view" /></Allowed> },
-          { path: "annonces/nouveau", element: <Allowed permission="announcements.add_announcement"><AnnouncementFormPage mode="create" /></Allowed> },
-          { path: "annonces/:announcementId/modifier", element: <Allowed permission="announcements.change_announcement"><AnnouncementFormPage mode="edit" /></Allowed> },
-          { path: "annonces/:announcementId", element: <Allowed permission="announcements.view_announcement"><AnnouncementFormPage mode="view" /></Allowed> },
-          { path: "publications/nouveau", element: <Allowed permission="posts.add_post"><PublicationFormPage mode="create" /></Allowed> },
-          { path: "publications/:publicationId/modifier", element: <Allowed permission="posts.change_post"><PublicationFormPage mode="edit" /></Allowed> },
-          { path: "publications/:publicationId", element: <Allowed permission="posts.view_post"><PublicationFormPage mode="view" /></Allowed> },
-          { path: "evenements/nouveau", element: <Allowed permission="events.add_event"><EventFormPage mode="create" /></Allowed> },
-          { path: "evenements/:eventId/modifier", element: <Allowed permission="events.change_event"><EventFormPage mode="edit" /></Allowed> },
-          { path: "evenements/:eventId", element: <Allowed permission="events.view_event"><EventFormPage mode="view" /></Allowed> },
-          { path: "utilisateurs/nouveau", element: <Allowed permission="accounts.add_user"><UserCreatePage /></Allowed> },
-          { path: "utilisateurs/roles", element: <Allowed permission="accounts.view_user"><RolesPage /></Allowed> },
-          { path: "utilisateurs/:userId", element: <Allowed permission="accounts.view_user"><UserViewPage /></Allowed> },
-          { path: "compte/profil", element: <ProfilePage /> },
-          { path: "compte/mot-de-passe", element: <SoonPage /> },
-          { path: "compte/preferences", element: <PreferencesPage /> },
-          { path: "compte/notifications", element: <NotificationsPage /> },
-          { path: "compte/aide", element: <SoonPage /> },
-          { path: "acces-refuse", element: <ForbiddenPage /> },
-          { path: "*", element: <NotFoundPage /> },
-        ],
-      },
-    ],
-  },
-  { path: "*", element: <NotFoundPage /> },
-])
+function routerBasename() {
+  const base = import.meta.env.BASE_URL || "/"
+  if (base === "/") return undefined
+  return base.replace(/\/$/, "")
+}
+
+export const router = createBrowserRouter(
+  [
+    { path: "/connexion", element: <LoginPage /> },
+    {
+      element: <RequireAuth />,
+      children: [
+        {
+          element: <AdminShell />,
+          children: [
+            ...PAGES.map((page) =>
+              page.to === "/"
+                ? { index: true, element: <GuardedPage page={page} /> }
+                : { path: page.to.slice(1), element: <GuardedPage page={page} /> },
+            ),
+            { path: "catalogue/livres/nouveau", element: <Allowed permission="catalog.add_book"><BookFormPage mode="create" /></Allowed> },
+            { path: "catalogue/livres/:bookId/modifier", element: <Allowed permission="catalog.change_book"><BookFormPage mode="edit" /></Allowed> },
+            { path: "catalogue/livres/:bookId", element: <Allowed permission="catalog.view_book"><BookFormPage mode="view" /></Allowed> },
+            { path: "catalogue/auteurs/nouveau", element: <Allowed permission="catalog.add_author"><AuthorFormPage mode="create" /></Allowed> },
+            { path: "catalogue/auteurs/:authorId/modifier", element: <Allowed permission="catalog.change_author"><AuthorFormPage mode="edit" /></Allowed> },
+            { path: "catalogue/auteurs/:authorId", element: <Allowed permission="catalog.view_author"><AuthorFormPage mode="view" /></Allowed> },
+            { path: "catalogue/categories/nouveau", element: <Allowed permission="catalog.add_category"><CategoryFormPage mode="create" /></Allowed> },
+            { path: "catalogue/categories/:categoryId/modifier", element: <Allowed permission="catalog.change_category"><CategoryFormPage mode="edit" /></Allowed> },
+            { path: "catalogue/categories/:categoryId", element: <Allowed permission="catalog.view_category"><CategoryFormPage mode="view" /></Allowed> },
+            { path: "annonces/nouveau", element: <Allowed permission="announcements.add_announcement"><AnnouncementFormPage mode="create" /></Allowed> },
+            { path: "annonces/:announcementId/modifier", element: <Allowed permission="announcements.change_announcement"><AnnouncementFormPage mode="edit" /></Allowed> },
+            { path: "annonces/:announcementId", element: <Allowed permission="announcements.view_announcement"><AnnouncementFormPage mode="view" /></Allowed> },
+            { path: "publications/nouveau", element: <Allowed permission="posts.add_post"><PublicationFormPage mode="create" /></Allowed> },
+            { path: "publications/:publicationId/modifier", element: <Allowed permission="posts.change_post"><PublicationFormPage mode="edit" /></Allowed> },
+            { path: "publications/:publicationId", element: <Allowed permission="posts.view_post"><PublicationFormPage mode="view" /></Allowed> },
+            { path: "evenements/nouveau", element: <Allowed permission="events.add_event"><EventFormPage mode="create" /></Allowed> },
+            { path: "evenements/:eventId/modifier", element: <Allowed permission="events.change_event"><EventFormPage mode="edit" /></Allowed> },
+            { path: "evenements/:eventId", element: <Allowed permission="events.view_event"><EventFormPage mode="view" /></Allowed> },
+            { path: "utilisateurs/nouveau", element: <Allowed permission="accounts.add_user"><UserCreatePage /></Allowed> },
+            { path: "utilisateurs/roles", element: <Allowed permission="accounts.view_user"><RolesPage /></Allowed> },
+            { path: "utilisateurs/:userId", element: <Allowed permission="accounts.view_user"><UserViewPage /></Allowed> },
+            { path: "compte/profil", element: <ProfilePage /> },
+            { path: "compte/mot-de-passe", element: <SoonPage /> },
+            { path: "compte/preferences", element: <PreferencesPage /> },
+            { path: "compte/notifications", element: <NotificationsPage /> },
+            { path: "compte/aide", element: <SoonPage /> },
+            { path: "acces-refuse", element: <ForbiddenPage /> },
+            { path: "*", element: <NotFoundPage /> },
+          ],
+        },
+      ],
+    },
+    { path: "*", element: <NotFoundPage /> },
+  ],
+  { basename: routerBasename() },
+)

@@ -9,6 +9,8 @@ import {
 import { Link } from "react-router"
 import { useSession } from "../session/SessionContext.jsx"
 
+const asset = (path) => `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`
+
 const FIGURES = [
   { label: "Livres", value: "12 846", icon: BookOpen, chip: "bg-lavender text-violet" },
   { label: "Exemplaires disponibles", value: "11 420", icon: Layers, chip: "bg-available-soft text-available" },
@@ -76,7 +78,7 @@ export function DashboardPage() {
           </p>
         </div>
         <img
-          src="/images/bibliotheque.webp"
+          src={asset("images/bibliotheque.webp")}
           alt=""
           className="h-44 w-full object-cover lg:h-full"
         />

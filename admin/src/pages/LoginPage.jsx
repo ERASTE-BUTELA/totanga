@@ -4,6 +4,8 @@ import { Navigate } from "react-router"
 import { LOGIN_FAILED, SESSION_EXPIRED } from "../api/messages.js"
 import { useSession } from "../session/SessionContext.jsx"
 
+const asset = (path) => `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`
+
 export function LoginPage() {
   const session = useSession()
   const [username, setUsername] = useState("")
@@ -34,7 +36,7 @@ export function LoginPage() {
     <main className="min-h-dvh bg-lavender lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)]">
       <section className="relative hidden min-h-dvh overflow-hidden text-white lg:block">
         <img
-          src="/images/bibliotheque.webp"
+          src={asset("images/bibliotheque.webp")}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
         />
@@ -50,7 +52,7 @@ export function LoginPage() {
         </svg>
         <div className="relative z-10 flex h-full max-w-2xl flex-col px-12 py-12 xl:px-16">
           <img
-            src="/images/logo.png"
+            src={asset("images/logo.png")}
             alt=""
             className="h-20 w-auto self-start rounded-panel bg-white px-3 py-2"
           />
@@ -66,7 +68,7 @@ export function LoginPage() {
         <div className="w-full max-w-[32rem] rounded-[1.75rem] bg-white px-6 py-8 shadow-panel sm:px-10 sm:py-10">
           <div className="mb-8 flex justify-center">
             <img
-              src="/images/logo.png"
+              src={asset("images/logo.png")}
               alt="Bibliothèque Totanga, Sœurs des pauvres de Bergame"
               className="h-24 w-auto"
             />

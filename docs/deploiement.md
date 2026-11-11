@@ -76,7 +76,25 @@ docker compose -f docker-compose.production.yml --env-file .env up --build -d
 curl -fsS http://127.0.0.1:8000/api/sante/
 ```
 
-5. Nginx de l’hôte proxy vers `127.0.0.1:8080` (public), `8081` (admin), `8000` (API si besoin).
+5. Nginx de l’hôte : le site public sur `8080`, l’admin sur `8081`. L’admin doit rester sous `/admin/` même après un rafraîchissement (ne pas renvoyer vers le site public) :
+
+```nginx
+location = /admin {
+    return 301 /admin/;
+}
+location /admin/ {
+    proxy_pass http://127.0.0.1:8081;   # conserver le préfixe /admin/
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+location /api/ {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
 
 Ports Docker production :
 

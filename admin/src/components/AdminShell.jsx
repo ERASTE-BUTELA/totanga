@@ -199,7 +199,7 @@ export function AdminShell() {
       <a className="skip-link" href="#contenu">Aller au contenu</a>
       <div className="flex items-center bg-violet-dark px-4 py-4">
         <img
-          src="/images/logo.png"
+          src={`${import.meta.env.BASE_URL}images/logo.png`}
           alt="Bibliothèque Totanga, Sœurs des pauvres de Bergame"
           className="h-16 w-auto rounded-control bg-white px-2 py-1"
         />
