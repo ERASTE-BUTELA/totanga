@@ -8,6 +8,7 @@ const privateHeaders = {
 }
 
 export default defineConfig(({ mode }) => ({
+  base: "/admin/",
   plugins: [react(), tailwindcss()],
   build: {
     sourcemap: false,
