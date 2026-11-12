@@ -99,7 +99,12 @@ export function PublicationsPage() {
         {
           key: "image",
           label: "Image",
-          render: (row) => <img src={row.image} alt="" className="h-12 w-16 rounded-md object-cover" />,
+          render: (row) =>
+            row.image ? (
+              <img src={row.image} alt="" className="h-12 w-16 rounded-md object-cover" />
+            ) : (
+              <span className="inline-flex h-12 w-16 items-center justify-center rounded-md bg-canvas text-muted">—</span>
+            ),
         },
         { key: "title", label: "Titre", render: (row) => <span className="font-semibold text-heading">{row.title}</span> },
         {

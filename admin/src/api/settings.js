@@ -63,6 +63,6 @@ export function mapLibrarySettings(raw) {
     timeFormat: String(raw?.time_format || "24 heures (14:30)"),
     pageSize: String(raw?.page_size || 10),
     maintenance: Boolean(raw?.maintenance),
-    logo: String(raw?.logo || "") || "/images/logo.png",
+    logo: String(raw?.logo || "") || "/admin/images/logo.png",
   }
 }

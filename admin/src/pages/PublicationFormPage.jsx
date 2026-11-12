@@ -64,10 +64,16 @@ export function PublicationFormPage({ mode }) {
       return
     }
     setImageError("")
-    setPreview((current) => {
-      if (current.startsWith("blob:")) URL.revokeObjectURL(current)
-      return URL.createObjectURL(file)
-    })
+    const reader = new FileReader()
+    reader.onload = () => {
+      setPreview((current) => {
+        if (current.startsWith("blob:")) URL.revokeObjectURL(current)
+        return ""
+      })
+      set("image", typeof reader.result === "string" ? reader.result : "")
+    }
+    reader.onerror = () => setImageError("L'image n'a pas pu être lue.")
+    reader.readAsDataURL(file)
   }
 
   async function save(event, status) {

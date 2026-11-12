@@ -37,3 +37,10 @@ export function adminHref(path = "/") {
   if (normalized === "/") return `${ADMIN_BASENAME}/`
   return `${ADMIN_BASENAME}${normalized}`
 }
+
+/** Fichier statique servi par l'admin (public/), sous le préfixe /admin. */
+export function adminAsset(path) {
+  const clean = path.startsWith("/") ? path : `/${path}`
+  if (clean.startsWith(`${ADMIN_BASENAME}/`) || clean === ADMIN_BASENAME) return clean
+  return `${ADMIN_BASENAME}${clean}`
+}

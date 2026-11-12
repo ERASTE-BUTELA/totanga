@@ -6,6 +6,7 @@ import {
   DASHBOARD_PATH,
   LOGIN_ALIAS,
   LOGIN_PATH,
+  adminAsset,
   adminHref,
   normalizeAdminPath,
 } from "./paths.js"
@@ -41,4 +42,10 @@ test("adminHref never produces /admin/admin", () => {
   assert.equal(adminHref("/catalogue/livres"), "/admin/catalogue/livres")
   assert.equal(adminHref("/admin/catalogue/livres"), "/admin/catalogue/livres")
   assert.ok(!adminHref("/catalogue/livres").includes("/admin/admin"))
+})
+
+test("adminAsset prefixes static files under /admin", () => {
+  assert.equal(adminAsset("/images/publications/lecture.webp"), "/admin/images/publications/lecture.webp")
+  assert.equal(adminAsset("images/logo.png"), "/admin/images/logo.png")
+  assert.equal(adminAsset("/admin/images/logo.png"), "/admin/images/logo.png")
 })

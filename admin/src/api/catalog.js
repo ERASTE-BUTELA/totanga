@@ -20,6 +20,12 @@ async function request(path, options = {}) {
 async function finish(response) {
   if (!response) return { ok: false, error: "Le catalogue n'a pas pu être chargé. Réessayez." }
   if (response.status === 204) return { ok: true, data: null }
+  if (response.status === 413) {
+    return { ok: false, error: "Le fichier est trop volumineux (2 Mo maximum pour une image)." }
+  }
+  if (response.status === 403) {
+    return { ok: false, error: "Session expirée ou accès refusé. Reconnectez-vous." }
+  }
   const body = await response.json().catch(() => ({}))
   if (response.ok) return { ok: true, data: body }
   const detail = typeof body.detail === "string" ? body.detail : ""
