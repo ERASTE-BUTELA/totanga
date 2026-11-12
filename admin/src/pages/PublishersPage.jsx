@@ -4,6 +4,7 @@ import { deletePublisher, listPublishers } from "../api/catalog.js"
 import { useListNotice } from "../lib/useListNotice.js"
 import { RowActions } from "../components/RowActions.jsx"
 import { CatalogListPage } from "./CatalogListPage.jsx"
+import { PublisherFormModal } from "./PublisherFormPage.jsx"
 import { usePagedCatalog } from "./usePagedCatalog.js"
 
 function loadPublishers(criteria) {
@@ -22,8 +23,9 @@ function figure(stats, key) {
 
 export function PublishersPage() {
   const { data, error, onPageRequest, reload } = usePagedCatalog(loadPublishers)
-  const [notice] = useListNotice()
+  const [notice, setNotice] = useListNotice()
   const [actionError, setActionError] = useState("")
+  const [modal, setModal] = useState(null)
   const rows = data?.results || []
   const stats = data?.stats
 
@@ -38,6 +40,12 @@ export function PublishersPage() {
     reload()
   }
 
+  function onSaved(message) {
+    setNotice(message)
+    setActionError("")
+    reload()
+  }
+
   return (
     <>
       {error || actionError ? <p role="alert" className="mb-4 rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error || actionError}</p> : null}
@@ -47,7 +55,7 @@ export function PublishersPage() {
         one="éditeur"
         noun="éditeurs"
         addLabel="Ajouter un éditeur"
-        addTo="/catalogue/editeurs/nouveau"
+        onAdd={() => setModal({ mode: "create" })}
         placeholder="Rechercher un éditeur…"
         rows={rows}
         loading={!data && !error}
@@ -74,8 +82,8 @@ export function PublishersPage() {
             label: "Actions",
             render: (row) => (
               <RowActions
-                viewTo={`/catalogue/editeurs/${row.id}`}
-                editTo={`/catalogue/editeurs/${row.id}/modifier`}
+                onView={() => setModal({ mode: "view", publisherId: row.id })}
+                onEdit={() => setModal({ mode: "edit", publisherId: row.id })}
                 removeLabel="Supprimer"
                 onRemove={() => onRemove(row)}
               />
@@ -83,6 +91,14 @@ export function PublishersPage() {
           },
         ]}
       />
+      {modal ? (
+        <PublisherFormModal
+          mode={modal.mode}
+          publisherId={modal.publisherId}
+          onClose={() => setModal(null)}
+          onSaved={onSaved}
+        />
+      ) : null}
     </>
   )
 }

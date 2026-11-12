@@ -4,6 +4,7 @@ import { deleteCategory, listCategories } from "../api/catalog.js"
 import { useListNotice } from "../lib/useListNotice.js"
 import { RowActions } from "../components/RowActions.jsx"
 import { CatalogListPage } from "./CatalogListPage.jsx"
+import { CategoryFormModal } from "./CategoryFormPage.jsx"
 import { usePagedCatalog } from "./usePagedCatalog.js"
 
 function loadCategories(criteria) {
@@ -22,8 +23,9 @@ function figure(stats, key) {
 
 export function CategoriesPage() {
   const { data, error, onPageRequest, reload } = usePagedCatalog(loadCategories)
-  const [notice] = useListNotice()
+  const [notice, setNotice] = useListNotice()
   const [actionError, setActionError] = useState("")
+  const [modal, setModal] = useState(null)
   const rows = data?.results || []
   const stats = data?.stats
 
@@ -38,6 +40,12 @@ export function CategoriesPage() {
     reload()
   }
 
+  function onSaved(message) {
+    setNotice(message)
+    setActionError("")
+    reload()
+  }
+
   return (
     <>
       {error || actionError ? <p role="alert" className="mb-4 rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error || actionError}</p> : null}
@@ -47,7 +55,7 @@ export function CategoriesPage() {
         one="catégorie"
         noun="catégories"
         addLabel="Ajouter une catégorie"
-        addTo="/catalogue/categories/nouveau"
+        onAdd={() => setModal({ mode: "create" })}
         placeholder="Rechercher une catégorie (nom, description…)"
         rows={rows}
         loading={!data && !error}
@@ -74,8 +82,8 @@ export function CategoriesPage() {
             label: "Actions",
             render: (row) => (
               <RowActions
-                viewTo={`/catalogue/categories/${row.id}`}
-                editTo={`/catalogue/categories/${row.id}/modifier`}
+                onView={() => setModal({ mode: "view", categoryId: row.id })}
+                onEdit={() => setModal({ mode: "edit", categoryId: row.id })}
                 removeLabel="Supprimer"
                 onRemove={() => onRemove(row)}
               />
@@ -83,6 +91,14 @@ export function CategoriesPage() {
           },
         ]}
       />
+      {modal ? (
+        <CategoryFormModal
+          mode={modal.mode}
+          categoryId={modal.categoryId}
+          onClose={() => setModal(null)}
+          onSaved={onSaved}
+        />
+      ) : null}
     </>
   )
 }

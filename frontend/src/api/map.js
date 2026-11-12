@@ -128,6 +128,8 @@ export function mapLibraryInfo(raw) {
     facebookUrl: text(raw.facebook_url),
     whatsappUrl: text(raw.whatsapp_url),
     mapsUrl: text(raw.maps_url),
+    latitude: raw.latitude === null || raw.latitude === undefined || raw.latitude === "" ? null : Number(raw.latitude),
+    longitude: raw.longitude === null || raw.longitude === undefined || raw.longitude === "" ? null : Number(raw.longitude),
     maintenance: Boolean(raw.maintenance),
     hoursSummary: text(raw.hours_summary),
     socials: (Array.isArray(raw.social_links) ? raw.social_links : [])

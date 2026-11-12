@@ -22,7 +22,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 - **Un seul accès à l'API.** Un module unique appelle l'API. En cas d'erreur, l'écran affiche un message simple, jamais la trace technique, le code SQL ou le détail du serveur.
 - **Navigateur.** Pas de jeton, de mot de passe ni de donnée personnelle dans `localStorage` ou `sessionStorage`. L'administration lit le cookie CSRF et le renvoie. Le cookie de session reste illisible par un script.
 - **Administration.** Application séparée du site public, sans lien depuis celui-ci, non proposée aux moteurs de recherche. Le menu masque une entrée, mais le serveur décide.
-- **Ressources.** Pas de script, de police ou d'image chargé depuis un site que nous ne maîtrisons pas. Tout est servi par Totanga.
+- **Ressources.** Pas de script, de police ou d'image chargé depuis un site que nous ne maîtrisons pas. Tout est servi par Totanga. **Exception :** la localisation de la bibliothèque peut être affichée via l'API Google Maps Embed (`iframe` vers `google.com/maps/embed`), uniquement pour ce besoin. La clé `VITE_GOOGLE_MAPS_EMBED_KEY` reste dans `.env`, restreinte par référent HTTP, et n'est pas un secret d'administration (elle est exposée au navigateur comme toute clé Embed).
 - **Production.** Pas de `console.log` technique, pas de source maps publiées.
 - **En-têtes HTTP à la mise en ligne.** Politique de contenu (CSP), interdiction d'affichage dans un cadre, type de contenu forcé (`nosniff`), politique de référent, HTTPS forcé.
 
@@ -33,7 +33,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 - **CSRF.** Le middleware CSRF reste actif. Les origines de confiance sont explicites.
 - **Session du personnel.** Déconnexion après 30 minutes sans activité, et au plus tard au bout de 10 heures. Le cookie de session n'est pas lisible par un script. Le cookie CSRF le reste, pour que l'écran d'administration puisse l'envoyer. Cinq échecs de connexion bloquent les suivants pendant 15 minutes. La réponse est la même si le compte n'existe pas.
 - **CORS.** Limité au domaine du site. `CORS_ALLOW_ALL_ORIGINS` reste faux.
-- **API publique.** Lecture seule, sauf une exception : un visiteur peut envoyer un message à la bibliothèque. Il ne peut ni le modifier ni le supprimer. L'adresse électronique est conservée pour le personnel et n'est jamais renvoyée ni affichée. L'administration reste réservée au personnel connecté.
+- **API publique.** Lecture seule, sauf une exception : un visiteur peut envoyer un message à la bibliothèque. Il ne peut ni le modifier ni le supprimer. L'adresse électronique ou le numéro WhatsApp est conservé pour le personnel et n'est jamais renvoyé ni affiché au public. L'administration reste réservée au personnel connecté.
 - **Abus.** Limiter le nombre de requêtes, en particulier sur la connexion. L'adresse de l'administration n'est pas `/admin/`.
 - **Mots de passe.** Validateurs Django actifs (longueur, complexité, mots de passe courants).
 - **Fichiers.** Type et taille contrôlés. Les images du catalogue : JPG, PNG ou WebP, 2 Mo maximum. Aucun envoi de livre (PDF ou autre).
@@ -94,9 +94,9 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Réglages de développement et de production séparés | Appliqué |
 | Versions Python verrouillées dans `requirements.txt` | Appliqué |
 | `python manage.py check --deploy` réussi avec les réglages de production | Appliqué |
-| Pas de compte lecteur. L'adresse d'un message est réservée au personnel et n'est pas publiée | Appliqué |
+| Pas de compte lecteur. L'email ou le WhatsApp d'un message est réservé au personnel et n'est pas publié | Appliqué |
 | Message public : création seulement, texte sans balise, 8 envois par heure sur l'adresse de connexion | Appliqué |
-| Aucune ressource chargée depuis un site externe | Appliqué |
+| Aucune ressource chargée depuis un site externe (sauf carte Google Maps Embed pour la localisation de la bibliothèque) | Appliqué |
 | Politique de contenu CSP | À faire |
 | Dire à Django qu'un reverse proxy termine le HTTPS (`SECURE_PROXY_SSL_HEADER`) | Appliqué |
 | Origine CORS et `ALLOWED_HOSTS` du vrai domaine de production | À faire. Les placeholders et l'exemple `bibtotanga.com` sont dans `.env.example` ; les vrais sous-domaines restent à renseigner avant la mise en ligne. |
@@ -110,7 +110,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Rythme de mise à jour des images et contrôle des failles des paquets | À faire |
 | Module unique d'appel à l'API, message d'erreur sans détail technique | Appliqué |
 | Liens des contenus limités à http et https, ouverture sécurisée | Appliqué |
-| Pas de HTML brut, pas de secret et pas de ressource externe dans le frontend | Appliqué |
+| Pas de HTML brut, pas de secret et pas de ressource externe dans le frontend (hors iframe Maps Embed pour la localisation) | Appliqué |
 | Build de production sans source maps ni `console` | Appliqué |
 | Versions du frontend verrouillées (`package-lock.json`) | Appliqué |
 | Nettoyage d'un contenu HTML riche | Partiel. Le champ « À propos » des paramètres généraux est nettoyé côté serveur (même famille de balises que l'éditeur). Les publications riches restent à brancher. |

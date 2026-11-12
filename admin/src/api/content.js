@@ -84,5 +84,32 @@ export function listJournal() {
 }
 
 export function listMessages() {
-  return request("/api/gestion/messages/").then(finish)
+  return request("/api/gestion/messages/").then(finish).then((result) => {
+    if (!result.ok) return result
+    const body = result.data
+    if (Array.isArray(body)) {
+      return { ok: true, data: { results: body, unread_count: body.filter((row) => !row.is_read).length } }
+    }
+    return {
+      ok: true,
+      data: {
+        results: Array.isArray(body?.results) ? body.results : [],
+        unread_count: Number(body?.unread_count) || 0,
+      },
+    }
+  })
+}
+
+export function markMessageRead(id) {
+  return request("/api/gestion/messages/", {
+    method: "PATCH",
+    body: JSON.stringify({ id }),
+  }).then(finish)
+}
+
+export function markAllMessagesRead() {
+  return request("/api/gestion/messages/", {
+    method: "PATCH",
+    body: JSON.stringify({ mark_all: true }),
+  }).then(finish)
 }

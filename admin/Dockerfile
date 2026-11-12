@@ -23,6 +23,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+ARG VITE_GOOGLE_MAPS_EMBED_KEY=
+ENV VITE_GOOGLE_MAPS_EMBED_KEY=$VITE_GOOGLE_MAPS_EMBED_KEY
 RUN npm run build
 
 # Production : Nginx sert l'administration et relaie /api et /media

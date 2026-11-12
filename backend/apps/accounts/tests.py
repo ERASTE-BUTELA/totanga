@@ -602,3 +602,64 @@ class RoleSampleCommandTests(TestCase):
         self.assertFalse(superuser.groups.exists())
         self.assertTrue(superuser.check_password(password))
         self.assertNotIn(password, output.getvalue())
+
+class StaffVisitorMessageReadTests(TestCase):
+    def setUp(self):
+        sync_roles()
+        self.client = APIClient(enforce_csrf_checks=True)
+        self.admin = User.objects.create_user("admin-messages-lu", password=PASSWORD)
+        self.admin.groups.add(Group.objects.get(name=ROLE_ADMIN))
+
+    def token(self):
+        self.client.get("/api/gestion/session/")
+        csrf = self.client.cookies["csrftoken"].value
+        response = self.client.post(
+            "/api/gestion/session/",
+            {"username": "admin-messages-lu", "password": PASSWORD},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        self.assertEqual(response.status_code, 200)
+        return self.client.cookies["csrftoken"].value
+
+    def test_list_and_mark_read(self):
+        first = VisitorMessage.objects.create(
+            name="Amina",
+            email="amina@exemple.totanga.test",
+            subject="generale",
+            body="Premier message non lu.",
+        )
+        VisitorMessage.objects.create(
+            name="Jean",
+            email="jean@exemple.totanga.test",
+            subject="horaires",
+            body="Deuxieme message non lu.",
+        )
+        token = self.token()
+        listed = self.client.get("/api/gestion/messages/")
+        self.assertEqual(listed.status_code, 200)
+        body = listed.json()
+        self.assertEqual(body["unread_count"], 2)
+        self.assertEqual(len(body["results"]), 2)
+        self.assertFalse(body["results"][0]["is_read"])
+
+        marked = self.client.patch(
+            "/api/gestion/messages/",
+            {"id": first.pk},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(marked.status_code, 200)
+        self.assertEqual(marked.json()["unread_count"], 1)
+        first.refresh_from_db()
+        self.assertTrue(first.is_read)
+
+        all_read = self.client.patch(
+            "/api/gestion/messages/",
+            {"mark_all": True},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(all_read.status_code, 200)
+        self.assertEqual(all_read.json()["unread_count"], 0)
+        self.assertEqual(VisitorMessage.objects.filter(is_read=False).count(), 0)

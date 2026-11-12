@@ -12,7 +12,6 @@ import {
   Library,
   Lock,
   LogOut,
-  Mail,
   Megaphone,
   ScrollText,
   Settings,
@@ -23,7 +22,9 @@ import {
   Wrench,
 } from "lucide-react"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router"
+import { listMessages } from "../api/content.js"
 import { getLibrarySettings, setMaintenanceMode } from "../api/settings.js"
+import { subscribeAlerts, setUnreadMessages } from "../lib/alertsStore.js"
 import { LOGIN_PATH, normalizeAdminPath } from "../lib/paths.js"
 import { canOpen, PAGES, visibleNav } from "../nav/entries.js"
 import { useSession } from "../session/SessionContext.jsx"
@@ -39,12 +40,11 @@ const SUBTITLES = {
   "/evenements": "Gérez les événements, ateliers, conférences et activités de la bibliothèque.",
   "/utilisateurs": "Gérez les comptes du personnel, leurs rôles et leurs permissions.",
   "/journal": "Actions du personnel : qui, quoi, quel objet, quand.",
-  "/messages": "Messages envoyés par les visiteurs.",
   "/parametres": "Configurez la bibliothèque, ses fonctionnalités et son fonctionnement.",
   "/compte/profil": "Consultez et mettez à jour vos informations personnelles.",
   "/compte/mot-de-passe": "Compte du personnel",
   "/compte/preferences": "Personnalisez votre expérience d'utilisation.",
-  "/compte/notifications": "Consultez vos notifications et gérez vos préférences.",
+  "/compte/notifications": "Notifications système et messages des visiteurs.",
   "/compte/aide": "Compte du personnel",
 }
 
@@ -52,7 +52,7 @@ const ACCOUNT_TITLES = {
   "/compte/profil": "Mon profil",
   "/compte/mot-de-passe": "Changer le mot de passe",
   "/compte/preferences": "Préférences",
-  "/compte/notifications": "Notifications",
+  "/compte/notifications": "Alertes",
   "/compte/aide": "Aide et support",
 }
 
@@ -63,7 +63,7 @@ const ACCOUNT_LINKS = [
     { to: "/compte/preferences", label: "Préférences", icon: SlidersHorizontal },
   ],
   [
-    { to: "/compte/notifications", label: "Notifications", icon: Bell },
+    { to: "/compte/notifications", label: "Alertes", icon: Bell },
     { to: "/compte/aide", label: "Aide et support", icon: CircleQuestionMark },
   ],
 ]
@@ -81,7 +81,6 @@ const ICONS = {
   events: CalendarDays,
   users: Users,
   journal: ScrollText,
-  messages: Mail,
   settings: Settings,
 }
 
@@ -124,8 +123,8 @@ function trailFor(pathname) {
   }
   if (FORM_TRAILS[pathname]) return FORM_TRAILS[pathname]
   const rules = [
-    [/^\/annonces\/nouveau$/, ["Annonces", "Nouvelle annonce"], "Rédigez une annonce et définissez sa période d'affichage.", null],
-    [/^\/annonces\/\d+\/modifier$/, ["Annonces", "Modifier une annonce"], "Mettez à jour les informations de l'annonce et définissez sa période d'affichage.", null],
+    [/^\/annonces\/nouveau$/, ["Annonces", "Nouvelle annonce"], "Rédigez une annonce, puis publiez-la ou enregistrez un brouillon.", null],
+    [/^\/annonces\/\d+\/modifier$/, ["Annonces", "Modifier une annonce"], "Mettez à jour l'annonce, puis publiez-la ou enregistrez un brouillon.", null],
     [/^\/annonces\/\d+$/, ["Annonces", "Voir une annonce"], "Fiche de l'annonce.", null],
     [/^\/publications\/nouveau$/, ["Publications", "Nouvelle publication"], "Rédigez le contenu de la publication et ses informations.", null],
     [/^\/publications\/\d+\/modifier$/, ["Publications", "Modifier une publication"], "Mettez à jour le contenu de la publication et ses informations.", null],
@@ -171,16 +170,43 @@ export function AdminShell() {
   const [maintenance, setMaintenance] = useState(false)
   const [maintenanceBusy, setMaintenanceBusy] = useState(false)
   const [maintenanceError, setMaintenanceError] = useState("")
+  const [alertsUnread, setAlertsUnread] = useState(0)
   const nav = visibleNav(session.account?.permissions ?? [], session.account?.role)
   const canToggleMaintenance = canOpen(
     session.account?.permissions ?? [],
     "library_info.change_library",
     session.account?.role,
   )
+  const canViewMessages = canOpen(
+    session.account?.permissions ?? [],
+    "visitor_messages.view_visitormessage",
+    session.account?.role,
+  )
 
   useEffect(() => {
     setOpen(false)
   }, [location.pathname])
+
+  useEffect(() => subscribeAlerts((snapshot) => setAlertsUnread(snapshot.total)), [])
+
+  useEffect(() => {
+    if (!canViewMessages) {
+      setUnreadMessages(0)
+      return undefined
+    }
+    let active = true
+    async function refresh() {
+      const result = await listMessages()
+      if (!active || !result.ok) return
+      setUnreadMessages(Number(result.data?.unread_count) || 0)
+    }
+    refresh()
+    const timer = window.setInterval(refresh, 30000)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [canViewMessages, location.pathname, location.search])
 
   useEffect(() => {
     if (!canToggleMaintenance) return undefined
@@ -274,11 +300,22 @@ export function AdminShell() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <NavLink
-            to="/compte/notifications"
-            aria-label="Notifications"
-            className={({ isActive }) => `inline-flex h-11 w-11 items-center justify-center rounded-full border border-line text-violet shadow-card ${isActive ? "bg-lavender" : "bg-white"}`}
+            to={alertsUnread > 0 && canViewMessages ? "/compte/notifications?onglet=messages" : "/compte/notifications"}
+            aria-label={alertsUnread > 0 ? `Alertes, ${alertsUnread} non lue${alertsUnread > 1 ? "s" : ""}` : "Alertes"}
+            className={({ isActive }) =>
+              [
+                "relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-line text-violet shadow-card",
+                isActive ? "bg-lavender" : "bg-white",
+                alertsUnread > 0 ? "alerts-bell-pulse" : "",
+              ].join(" ")
+            }
           >
             <Bell aria-hidden="true" size={20} />
+            {alertsUnread > 0 ? (
+              <span className="alerts-badge absolute -top-1 -right-1 min-w-5 rounded-full bg-unavailable px-1 text-center text-meta font-bold text-white">
+                {alertsUnread > 99 ? "99+" : alertsUnread}
+              </span>
+            ) : null}
           </NavLink>
           <div className="relative">
           <button

@@ -98,7 +98,7 @@ function AnnouncementContent({ item, items }) {
               {fixtures.library.name}
             </li>
           </ul>
-          {item.image ? <img src={item.image} alt="" className="mt-5 aspect-video w-full rounded-xl object-cover" /> : null}
+          {item.image ? <img src={item.image} alt="" className="mt-5 h-64 w-full rounded-xl object-cover sm:h-72" /> : null}
           {textBlocks(item.body).map((paragraph) => (
             <p key={paragraph} className="mt-4 text-article text-ink">
               {paragraph}

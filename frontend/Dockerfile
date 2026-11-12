@@ -24,7 +24,9 @@ RUN npm ci
 
 COPY . .
 # Fixtures jamais livrées en production ; l'API est relative (/api).
+ARG VITE_GOOGLE_MAPS_EMBED_KEY=
 ENV VITE_USE_FIXTURES=false
+ENV VITE_GOOGLE_MAPS_EMBED_KEY=$VITE_GOOGLE_MAPS_EMBED_KEY
 RUN npm run build
 
 # Production : Nginx sert le site et relaie /api et /media

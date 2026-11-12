@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react"
 import { Bell, BookOpen, CalendarDays, Check, Database, Globe, ImagePlus, Library, Mail, MapPin, Pencil, Phone, Settings, Shield, X } from "lucide-react"
 import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
 import { setSiteFavicon } from "../lib/favicon.js"
+import { mapsEmbedSrc, parseMapsCoords } from "../lib/maps.js"
 import { busyPhase } from "../lib/saveAndGo.js"
 import { getLibrarySettings, mapLibrarySettings, saveLibrarySettings } from "../api/settings.js"
 import { RichTextEditor } from "./RichTextEditor.jsx"
@@ -30,6 +31,8 @@ const EMPTY = {
   facebookUrl: "",
   whatsappUrl: "",
   mapsUrl: "",
+  latitude: "",
+  longitude: "",
   about: "",
   language: "Français",
   theme: "Violet (Totanga)",
@@ -87,6 +90,8 @@ function applyMapped(mapped, setters) {
     facebookUrl: mapped.facebookUrl,
     whatsappUrl: mapped.whatsappUrl,
     mapsUrl: mapped.mapsUrl,
+    latitude: mapped.latitude,
+    longitude: mapped.longitude,
     about: mapped.about,
     language: mapped.language,
     theme: mapped.theme,
@@ -116,8 +121,17 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [phase, setPhase] = useState(null)
   const [version, setVersion] = useState(0)
+  const [mapOpen, setMapOpen] = useState(false)
   const busy = busyPhase(phase)
   const locked = !editing || busy
+  const mapsQuery =
+    form.mapsUrl.trim() || [form.address, form.city].filter(Boolean).join(", ")
+  const embedSrc = mapsEmbedSrc({
+    mapsUrl: form.mapsUrl,
+    latitude: form.latitude,
+    longitude: form.longitude,
+    query: mapsQuery,
+  })
 
   const setters = {
     setForm,
@@ -176,7 +190,7 @@ export function SettingsPage() {
       setNotice("Le lien Facebook doit commencer par http:// ou https://.")
       return
     }
-    if (form.mapsUrl && !/^https?:\/\//i.test(form.mapsUrl.trim())) {
+    if (/^https?:/i.test(form.mapsUrl.trim()) && !/^https?:\/\//i.test(form.mapsUrl.trim())) {
       setNotice("Le lien Google Maps doit commencer par http:// ou https://.")
       return
     }
@@ -200,6 +214,8 @@ export function SettingsPage() {
     body.set("facebook_url", form.facebookUrl.trim())
     body.set("whatsapp_url", form.whatsappUrl.trim())
     body.set("maps_url", form.mapsUrl.trim())
+    body.set("latitude", form.latitude)
+    body.set("longitude", form.longitude)
     body.set("about", form.about)
     body.set("language", form.language)
     body.set("theme", form.theme)
@@ -308,20 +324,80 @@ export function SettingsPage() {
                 <span className="font-semibold text-heading">WhatsApp (facultatif)</span>
                 <input className={fieldClass} value={form.whatsappUrl} onChange={(event) => set("whatsappUrl", event.target.value)} placeholder="+243800000000 ou https://wa.me/…" disabled={locked} />
               </label>
-              <label className="grid gap-1 sm:col-span-2">
+              <div className="grid gap-2 sm:col-span-2">
                 <span className="font-semibold text-heading">Localisation Google Maps (facultatif)</span>
                 <span className="relative">
                   <MapPin aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-violet" />
                   <input
                     className={`${fieldClass} pl-10`}
                     value={form.mapsUrl}
-                    onChange={(event) => set("mapsUrl", event.target.value)}
-                    placeholder="https://maps.google.com/… ou https://maps.app.goo.gl/…"
+                    onChange={(event) => {
+                      const value = event.target.value
+                      set("mapsUrl", value)
+                      const coords = parseMapsCoords(value)
+                      if (coords) {
+                        setForm((current) => ({
+                          ...current,
+                          mapsUrl: value,
+                          latitude: String(coords.latitude),
+                          longitude: String(coords.longitude),
+                        }))
+                      }
+                    }}
+                    onFocus={() => {
+                      if (editing) setMapOpen(true)
+                    }}
+                    placeholder="Adresse ou lien Google Maps (ex. Kinshasa ou https://maps.google.com/…)"
                     disabled={locked}
                   />
                 </span>
-                <span className="text-muted">Collez le lien de partage Google Maps. Il s'affiche sur le site public (sans carte intégrée).</span>
-              </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-3 font-semibold text-violet disabled:opacity-60"
+                    disabled={!mapsQuery && !(form.latitude && form.longitude)}
+                    onClick={() => {
+                      const coords = parseMapsCoords(form.mapsUrl)
+                      if (coords) {
+                        setForm((current) => ({
+                          ...current,
+                          latitude: String(coords.latitude),
+                          longitude: String(coords.longitude),
+                        }))
+                      }
+                      setMapOpen(true)
+                    }}
+                  >
+                    <MapPin aria-hidden="true" size={18} />
+                    Afficher la carte
+                  </button>
+                  {form.latitude && form.longitude ? (
+                    <span className="text-muted">
+                      Coordonnées : {form.latitude}, {form.longitude}
+                    </span>
+                  ) : (
+                    <span className="text-muted">
+                      Saisissez une adresse pour l'aperçu, ou collez un lien Google Maps pour récupérer les coordonnées.
+                    </span>
+                  )}
+                </div>
+                {mapOpen ? (
+                  embedSrc ? (
+                    <iframe
+                      title="Aperçu Google Maps de la bibliothèque"
+                      src={embedSrc}
+                      className="mt-1 h-80 w-full rounded-control border border-line"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <p className="mt-1 rounded-control border border-line bg-canvas p-4 text-muted">
+                      Indiquez une adresse ou un lien Google Maps pour afficher la carte.
+                    </p>
+                  )
+                ) : null}
+              </div>
             </div>
             <div className="mt-4">
               <p className="font-semibold text-heading">Logo de la bibliothèque</p>

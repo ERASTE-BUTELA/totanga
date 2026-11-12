@@ -116,6 +116,33 @@ class LibrarySettingsApiTests(TestCase):
             ],
         )
 
+    def test_admin_can_persist_maps_location(self):
+        token = self._login("admin_settings")
+        Library.get_solo()
+        response = self.client.patch(
+            "/api/gestion/parametres/",
+            {
+                "name": "Bibliothèque Totanga",
+                "address": "Avenue de la Paix",
+                "city": "Kinshasa",
+                "phone": "+243 800 000 000",
+                "email": "contact@exemple.totanga.test",
+                "maps_url": "https://www.google.com/maps/@-4.3276,15.3136,17z",
+                "latitude": "-4.327600",
+                "longitude": "15.313600",
+            },
+            format="multipart",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        library = Library.objects.get(pk=1)
+        self.assertIn("15.3136", library.maps_url)
+        self.assertEqual(float(library.latitude), -4.3276)
+        self.assertEqual(float(library.longitude), 15.3136)
+        public = self.client.get("/api/bibliotheque/")
+        self.assertEqual(public.data["latitude"], -4.3276)
+        self.assertEqual(public.data["longitude"], 15.3136)
+
     def test_librarian_cannot_change_settings(self):
         token = self._login("biblio_settings")
         response = self.client.patch(

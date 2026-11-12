@@ -56,7 +56,6 @@ test("the administrator role sees the whole menu from the mockup", () => {
     "Événements",
     "Utilisateurs et rôles",
     "Journal",
-    "Messages",
     "Paramètres",
   ])
 })

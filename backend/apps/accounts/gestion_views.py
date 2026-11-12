@@ -285,6 +285,88 @@ class StaffJournalView(APIView):
         return Response(rows)
 
 
+class DashboardView(APIView):
+    """Chiffres réels du tableau de bord (personnel connecté)."""
+
+    authentication_classes = [CsrfEnforcedAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models import Count
+        from django.utils import timezone
+
+        from apps.announcements.models import Announcement, AnnouncementState
+        from apps.catalog.models import Book, Copy, CopyStatus
+        from apps.events.models import Event, EventState
+        from .models import StaffAction
+
+        now = timezone.now()
+        available = Copy.objects.filter(status=CopyStatus.AVAILABLE).count()
+        copies_by_status = {
+            row["status"]: row["total"]
+            for row in Copy.objects.values("status").annotate(total=Count("id"))
+        }
+        copy_rows = []
+        for code, label in CopyStatus.choices:
+            copy_rows.append({"code": code, "label": label, "count": int(copies_by_status.get(code, 0))})
+
+        announcements_published = Announcement.objects.filter(state=AnnouncementState.PUBLISHED).count()
+        announcements_draft = Announcement.objects.filter(state=AnnouncementState.DRAFT).count()
+        events_published = Event.objects.filter(state=EventState.PUBLISHED).count()
+        events_draft = Event.objects.filter(state=EventState.DRAFT).count()
+        events_upcoming = Event.objects.filter(
+            state=EventState.PUBLISHED,
+            starts_at__gte=now,
+        ).count()
+        drafts_total = (
+            announcements_draft
+            + events_draft
+            + Book.objects.filter(state="draft").count()
+        )
+
+        activity = []
+        if request.user.has_perm("accounts.view_staffaction"):
+            for action in StaffAction.objects.select_related("actor").order_by("-created_at")[:8]:
+                name = ""
+                if action.actor_id:
+                    name = action.actor.get_full_name().strip() or action.actor.get_username()
+                activity.append(
+                    {
+                        "id": action.pk,
+                        "actor": name or "—",
+                        "action": action.action,
+                        "target_type": action.target_type,
+                        "target_id": action.target_id,
+                        "created_at": action.created_at.isoformat(),
+                    }
+                )
+
+        return Response(
+            {
+                "books": Book.objects.count(),
+                "copies_available": available,
+                "copies_unavailable": Copy.objects.count() - available,
+                "announcements_published": announcements_published,
+                "events_upcoming": events_upcoming,
+                "drafts": drafts_total,
+                "copies": copy_rows,
+                "statuses": [
+                    {
+                        "label": "Annonces",
+                        "published": announcements_published,
+                        "draft": announcements_draft,
+                    },
+                    {
+                        "label": "Événements",
+                        "published": events_published,
+                        "draft": events_draft,
+                    },
+                ],
+                "activity": activity,
+            }
+        )
+
+
 class StaffMessageListView(APIView):
     authentication_classes = [CsrfEnforcedAuthentication]
     permission_classes = [IsAuthenticated]
@@ -304,7 +386,44 @@ class StaffMessageListView(APIView):
                     "whatsapp": message.whatsapp or "",
                     "subject": message.get_subject_display(),
                     "body": message.body,
+                    "is_read": bool(message.is_read),
                     "created_at": message.created_at.isoformat(),
                 }
             )
-        return Response(rows)
+        return Response(
+            {
+                "results": rows,
+                "unread_count": VisitorMessage.objects.filter(is_read=False).count(),
+            }
+        )
+
+    def patch(self, request):
+        """Marquer un message ou tous les messages comme lus (personnel uniquement)."""
+        if not request.user.has_perm("visitor_messages.view_visitormessage"):
+            return Response({"detail": "Vous n'avez pas l'autorisation d'effectuer cette action."}, status=403)
+        from apps.visitor_messages.models import VisitorMessage
+
+        mark_all = bool(request.data.get("mark_all"))
+        if mark_all:
+            updated = VisitorMessage.objects.filter(is_read=False).update(is_read=True)
+            return Response({"ok": True, "updated": updated, "unread_count": 0})
+
+        raw_id = request.data.get("id")
+        try:
+            message_id = int(raw_id)
+        except (TypeError, ValueError):
+            return Response({"detail": "Indiquez le message à marquer comme lu."}, status=400)
+        message = VisitorMessage.objects.filter(pk=message_id).first()
+        if message is None:
+            return Response({"detail": "Ce message n'existe pas."}, status=404)
+        if not message.is_read:
+            message.is_read = True
+            message.save(update_fields=["is_read"])
+        return Response(
+            {
+                "ok": True,
+                "id": message.pk,
+                "is_read": True,
+                "unread_count": VisitorMessage.objects.filter(is_read=False).count(),
+            }
+        )

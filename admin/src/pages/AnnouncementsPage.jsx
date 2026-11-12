@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { AlertTriangle, Megaphone } from "lucide-react"
+import { AlertTriangle, CheckCircle2, FileText, Megaphone, Star } from "lucide-react"
 import { listAnnouncements, setAnnouncementState } from "../api/content.js"
 import { RowActions } from "../components/RowActions.jsx"
 import { useListNotice } from "../lib/useListNotice.js"
@@ -67,6 +67,10 @@ export function AnnouncementsPage() {
   if (error && !rows) return <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p>
   if (!rows) return <p>Chargement…</p>
 
+  const published = rows.filter((row) => row.status === "Publié").length
+  const drafts = rows.filter((row) => row.status === "Brouillon").length
+  const important = rows.filter((row) => row.important).length
+
   return (
     <section className="grid gap-4">
       {error ? <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p> : null}
@@ -83,6 +87,12 @@ export function AnnouncementsPage() {
         showSort={false}
         searchOf={(row) => `${row.title} ${row.body} ${row.category_label}`}
         sortOf={(row) => row.published_at || ""}
+        stats={[
+          { label: "Annonces", value: String(rows.length), trend: "dans la liste", icon: Megaphone, chip: "bg-lavender text-violet" },
+          { label: "Publiées", value: String(published), trend: "visibles", icon: CheckCircle2, chip: "bg-available-soft text-available" },
+          { label: "En brouillon", value: String(drafts), trend: "pas encore publiées", icon: FileText, chip: "bg-[#fde7c7] text-[#9a3412]" },
+          { label: "Importantes", value: String(important), trend: "mises en avant", icon: Star, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
+        ]}
         filters={[
           {
             id: "category",

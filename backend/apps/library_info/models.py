@@ -19,7 +19,21 @@ class Library(models.Model):
     website = models.URLField("site web", blank=True)
     facebook_url = models.URLField("Facebook", blank=True)
     whatsapp_url = models.URLField("WhatsApp", blank=True)
-    maps_url = models.URLField("lien Google Maps", blank=True)
+    maps_url = models.CharField("localisation Google Maps", max_length=500, blank=True)
+    latitude = models.DecimalField(
+        "latitude",
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+    )
+    longitude = models.DecimalField(
+        "longitude",
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+    )
     about = models.TextField("à propos", blank=True)
     logo = models.ForeignKey(
         StoredImage,
@@ -67,6 +81,10 @@ class Library(models.Model):
             raise ValidationError({"id": "La fiche bibliothèque est unique (identifiant 1)."})
         if self.page_size not in (10, 25, 50):
             raise ValidationError({"page_size": "Choisissez 10, 25 ou 50."})
+        if (self.latitude is None) ^ (self.longitude is None):
+            raise ValidationError(
+                {"latitude": "Indiquez la latitude et la longitude ensemble, ou aucun des deux."}
+            )
 
     def save(self, *args, **kwargs):
         self.pk = 1

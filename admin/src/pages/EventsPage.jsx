@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { CalendarDays } from "lucide-react"
+import { CalendarDays, CheckCircle2, Clock, FileText } from "lucide-react"
 import { listEvents, setEventState } from "../api/content.js"
 import { RowActions } from "../components/RowActions.jsx"
 import { useListNotice } from "../lib/useListNotice.js"
@@ -63,6 +63,15 @@ export function EventsPage() {
   if (error && !rows) return <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p>
   if (!rows) return <p>Chargement…</p>
 
+  const now = Date.now()
+  const published = rows.filter((row) => row.status === "Publié").length
+  const drafts = rows.filter((row) => row.status === "Brouillon").length
+  const upcoming = rows.filter((row) => {
+    if (row.status !== "Publié") return false
+    const start = new Date(row.starts_at).getTime()
+    return Number.isFinite(start) && start >= now
+  }).length
+
   return (
     <section className="grid gap-4">
       {error ? <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p> : null}
@@ -79,6 +88,12 @@ export function EventsPage() {
         showSort={false}
         searchOf={(row) => `${row.title} ${row.summary} ${row.location} ${row.type_label}`}
         sortOf={(row) => row.starts_at || ""}
+        stats={[
+          { label: "Événements", value: String(rows.length), trend: "dans la liste", icon: CalendarDays, chip: "bg-lavender text-violet" },
+          { label: "Publiés", value: String(published), trend: "visibles", icon: CheckCircle2, chip: "bg-available-soft text-available" },
+          { label: "En brouillon", value: String(drafts), trend: "pas encore publiés", icon: FileText, chip: "bg-[#fde7c7] text-[#9a3412]" },
+          { label: "À venir", value: String(upcoming), trend: "publiés à venir", icon: Clock, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
+        ]}
         filters={[
           {
             id: "type",

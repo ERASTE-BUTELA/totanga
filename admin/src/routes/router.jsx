@@ -26,7 +26,6 @@ import { EventsPage } from "../pages/EventsPage.jsx"
 import { ForbiddenPage } from "../pages/ForbiddenPage.jsx"
 import { JournalPage } from "../pages/JournalPage.jsx"
 import { LoginPage } from "../pages/LoginPage.jsx"
-import { MessagesPage } from "../pages/MessagesPage.jsx"
 import { NotFoundPage } from "../pages/NotFoundPage.jsx"
 import { NotificationsPage } from "../pages/NotificationsPage.jsx"
 import { PreferencesPage } from "../pages/PreferencesPage.jsx"
@@ -67,7 +66,6 @@ function GuardedPage() {
   if (page.to === "/evenements") return <EventsPage />
   if (page.to === "/utilisateurs") return <UsersPage />
   if (page.to === "/journal") return <JournalPage />
-  if (page.to === "/messages") return <MessagesPage />
   if (page.to === "/parametres") return <SettingsPage />
   return <SoonPage />
 }
@@ -95,12 +93,12 @@ export const router = createBrowserRouter(
             { path: "catalogue/auteurs/nouveau", element: <Allowed permission="catalog.add_author"><AuthorFormPage mode="create" /></Allowed> },
             { path: "catalogue/auteurs/:authorId/modifier", element: <Allowed permission="catalog.change_author"><AuthorFormPage mode="edit" /></Allowed> },
             { path: "catalogue/auteurs/:authorId", element: <Allowed permission="catalog.view_author"><AuthorFormPage mode="view" /></Allowed> },
-            { path: "catalogue/editeurs/nouveau", element: <Allowed permission="catalog.add_publisher"><PublisherFormPage mode="create" /></Allowed> },
-            { path: "catalogue/editeurs/:publisherId/modifier", element: <Allowed permission="catalog.change_publisher"><PublisherFormPage mode="edit" /></Allowed> },
-            { path: "catalogue/editeurs/:publisherId", element: <Allowed permission="catalog.view_publisher"><PublisherFormPage mode="view" /></Allowed> },
-            { path: "catalogue/categories/nouveau", element: <Allowed permission="catalog.add_category"><CategoryFormPage mode="create" /></Allowed> },
-            { path: "catalogue/categories/:categoryId/modifier", element: <Allowed permission="catalog.change_category"><CategoryFormPage mode="edit" /></Allowed> },
-            { path: "catalogue/categories/:categoryId", element: <Allowed permission="catalog.view_category"><CategoryFormPage mode="view" /></Allowed> },
+            { path: "catalogue/editeurs/nouveau", element: <PublisherFormPage /> },
+            { path: "catalogue/editeurs/:publisherId/modifier", element: <PublisherFormPage /> },
+            { path: "catalogue/editeurs/:publisherId", element: <PublisherFormPage /> },
+            { path: "catalogue/categories/nouveau", element: <CategoryFormPage /> },
+            { path: "catalogue/categories/:categoryId/modifier", element: <CategoryFormPage /> },
+            { path: "catalogue/categories/:categoryId", element: <CategoryFormPage /> },
             { path: "annonces/nouveau", element: <Allowed permission="announcements.add_announcement"><AnnouncementFormPage mode="create" /></Allowed> },
             { path: "annonces/:announcementId/modifier", element: <Allowed permission="announcements.change_announcement"><AnnouncementFormPage mode="edit" /></Allowed> },
             { path: "annonces/:announcementId", element: <Allowed permission="announcements.view_announcement"><AnnouncementFormPage mode="view" /></Allowed> },
@@ -117,6 +115,7 @@ export const router = createBrowserRouter(
             { path: "compte/mot-de-passe", element: <SoonPage /> },
             { path: "compte/preferences", element: <PreferencesPage /> },
             { path: "compte/notifications", element: <NotificationsPage /> },
+            { path: "messages", element: <Navigate to="/compte/notifications?onglet=messages" replace /> },
             { path: "compte/aide", element: <SoonPage /> },
             { path: "acces-refuse", element: <ForbiddenPage /> },
             { path: "*", element: <NotFoundPage /> },

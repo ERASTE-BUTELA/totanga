@@ -213,6 +213,49 @@
     -webkit-line-clamp: 2;
   }
 
+  @keyframes send-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes send-pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.86);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes send-check {
+    0% {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    60% {
+      transform: scale(1.08);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .send-spin {
+    animation: send-spin 0.8s linear infinite;
+  }
+
+  .send-card {
+    animation: send-pop 0.28s ease-out;
+  }
+
+  .send-check {
+    animation: send-check 0.4s ease-out;
+  }
+
   .rich-text p {
     margin-block: 0.75rem;
   }

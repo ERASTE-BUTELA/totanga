@@ -15,6 +15,7 @@ class VisitorMessage(models.Model):
     whatsapp = models.CharField("WhatsApp", max_length=40, blank=True)
     subject = models.CharField("sujet", max_length=20, choices=SUBJECTS)
     body = models.TextField("message", max_length=1000)
+    is_read = models.BooleanField("lu", default=False)
     created_at = models.DateTimeField("envoyé le", auto_now_add=True)
 
     class Meta:

@@ -1,5 +1,7 @@
 """API du personnel pour la fiche bibliothèque et les réglages généraux."""
 
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from rest_framework.response import Response
@@ -55,6 +57,41 @@ def _optional_whatsapp(value):
     if not (8 <= len(digits) <= 15):
         return "", "Indiquez un numéro WhatsApp (ex. +243800000000) ou un lien https://wa.me/…"
     return f"https://wa.me/{digits}", ""
+
+
+def _optional_maps_location(value):
+    raw = str(value or "").strip()
+    if not raw:
+        return "", ""
+    if "<" in raw or ">" in raw:
+        return "", "La localisation ne peut pas contenir de balises."
+    if len(raw) > 500:
+        return "", "La localisation est trop longue."
+    if raw.lower().startswith(("http://", "https://")):
+        return _optional_http_url(raw, label="Le lien Google Maps")
+    return raw, ""
+
+
+def _optional_coords(latitude_raw, longitude_raw):
+    lat_text = "" if latitude_raw in (None, "") else str(latitude_raw).strip()
+    lng_text = "" if longitude_raw in (None, "") else str(longitude_raw).strip()
+    if not lat_text and not lng_text:
+        return None, None, ""
+    if not lat_text or not lng_text:
+        return None, None, "Indiquez la latitude et la longitude ensemble, ou laissez les deux vides."
+    try:
+        latitude = Decimal(lat_text)
+        longitude = Decimal(lng_text)
+    except (InvalidOperation, TypeError, ValueError):
+        return None, None, "Les coordonnées Google Maps ne sont pas valides."
+    if not (Decimal("-90") <= latitude <= Decimal("90") and Decimal("-180") <= longitude <= Decimal("180")):
+        return None, None, "Les coordonnées Google Maps sont hors limites."
+    quant = Decimal("0.000001")
+    return (
+        latitude.quantize(quant, rounding=ROUND_HALF_UP),
+        longitude.quantize(quant, rounding=ROUND_HALF_UP),
+        "",
+    )
 
 
 def _store_image(upload, *, alt_text, user):
@@ -119,12 +156,18 @@ def _apply_general(library, data, files, user):
     if whatsapp_error:
         return whatsapp_error
 
-    maps_url, maps_error = _optional_http_url(
+    maps_url, maps_error = _optional_maps_location(
         data.get("maps_url", library.maps_url or ""),
-        label="Le lien Google Maps",
     )
     if maps_error:
         return maps_error
+
+    latitude, longitude, coords_error = _optional_coords(
+        data.get("latitude", library.latitude),
+        data.get("longitude", library.longitude),
+    )
+    if coords_error:
+        return coords_error
 
     language = str(data.get("language", library.language)).strip()
     if language not in LANGUAGES:
@@ -176,6 +219,8 @@ def _apply_general(library, data, files, user):
     library.facebook_url = facebook_url
     library.whatsapp_url = whatsapp_url
     library.maps_url = maps_url
+    library.latitude = latitude
+    library.longitude = longitude
     library.about = about
     library.logo = logo
     # Favicon = logo (plus de champ séparé dans l'interface).

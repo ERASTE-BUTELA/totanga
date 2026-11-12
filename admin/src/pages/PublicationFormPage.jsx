@@ -8,8 +8,7 @@ import { readPublication, savePublication } from "./contentStore.js"
 import { richTextIsEmpty, sanitizeRichText } from "./richText.js"
 
 const CATEGORIES = ["Culture", "Actualité", "Conseils", "Événement", "Technologie"]
-const AUTHORS = ["Équipe Totanga", "Martin Kabasele", "Aline Mbuyi", "Jean-Pierre Tshala", "Denis Mukwege", "Comité Totanga", "Amina Nsiku"]
-const STATUSES = ["Publié", "Brouillon", "Archivé"]
+const DEFAULT_AUTHOR = "Équipe Totanga"
 const MAX_IMAGE = 2 * 1024 * 1024
 const MAX_EXCERPT = 250
 const fieldClass = "w-full rounded-control border border-line bg-white px-3"
@@ -17,7 +16,7 @@ const fieldClass = "w-full rounded-control border border-line bg-white px-3"
 const EMPTY = {
   title: "",
   category: "Culture",
-  author: "Équipe Totanga",
+  author: DEFAULT_AUTHOR,
   status: "Brouillon",
   featured: false,
   pinned: false,
@@ -25,12 +24,6 @@ const EMPTY = {
   content: "",
   excerpt: "",
   image: "",
-}
-
-function statusDot(status) {
-  if (status === "Brouillon") return "bg-[#d97706]"
-  if (status === "Archivé") return "bg-muted"
-  return "bg-available"
 }
 
 function Switch({ checked, label, disabled, onClick }) {
@@ -53,7 +46,6 @@ export function PublicationFormPage({ mode }) {
   const [phase, setPhase] = useState(null)
   const busy = busyPhase(phase)
   const [problems, setProblems] = useState([])
-  const authors = AUTHORS.includes(form.author) ? AUTHORS : [form.author, ...AUTHORS]
 
   function set(key, value) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -84,7 +76,6 @@ export function PublicationFormPage({ mode }) {
     const content = sanitizeRichText(form.content)
     const next = []
     if (!form.title.trim()) next.push("Le titre est obligatoire.")
-    if (!form.author.trim()) next.push("Le rédacteur est obligatoire.")
     if (!form.publishedAt) next.push("La date de publication est obligatoire.")
     if (richTextIsEmpty(content)) next.push("Le contenu est obligatoire.")
     if (!form.excerpt.trim()) next.push("Le résumé est obligatoire.")
@@ -98,7 +89,7 @@ export function PublicationFormPage({ mode }) {
       order: existing?.order ?? 0,
       status,
       title: form.title.trim(),
-      author: form.author.trim(),
+      author: form.author.trim() || DEFAULT_AUTHOR,
       excerpt: form.excerpt.trim(),
       content,
     })
@@ -147,21 +138,6 @@ export function PublicationFormPage({ mode }) {
                     {CATEGORIES.map((item) => <option key={item}>{item}</option>)}
                   </select>
                 </span>
-              </label>
-              <label className="grid gap-1">
-                <span className="font-semibold text-heading">Statut *</span>
-                <span className="relative">
-                  <span aria-hidden="true" className={`pointer-events-none absolute top-1/2 left-3 h-2.5 w-2.5 -translate-y-1/2 rounded-full ${statusDot(form.status)}`} />
-                  <select className={`${fieldClass} pl-8`} value={form.status} onChange={(event) => set("status", event.target.value)} disabled={viewing}>
-                    {STATUSES.map((item) => <option key={item}>{item}</option>)}
-                  </select>
-                </span>
-              </label>
-              <label className="grid gap-1">
-                <span className="font-semibold text-heading">Rédacteur *</span>
-                <select className={fieldClass} value={form.author} onChange={(event) => set("author", event.target.value)} disabled={viewing}>
-                  {authors.map((item) => <option key={item}>{item}</option>)}
-                </select>
               </label>
               <label className="grid gap-1">
                 <span className="font-semibold text-heading">Date de publication *</span>

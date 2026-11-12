@@ -46,6 +46,7 @@ services:
     environment:
       VITE_USE_FIXTURES: "false"
       VITE_API_URL: http://localhost:8000
+      VITE_GOOGLE_MAPS_EMBED_KEY: ${VITE_GOOGLE_MAPS_EMBED_KEY:-}
       CHOKIDAR_USEPOLLING: "true"
     volumes:
       - ./frontend:/app
@@ -60,6 +61,7 @@ services:
     environment:
       CHOKIDAR_USEPOLLING: "true"
       VITE_PROXY_TARGET: http://backend:8000
+      VITE_GOOGLE_MAPS_EMBED_KEY: ${VITE_GOOGLE_MAPS_EMBED_KEY:-}
     volumes:
       - ./admin:/app
       - admin_node_modules:/app/node_modules

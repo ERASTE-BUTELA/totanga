@@ -361,8 +361,8 @@ Rôle : l'unique fiche de l'établissement. Une seule ligne, imposée par la bas
 | adresse électronique de contact | texte, 254 | oui | affichée au public, ce n'est pas l'adresse d'un compte |
 | présentation, histoire, mission, vision, valeurs, services | textes longs | non | français |
 | texte du pied de page | texte long | non | français |
-| lien d'itinéraire | texte | non | `http://` ou `https://` seulement ; pas de carte intégrée |
-| latitude, longitude | nombres | non | les deux ensemble, ou aucun |
+| localisation Google Maps | texte, 500 | non | adresse libre ou lien `http://` / `https://` ; carte intégrée via Google Maps Embed |
+| latitude, longitude | nombres | non | les deux ensemble, ou aucun ; récupérées depuis un lien Maps quand possible |
 
 Italien dans Bibliothèque IT, pour les textes longs seulement. Le nom, l'adresse, le téléphone et l'adresse de contact ne sont pas traduits.
 
@@ -411,6 +411,7 @@ Déjà en place. On ne le change pas dans ce plan.
 | adresse électronique | texte, 254 | oui | jamais renvoyée au public, jamais recopiée dans le journal |
 | sujet | texte, 20 | oui | question générale, horaires, catalogue, événement, autre |
 | message | texte, 1 000 | oui | pas de HTML ; pas dans le journal |
+| lu | oui / non | oui | défaut non ; réservé au personnel |
 | envoyé le | instant | oui | |
 
 Le visiteur peut créer un message. Il ne peut ni le lire en liste, ni le modifier, ni le supprimer.

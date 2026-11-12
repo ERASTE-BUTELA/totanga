@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react"
 import {
   BookOpen,
   CalendarDays,
@@ -7,40 +8,18 @@ import {
   Megaphone,
 } from "lucide-react"
 import { Link } from "react-router"
+import { getDashboard } from "../api/dashboard.js"
 import { useSession } from "../session/SessionContext.jsx"
 
 const asset = (path) => `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`
 
-const FIGURES = [
-  { label: "Livres", value: "12 846", icon: BookOpen, chip: "bg-lavender text-violet" },
-  { label: "Exemplaires disponibles", value: "11 420", icon: Layers, chip: "bg-available-soft text-available" },
-  { label: "Exemplaires indisponibles", value: "1 376", icon: Library, chip: "bg-unavailable-soft text-unavailable" },
-  { label: "Annonces publiées", value: "48", icon: Megaphone, chip: "bg-lavender text-violet" },
-  { label: "Événements à venir", value: "12", icon: CalendarDays, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
-  { label: "Contenus en brouillon", value: "26", icon: FileText, chip: "bg-[#fde7c7] text-[#9a3412]" },
-]
-
-const COPIES = [
-  { label: "Disponible", value: "11 420", share: "89,2 %", count: 11420, color: "#e4ae24" },
-  { label: "Emprunté", value: "682", share: "5,3 %", count: 682, color: "#4e154f" },
-  { label: "Réservé", value: "143", share: "1,1 %", count: 143, color: "#2563eb" },
-  { label: "En réparation", value: "96", share: "0,8 %", count: 96, color: "#f59e0b" },
-  { label: "Perdu", value: "55", share: "0,4 %", count: 55, color: "#e11d48" },
-]
-
-const STATUSES = [
-  { label: "Annonces", published: 48, draft: 6 },
-  { label: "Publications", published: 36, draft: 14 },
-  { label: "Événements", published: 12, draft: 6 },
-]
-
-const ACTIVITY = [
-  ["Jacques Mbuyi", "Publication", "Publication créée : « La lecture à l'ère numérique »", "Aujourd'hui 10:24"],
-  ["Emma Ngalula", "Événement", "Événement mis à jour : « Atelier d'écriture »", "Aujourd'hui 09:47"],
-  ["Martin Kabasele", "Livre", "Nouveau livre ajouté : « Intelligence artificielle »", "Hier 16:20"],
-  ["Jacques Mbuyi", "Annonce", "Annonce publiée : « Nouveaux horaires »", "Hier 14:08"],
-  ["Emma Ngalula", "Livre", "Exemplaire ajouté : cote TOT-IA-002", "Hier 11:36"],
-]
+const COPY_COLORS = {
+  available: "#e4ae24",
+  borrowed: "#4e154f",
+  reserved: "#2563eb",
+  in_repair: "#f59e0b",
+  lost: "#e11d48",
+}
 
 const ACTIONS = [
   { label: "Ajouter un livre", to: "/catalogue/livres", icon: BookOpen },
@@ -49,13 +28,48 @@ const ACTIONS = [
   { label: "Nouvel événement", to: "/evenements/nouveau", icon: CalendarDays },
 ]
 
-const COPY_TOTAL = COPIES.reduce((sum, item) => sum + item.count, 0)
 const RING = 2 * Math.PI * 42
+const numberFormat = new Intl.NumberFormat("fr-FR")
 
-function rings() {
+function formatCount(value) {
+  return numberFormat.format(Number(value) || 0)
+}
+
+function formatWhen(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Africa/Kinshasa",
+  })
+}
+
+function actionKind(action, targetType) {
+  const text = `${action} ${targetType}`.toLowerCase()
+  if (text.includes("annonce")) return "Annonce"
+  if (text.includes("evenement") || text.includes("événement")) return "Événement"
+  if (text.includes("livre") || text.includes("catalog.book") || text.includes("exemplaire")) return "Livre"
+  if (text.includes("publication") || text.includes("post")) return "Publication"
+  if (text.includes("connexion")) return "Connexion"
+  if (text.includes("compte") || text.includes("user")) return "Compte"
+  return "Action"
+}
+
+function actionDetail(row) {
+  const label = String(row.action || "").replaceAll("_", " ")
+  const object = row.target_type ? `${row.target_type}${row.target_id ? ` #${row.target_id}` : ""}` : ""
+  return object ? `${label} · ${object}` : label
+}
+
+function rings(copies) {
+  const total = copies.reduce((sum, item) => sum + item.count, 0) || 1
   let cursor = 0
-  return COPIES.map((item) => {
-    const length = (item.count / COPY_TOTAL) * RING
+  return copies.map((item) => {
+    const length = (item.count / total) * RING
     const segment = { ...item, length, cursor }
     cursor += length
     return segment
@@ -65,7 +79,60 @@ function rings() {
 export function DashboardPage() {
   const session = useSession()
   const name = session.account?.name || ""
-  const widest = Math.max(...STATUSES.map((item) => item.published + item.draft))
+  const [data, setData] = useState(null)
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    getDashboard().then((result) => {
+      if (!active) return
+      if (!result.ok) {
+        setError(result.error)
+        setLoading(false)
+        return
+      }
+      setData(result.data)
+      setError("")
+      setLoading(false)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const figures = useMemo(() => {
+    if (!data) return []
+    return [
+      { label: "Livres", value: formatCount(data.books), icon: BookOpen, chip: "bg-lavender text-violet" },
+      { label: "Exemplaires disponibles", value: formatCount(data.copies_available), icon: Layers, chip: "bg-available-soft text-available" },
+      { label: "Exemplaires indisponibles", value: formatCount(data.copies_unavailable), icon: Library, chip: "bg-unavailable-soft text-unavailable" },
+      { label: "Annonces publiées", value: formatCount(data.announcements_published), icon: Megaphone, chip: "bg-lavender text-violet" },
+      { label: "Événements à venir", value: formatCount(data.events_upcoming), icon: CalendarDays, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
+      { label: "Contenus en brouillon", value: formatCount(data.drafts), icon: FileText, chip: "bg-[#fde7c7] text-[#9a3412]" },
+    ]
+  }, [data])
+
+  const copies = useMemo(() => {
+    const rows = Array.isArray(data?.copies) ? data.copies : []
+    const total = rows.reduce((sum, item) => sum + (Number(item.count) || 0), 0) || 1
+    return rows.map((item) => {
+      const count = Number(item.count) || 0
+      const share = `${((count / total) * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`
+      return {
+        label: item.label,
+        count,
+        value: formatCount(count),
+        share,
+        color: COPY_COLORS[item.code] || "#4e154f",
+      }
+    })
+  }, [data])
+
+  const statuses = Array.isArray(data?.statuses) ? data.statuses : []
+  const widest = Math.max(1, ...statuses.map((item) => (Number(item.published) || 0) + (Number(item.draft) || 0)))
+  const activity = Array.isArray(data?.activity) ? data.activity : []
+  const copiesTotal = copies.reduce((sum, item) => sum + item.count, 0)
 
   return (
     <section className="grid gap-4">
@@ -84,11 +151,17 @@ export function DashboardPage() {
         />
       </article>
 
+      {error ? (
+        <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
+          {error}
+        </p>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        {FIGURES.map((figure) => {
+        {(loading ? Array.from({ length: 6 }, (_, index) => ({ label: "…", value: "…", icon: BookOpen, chip: "bg-lavender text-violet", key: index })) : figures).map((figure) => {
           const Icon = figure.icon
           return (
-            <article key={figure.label} className="rounded-panel border border-line bg-white p-4 shadow-card">
+            <article key={figure.label + (figure.key ?? "")} className="rounded-panel border border-line bg-white p-4 shadow-card">
               <span className={`inline-flex h-11 w-11 items-center justify-center rounded-control ${figure.chip}`}>
                 <Icon aria-hidden="true" size={22} />
               </span>
@@ -102,63 +175,81 @@ export function DashboardPage() {
       <div className="grid gap-4 xl:grid-cols-2">
         <article className="rounded-panel border border-line bg-white p-6 shadow-card">
           <h2 className="text-section text-heading">Répartition des exemplaires</h2>
-          <div className="mt-5 flex flex-wrap items-center gap-6">
-            <div className="relative h-44 w-44 shrink-0">
-              <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90" aria-hidden="true">
-                {rings().map((item) => (
-                  <circle
-                    key={item.label}
-                    cx="60"
-                    cy="60"
-                    r="42"
-                    fill="none"
-                    stroke={item.color}
-                    strokeWidth="16"
-                    strokeDasharray={`${item.length} ${RING - item.length}`}
-                    strokeDashoffset={-item.cursor}
-                  />
+          {loading ? (
+            <p className="mt-5 text-muted">Chargement…</p>
+          ) : copiesTotal === 0 ? (
+            <p className="mt-5 text-muted">Aucun exemplaire pour le moment.</p>
+          ) : (
+            <div className="mt-5 flex flex-wrap items-center gap-6">
+              <div className="relative h-44 w-44 shrink-0">
+                <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90" aria-hidden="true">
+                  {rings(copies).map((item) => (
+                    <circle
+                      key={item.label}
+                      cx="60"
+                      cy="60"
+                      r="42"
+                      fill="none"
+                      stroke={item.color}
+                      strokeWidth="16"
+                      strokeDasharray={`${item.length} ${RING - item.length}`}
+                      strokeDashoffset={-item.cursor}
+                    />
+                  ))}
+                </svg>
+                <p className="absolute inset-0 grid place-items-center text-center">
+                  <span>
+                    <span className="block text-section text-heading">{formatCount(copiesTotal)}</span>
+                    <span className="text-muted">Exemplaires</span>
+                  </span>
+                </p>
+              </div>
+              <ul className="grid min-w-60 flex-1 gap-2">
+                {copies.map((item) => (
+                  <li key={item.label} className="flex items-center gap-3">
+                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: item.color }} />
+                    <span className="flex-1">{item.label}</span>
+                    <span className="font-semibold text-heading">{item.value}</span>
+                    <span className="w-16 text-right text-muted">({item.share})</span>
+                  </li>
                 ))}
-              </svg>
-              <p className="absolute inset-0 grid place-items-center text-center">
-                <span>
-                  <span className="block text-section text-heading">12 796</span>
-                  <span className="text-muted">Exemplaires</span>
-                </span>
-              </p>
+              </ul>
             </div>
-            <ul className="grid min-w-60 flex-1 gap-2">
-              {COPIES.map((item) => (
-                <li key={item.label} className="flex items-center gap-3">
-                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: item.color }} />
-                  <span className="flex-1">{item.label}</span>
-                  <span className="font-semibold text-heading">{item.value}</span>
-                  <span className="w-16 text-right text-muted">({item.share})</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          )}
         </article>
 
         <article className="rounded-panel border border-line bg-white p-6 shadow-card">
           <h2 className="text-section text-heading">Contenus par statut</h2>
-          <ul className="mt-5 grid gap-4">
-            {STATUSES.map((item) => (
-              <li key={item.label}>
-                <div className="mb-2 flex justify-between">
-                  <span className="font-semibold text-heading">{item.label}</span>
-                  <span className="text-muted">{item.published} publié · {item.draft} brouillon</span>
-                </div>
-                <div className="flex h-3 overflow-hidden rounded-full bg-[#f3eef8]">
-                  <span className="bg-violet" style={{ width: `${(item.published / widest) * 100}%` }} />
-                  <span className="bg-[#ddd4ea]" style={{ width: `${(item.draft / widest) * 100}%` }} />
-                </div>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 flex gap-4 text-muted">
-            <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-violet" /> Publié</span>
-            <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-[#ddd4ea]" /> Brouillon</span>
-          </p>
+          {loading ? (
+            <p className="mt-5 text-muted">Chargement…</p>
+          ) : (
+            <>
+              <ul className="mt-5 grid gap-4">
+                {statuses.map((item) => (
+                  <li key={item.label}>
+                    <div className="mb-2 flex justify-between">
+                      <span className="font-semibold text-heading">{item.label}</span>
+                      <span className="text-muted">
+                        {item.published} publié · {item.draft} brouillon
+                      </span>
+                    </div>
+                    <div className="flex h-3 overflow-hidden rounded-full bg-[#f3eef8]">
+                      <span className="bg-violet" style={{ width: `${((Number(item.published) || 0) / widest) * 100}%` }} />
+                      <span className="bg-[#ddd4ea]" style={{ width: `${((Number(item.draft) || 0) / widest) * 100}%` }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-4 flex gap-4 text-muted">
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-sm bg-violet" /> Publié
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-sm bg-[#ddd4ea]" /> Brouillon
+                </span>
+              </p>
+            </>
+          )}
         </article>
       </div>
 
@@ -166,32 +257,42 @@ export function DashboardPage() {
         <article className="rounded-panel border border-line bg-white p-6 shadow-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-section text-heading">Activité récente</h2>
-            <Link to="/journal" className="font-semibold text-violet">Voir le journal des actions →</Link>
+            <Link to="/journal" className="font-semibold text-violet">
+              Voir le journal des actions →
+            </Link>
           </div>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[36rem] text-left">
-              <thead>
-                <tr className="text-muted">
-                  <th className="py-2 pr-3 font-semibold">Utilisateur</th>
-                  <th className="py-2 pr-3 font-semibold">Action</th>
-                  <th className="py-2 pr-3 font-semibold">Détails</th>
-                  <th className="py-2 font-semibold">Date et heure</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ACTIVITY.map((row) => (
-                  <tr key={row[2]} className="border-t border-line">
-                    <td className="py-3 pr-3 font-semibold text-heading">{row[0]}</td>
-                    <td className="py-3 pr-3">
-                      <span className="rounded-full bg-lavender px-3 py-1 font-semibold text-violet">{row[1]}</span>
-                    </td>
-                    <td className="py-3 pr-3">{row[2]}</td>
-                    <td className="py-3 text-muted">{row[3]}</td>
+          {loading ? (
+            <p className="mt-4 text-muted">Chargement…</p>
+          ) : activity.length === 0 ? (
+            <p className="mt-4 text-muted">Aucune action récente.</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[36rem] text-left">
+                <thead>
+                  <tr className="text-muted">
+                    <th className="py-2 pr-3 font-semibold">Utilisateur</th>
+                    <th className="py-2 pr-3 font-semibold">Action</th>
+                    <th className="py-2 pr-3 font-semibold">Détails</th>
+                    <th className="py-2 font-semibold">Date et heure</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {activity.map((row) => (
+                    <tr key={row.id} className="border-t border-line">
+                      <td className="py-3 pr-3 font-semibold text-heading">{row.actor}</td>
+                      <td className="py-3 pr-3">
+                        <span className="rounded-full bg-lavender px-3 py-1 font-semibold text-violet">
+                          {actionKind(row.action, row.target_type)}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-3">{actionDetail(row)}</td>
+                      <td className="py-3 text-muted">{formatWhen(row.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </article>
 
         <article className="rounded-panel border border-line bg-white p-6 shadow-card">

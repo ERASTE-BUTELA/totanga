@@ -5,6 +5,7 @@ import { getAnnouncements, getBooks, getEvents, getLibraryInfo, getPublications 
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
 import { QueryState } from "../components/ui/QueryState.jsx"
 import { SafeHtml } from "../components/ui/SafeHtml.jsx"
+import { mapsEmbedSrc } from "../lib/maps.js"
 import { richTextIsEmpty } from "../lib/richText.js"
 import { useAsync } from "../lib/useAsync.js"
 import { usePageTitle } from "../lib/usePageTitle.js"
@@ -93,7 +94,7 @@ function AboutContent({ library, counts }) {
       </section>
 
       <section id="contact-bibliotheque" className="mt-8 rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6" aria-labelledby="nous-trouver">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
           <div>
             <h2 id="nous-trouver" className="flex items-center gap-2 text-section text-heading">
               <MapPin className="h-6 w-6 text-violet" aria-hidden="true" />
@@ -135,10 +136,32 @@ function AboutContent({ library, counts }) {
               ))}
             </ul>
           </div>
-          <p className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-2xl bg-lavender text-violet">
-            <MapPin className="h-8 w-8" aria-hidden="true" />
-            <span className="text-meta font-semibold">{library.city || "Kinshasa"}</span>
-          </p>
+          {(() => {
+            const src = mapsEmbedSrc({
+              mapsUrl: library.mapsUrl,
+              latitude: library.latitude,
+              longitude: library.longitude,
+              query: library.mapsUrl || place,
+            })
+            if (!src) {
+              return (
+                <p className="flex min-h-72 flex-col items-center justify-center gap-2 rounded-2xl bg-lavender text-violet">
+                  <MapPin className="h-8 w-8" aria-hidden="true" />
+                  <span className="text-meta font-semibold">{library.city || "Kinshasa"}</span>
+                </p>
+              )
+            }
+            return (
+              <iframe
+                title="Localisation de la Bibliothèque Totanga"
+                src={src}
+                className="h-80 w-full rounded-2xl border border-line bg-lavender sm:h-96"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+            )
+          })()}
         </div>
       </section>
 

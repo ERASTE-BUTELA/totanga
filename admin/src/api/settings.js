@@ -52,6 +52,8 @@ export function mapLibrarySettings(raw) {
     facebookUrl: String(raw?.facebook_url || ""),
     whatsappUrl: String(raw?.whatsapp_url || ""),
     mapsUrl: String(raw?.maps_url || ""),
+    latitude: raw?.latitude === null || raw?.latitude === undefined ? "" : String(raw.latitude),
+    longitude: raw?.longitude === null || raw?.longitude === undefined ? "" : String(raw.longitude),
     about: String(raw?.about || ""),
     language: String(raw?.language || "Français"),
     theme: String(raw?.theme || "Violet (Totanga)"),

@@ -47,9 +47,38 @@ class VisitorMessageApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertNotIn("email", response.json())
+        self.assertNotIn("whatsapp", response.json())
         stored = VisitorMessage.objects.get()
         self.assertEqual(stored.email, "amina@exemple.totanga.test")
         self.assertEqual(response.json()["name"], "Amina")
+
+    def test_post_accepts_whatsapp_without_email(self):
+        response = self.client.post(
+            "/api/messages/",
+            {
+                "name": "Paul",
+                "whatsapp": "+243 800 000 002",
+                "subject": "catalogue",
+                "body": "Cherche un livre d'histoire congolaise.",
+            },
+            format="json",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        stored = VisitorMessage.objects.get()
+        self.assertEqual(stored.email, "")
+        self.assertEqual(stored.whatsapp, "243800000002")
+        self.assertNotIn("whatsapp", response.json())
+
+    def test_post_requires_email_or_whatsapp(self):
+        response = self.client.post(
+            "/api/messages/",
+            {"name": "Paul", "subject": "autre", "body": "Bonjour la bibliothèque."},
+            format="json",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(VisitorMessage.objects.count(), 0)
 
     def test_post_rejects_markup_and_unknown_subject(self):
         token = self.token()

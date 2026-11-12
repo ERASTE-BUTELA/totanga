@@ -61,6 +61,8 @@ services:
     build:
       context: ./admin
       target: production
+      args:
+        VITE_GOOGLE_MAPS_EMBED_KEY: ${VITE_GOOGLE_MAPS_EMBED_KEY:-}
     restart: unless-stopped
     volumes:
       - media_data:/var/www/media:ro
@@ -76,6 +78,8 @@ services:
     build:
       context: ./frontend
       target: production
+      args:
+        VITE_GOOGLE_MAPS_EMBED_KEY: ${VITE_GOOGLE_MAPS_EMBED_KEY:-}
     restart: unless-stopped
     volumes:
       - media_data:/var/www/media:ro

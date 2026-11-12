@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { ArrowLeft, Check, Eye, ImagePlus, Info, Megaphone, Pencil, Save, Trash2 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
 import { getAnnouncement, saveAnnouncement } from "../api/content.js"
@@ -27,7 +27,6 @@ const EMPTY = {
   category: "informations",
   important: false,
   publishedAt: localStamp(),
-  effectiveOn: "",
   displayUntil: "",
   body: "",
   image: "",
@@ -39,6 +38,7 @@ export function AnnouncementFormPage({ mode }) {
   const navigate = useNavigate()
   const imageInput = useId()
   const viewing = mode === "view"
+  const publishIntent = useRef(false)
   const [form, setForm] = useState(EMPTY)
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState("")
@@ -66,7 +66,6 @@ export function AnnouncementFormPage({ mode }) {
         category: item.category,
         important: item.important,
         publishedAt: localStamp(item.published_at),
-        effectiveOn: item.effective_on || "",
         displayUntil: item.display_until || "",
         body: item.body,
         image: item.image,
@@ -107,11 +106,12 @@ export function AnnouncementFormPage({ mode }) {
   async function save(event, state) {
     event.preventDefault()
     if (busy) return
+    publishIntent.current = state === "published"
+    const publishedAt = mode === "create" || !form.publishedAt ? localStamp() : form.publishedAt
     const next = []
     if (!form.title.trim()) next.push("Le titre est obligatoire.")
     if (!form.body.trim()) next.push("Le texte est obligatoire.")
-    if (!form.publishedAt) next.push("La date de publication est obligatoire.")
-    if (form.displayUntil && form.publishedAt && form.displayUntil < form.publishedAt.slice(0, 10)) {
+    if (form.displayUntil && publishedAt && form.displayUntil < publishedAt.slice(0, 10)) {
       next.push("La fin d'affichage ne peut pas précéder le jour de publication.")
     }
     setProblems(next)
@@ -122,8 +122,8 @@ export function AnnouncementFormPage({ mode }) {
     body.set("body", form.body.trim())
     body.set("category", form.category)
     body.set("important", form.important ? "true" : "false")
-    body.set("published_at", new Date(form.publishedAt).toISOString())
-    body.set("effective_on", form.effectiveOn)
+    body.set("published_at", new Date(publishedAt).toISOString())
+    body.set("effective_on", "")
     body.set("display_until", form.displayUntil)
     body.set("state", form.state === "archived" ? "archived" : state)
     if (file) body.set("image", file)
@@ -142,6 +142,15 @@ export function AnnouncementFormPage({ mode }) {
     })
   }
 
+  const overlayLabel =
+    phase === "done"
+      ? publishIntent.current
+        ? "Annonce publiée"
+        : "Brouillon enregistré"
+      : publishIntent.current
+        ? "Publication…"
+        : "Enregistrement…"
+
   if (loading) return <p>Chargement…</p>
   if (missing) {
     return (
@@ -156,7 +165,7 @@ export function AnnouncementFormPage({ mode }) {
 
   return (
     <form className="grid gap-4" onSubmit={(event) => (viewing ? event.preventDefault() : save(event, "published"))}>
-      {phase ? <FormSaveOverlay phase={phase} /> : null}
+      {phase ? <FormSaveOverlay phase={phase} label={overlayLabel} /> : null}
       {problems.length > 0 ? (
         <div role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
           {problems.map((problem) => <p key={problem}>{problem}</p>)}
@@ -182,24 +191,16 @@ export function AnnouncementFormPage({ mode }) {
                 {CATEGORIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
-            <label className="flex min-h-11 items-center gap-3 self-end">
-              <input type="checkbox" checked={form.important} onChange={(event) => set("important", event.target.checked)} disabled={viewing} />
-              <span className="font-semibold text-heading">Important</span>
-            </label>
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Date de publication *</span>
-              <input className={fieldClass} type="datetime-local" value={form.publishedAt} onChange={(event) => set("publishedAt", event.target.value)} disabled={viewing} required />
-            </label>
-            <label className="grid gap-1">
-              <span className="font-semibold text-heading">Date d'effet</span>
-              <input className={fieldClass} type="date" value={form.effectiveOn} onChange={(event) => set("effectiveOn", event.target.value)} disabled={viewing} />
-            </label>
-            <label className="grid gap-1 sm:col-span-2">
               <span className="font-semibold text-heading">Fin d'affichage</span>
               <input className={fieldClass} type="date" value={form.displayUntil} onChange={(event) => set("displayUntil", event.target.value)} disabled={viewing} />
             </label>
           </div>
-          <p className="mt-2 text-muted">Les heures sont celles de Kinshasa. La fin d'affichage, si elle est indiquée, est le dernier jour visible.</p>
+          <label className="mt-3 flex min-h-11 items-center gap-3">
+            <input type="checkbox" checked={form.important} onChange={(event) => set("important", event.target.checked)} disabled={viewing} />
+            <span className="font-semibold text-heading">Important</span>
+          </label>
+          <p className="mt-2 text-muted">La date de publication est enregistrée automatiquement. La fin d'affichage, si elle est indiquée, est le dernier jour visible.</p>
           <label className="mt-4 grid gap-1">
             <span className="font-semibold text-heading">Texte *</span>
             <textarea className="min-h-56 w-full rounded-control border border-line px-3 py-2" value={form.body} onChange={(event) => set("body", event.target.value)} disabled={viewing} required />

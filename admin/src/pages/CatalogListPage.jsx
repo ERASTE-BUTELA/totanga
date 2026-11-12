@@ -12,6 +12,7 @@ export function CatalogListPage({
   noun,
   addLabel,
   addTo,
+  onAdd,
   placeholder,
   rows,
   columns,
@@ -111,13 +112,18 @@ export function CatalogListPage({
               {countLabel}
             </span>
           </h2>
-          {addTo ? (
+          {onAdd ? (
+            <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" onClick={onAdd}>
+              <Plus aria-hidden="true" size={18} />
+              {addLabel}
+            </button>
+          ) : addTo ? (
             <Link to={addTo} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
               <Plus aria-hidden="true" size={18} />
               {addLabel}
             </Link>
           ) : addLabel ? (
-            <button type="button" className="inline-flex items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+            <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
               <Plus aria-hidden="true" size={18} />
               {addLabel}
             </button>

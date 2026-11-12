@@ -1,12 +1,98 @@
-import { useMemo, useState } from "react"
-import { Bell, BookOpen, CalendarDays, Check, Mail, Megaphone, Search, Settings, Shield, Users } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "react-router"
+import { Bell, BookOpen, CalendarDays, Check, Inbox, Mail, Megaphone, Search, Settings, Shield, Users } from "lucide-react"
+import { getAlertsUnread, setUnreadNotifications, subscribeAlerts } from "../lib/alertsStore.js"
+import { canOpen } from "../nav/entries.js"
+import { useSession } from "../session/SessionContext.jsx"
 import { PreferenceSwitch, readPreferences, savePreferences } from "./accountPreferences.jsx"
+import { VisitorMessagesPanel } from "./MessagesPage.jsx"
 
 const fieldClass = "w-full rounded-control border border-line bg-white px-3"
 
 const ITEMS = []
 
 export function NotificationsPage() {
+  const session = useSession()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const canMessages = canOpen(
+    session.account?.permissions ?? [],
+    "visitor_messages.view_visitormessage",
+    session.account?.role,
+  )
+  const requested = searchParams.get("onglet") === "messages" ? "messages" : "notifications"
+  const section = requested === "messages" && canMessages ? "messages" : "notifications"
+  const [alertCounts, setAlertCounts] = useState(() => getAlertsUnread())
+
+  useEffect(() => subscribeAlerts(setAlertCounts), [])
+
+  function setSection(next) {
+    if (next === "messages") {
+      setSearchParams({ onglet: "messages" }, { replace: true })
+      return
+    }
+    setSearchParams({}, { replace: true })
+  }
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex flex-wrap gap-2">
+        <SectionTab
+          icon={Bell}
+          label="Notifications"
+          count={alertCounts.notifications}
+          selected={section === "notifications"}
+          onClick={() => setSection("notifications")}
+        />
+        {canMessages ? (
+          <SectionTab
+            icon={Inbox}
+            label="Messages"
+            count={alertCounts.messages}
+            selected={section === "messages"}
+            onClick={() => setSection("messages")}
+          />
+        ) : null}
+      </div>
+      {section === "messages" ? (
+        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <h2 className="flex items-center gap-2 text-section text-heading">
+            <Inbox aria-hidden="true" className="text-violet" size={22} />
+            Messages des visiteurs
+          </h2>
+          <p className="mt-1 text-muted">Demandes envoyées depuis le site public.</p>
+          <div className="mt-4">
+            <VisitorMessagesPanel />
+          </div>
+        </article>
+      ) : (
+        <NotificationsPanel />
+      )}
+    </div>
+  )
+}
+
+function SectionTab({ icon: Icon, label, count = 0, selected, onClick }) {
+  const unread = Number(count) || 0
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      aria-label={unread > 0 ? `${label}, ${unread} non lu${unread > 1 ? "s" : ""}` : label}
+      className={`relative inline-flex min-h-11 items-center gap-2 rounded-control px-4 font-semibold ${selected ? "bg-violet text-white" : "bg-lavender text-violet"}`}
+      onClick={onClick}
+    >
+      <Icon aria-hidden="true" size={18} />
+      {label}
+      {unread > 0 ? (
+        <span className="alerts-badge absolute -top-2 -right-2 min-w-5 rounded-full bg-unavailable px-1 text-center text-meta font-bold text-white">
+          {unread > 99 ? "99+" : unread}
+        </span>
+      ) : null}
+    </button>
+  )
+}
+
+function NotificationsPanel() {
   const [items, setItems] = useState(ITEMS)
   const [filter, setFilter] = useState("toutes")
   const [category, setCategory] = useState("")
@@ -32,8 +118,16 @@ export function NotificationsPage() {
   const unread = items.filter((item) => !item.read).length
   const system = items.filter((item) => item.kind === "systeme").length
 
+  useEffect(() => {
+    setUnreadNotifications(unread)
+  }, [unread])
+
   function markAll() {
     setItems((current) => current.map((item) => ({ ...item, read: true })))
+  }
+
+  function openItem(id) {
+    setItems((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)))
   }
 
   const tabs = [
@@ -50,7 +144,12 @@ export function NotificationsPage() {
             <Bell aria-hidden="true" className="text-violet" size={22} />
             Centre de notifications
           </h2>
-          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line px-3 font-semibold text-violet" onClick={markAll} disabled={unread === 0}>
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line px-3 font-semibold text-violet"
+            onClick={markAll}
+            disabled={unread === 0}
+          >
             <Check aria-hidden="true" size={18} />
             Marquer tout comme lu
           </button>
@@ -77,7 +176,12 @@ export function NotificationsPage() {
           <label className="relative min-w-60 flex-1">
             <span className="sr-only">Rechercher une notification</span>
             <Search aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
-            <input className={`${fieldClass} pl-10`} value={query} placeholder="Rechercher une notification…" onChange={(event) => setQuery(event.target.value)} />
+            <input
+              className={`${fieldClass} pl-10`}
+              value={query}
+              placeholder="Rechercher une notification…"
+              onChange={(event) => setQuery(event.target.value)}
+            />
           </label>
           <label className="min-w-52">
             <span className="sr-only">Catégorie</span>
@@ -96,9 +200,20 @@ export function NotificationsPage() {
         ) : (
           <ul className="mt-4 grid gap-2">
             {visible.map((item) => (
-              <li key={item.id} className="rounded-control border border-line px-4 py-3">
-                <p className="font-semibold text-heading">{item.title}</p>
-                <p className="text-muted">{item.text}</p>
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={`w-full rounded-control border px-4 py-3 text-left ${item.read ? "border-line bg-white" : "border-violet/40 bg-lavender/40"}`}
+                  onClick={() => openItem(item.id)}
+                >
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-heading">{item.title}</span>
+                    {!item.read ? (
+                      <span className="rounded-full bg-violet px-2 py-0.5 text-meta font-semibold text-white">Non lu</span>
+                    ) : null}
+                  </span>
+                  <span className="mt-1 block text-muted">{item.text}</span>
+                </button>
               </li>
             ))}
           </ul>

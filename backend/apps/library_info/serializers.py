@@ -29,6 +29,8 @@ def library_payload(library, *, staff=False):
         "facebook_url": library.facebook_url or "",
         "whatsapp_url": library.whatsapp_url or "",
         "maps_url": library.maps_url or "",
+        "latitude": float(library.latitude) if library.latitude is not None else None,
+        "longitude": float(library.longitude) if library.longitude is not None else None,
         "about": library.about,
         "logo": _media(library.logo.file) if library.logo_id else "",
         # Le favicon du site suit toujours le logo.
