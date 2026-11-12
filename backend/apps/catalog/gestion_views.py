@@ -29,6 +29,7 @@ from .models import (
     Copy,
     CopyStatus,
     Keyword,
+    Publisher,
     RegisterRow,
     StoredImage,
     normalize_isbn,
@@ -176,7 +177,16 @@ def _book_detail(book):
             "summary": book.summary,
             "author_ids": [author.pk for author in book.authors.all()],
             "author_choices": [{"id": author.pk, "name": author.name} for author in book.authors.all()],
-            "publisher": book.publisher,
+            "publisher": book.publisher.name if book.publisher_id else "",
+            "publisher_id": book.publisher_id,
+            "publisher_choice": (
+                {"id": book.publisher.pk, "name": book.publisher.name} if book.publisher_id else None
+            ),
+            "category_choice": {
+                "id": book.category.pk,
+                "name": book.category.name,
+                "parent_name": book.category.parent.name if book.category.parent_id else "",
+            },
             "language": book.language,
             "pages": book.page_count or "",
             "keywords": [item.label for item in book.keywords.all()],
@@ -201,6 +211,35 @@ def _author_payload(author, brief=False):
         "photo": _media(author.photo),
         "books": books,
     }
+
+
+def _publisher_payload(publisher, brief=False):
+    notes = publisher.notes or ""
+    if brief and len(notes) > 180:
+        notes = f"{notes[:177]}…"
+    books = publisher.__dict__.get("book_count")
+    if books is None:
+        books = publisher.books.count()
+    return {
+        "id": publisher.pk,
+        "name": publisher.name,
+        "notes": notes,
+        "books": books,
+    }
+
+
+def _publisher_choice(data, book=None):
+    if "publisher_id" not in data and "publisher" not in data:
+        return (book.publisher if book is not None else None), ""
+    raw = data.get("publisher_id", data.get("publisher"))
+    if raw in (None, "", "null"):
+        return None, ""
+    if isinstance(raw, str) and not str(raw).isdigit():
+        return None, "L'éditeur indiqué n'existe pas."
+    publisher = Publisher.objects.filter(pk=raw).first()
+    if publisher is None:
+        return None, "L'éditeur indiqué n'existe pas."
+    return publisher, ""
 
 
 def _parent_choice(data, category=None):
@@ -326,7 +365,10 @@ def _apply_book(book, data, cover, *, creating, user=None):
     book.publication_year = year_number
     book.summary = summary
     book.language = language or BookLanguage.FRENCH
-    book.publisher = str(data.get("publisher", "")).strip()[:200]
+    publisher, publisher_error = _publisher_choice(data, None if creating else book)
+    if publisher_error:
+        return publisher_error
+    book.publisher = publisher
     book.isbn = normalize_isbn(data.get("isbn"))
     book.page_count = page_count
     book.state = state
@@ -468,6 +510,106 @@ class AuthorDetailView(APIView):
         return Response(status=204)
 
 
+class PublisherListView(APIView):
+    authentication_classes = [CsrfEnforcedAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        denied = _needs(request, "catalog.view_publisher")
+        if denied:
+            return denied
+        publishers = _named_rows(request, Publisher.objects.all(), "notes")
+        if not _wants_page(request):
+            counted = publishers.annotate(book_count=Count("books", distinct=True))
+            return Response([_publisher_payload(item, brief=True) for item in counted])
+        total = publishers.count()
+        start, end, number, pages = _bounds(request, total)
+        page = publishers.annotate(book_count=Count("books", distinct=True))[start:end]
+        return _page_payload(
+            [_publisher_payload(item, brief=True) for item in page],
+            total,
+            number,
+            pages,
+            _publisher_stats(),
+        )
+
+    def post(self, request):
+        denied = _needs(request, "catalog.add_publisher")
+        if denied:
+            return denied
+        name = str(request.data.get("name", "")).strip()
+        if not name:
+            return _fail("Le nom est obligatoire.")
+        if Publisher.objects.filter(name__iexact=name).exists():
+            return _fail("Cet éditeur existe déjà.")
+        publisher = Publisher(name=name[:200], notes=str(request.data.get("notes", "")).strip())
+        publisher.save()
+        record_staff_action(
+            actor=request.user,
+            action="editeur_ajout",
+            target_type="catalog.Publisher",
+            target_id=publisher.pk,
+        )
+        return Response(_publisher_payload(publisher), status=201)
+
+
+class PublisherDetailView(APIView):
+    authentication_classes = [CsrfEnforcedAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        denied = _needs(request, "catalog.view_publisher")
+        if denied:
+            return denied
+        publisher = Publisher.objects.filter(pk=pk).first()
+        if publisher is None:
+            return _fail("Cet éditeur n'existe pas.", 404)
+        return Response(_publisher_payload(publisher))
+
+    def patch(self, request, pk):
+        denied = _needs(request, "catalog.change_publisher")
+        if denied:
+            return denied
+        publisher = Publisher.objects.filter(pk=pk).first()
+        if publisher is None:
+            return _fail("Cet éditeur n'existe pas.", 404)
+        name = str(request.data.get("name", publisher.name)).strip()
+        if not name:
+            return _fail("Le nom est obligatoire.")
+        if Publisher.objects.filter(name__iexact=name).exclude(pk=publisher.pk).exists():
+            return _fail("Cet éditeur existe déjà.")
+        publisher.name = name[:200]
+        if "notes" in request.data:
+            publisher.notes = str(request.data.get("notes", "")).strip()
+        publisher.save()
+        record_staff_action(
+            actor=request.user,
+            action="editeur_modification",
+            target_type="catalog.Publisher",
+            target_id=publisher.pk,
+        )
+        return Response(_publisher_payload(publisher))
+
+    def delete(self, request, pk):
+        denied = _needs(request, "catalog.delete_publisher")
+        if denied:
+            return denied
+        publisher = Publisher.objects.filter(pk=pk).first()
+        if publisher is None:
+            return _fail("Cet éditeur n'existe pas.", 404)
+        if publisher.books.exists():
+            return _fail("Cet éditeur est lié à des livres.", 409)
+        publisher_id = publisher.pk
+        publisher.delete()
+        record_staff_action(
+            actor=request.user,
+            action="editeur_suppression",
+            target_type="catalog.Publisher",
+            target_id=publisher_id,
+        )
+        return Response(status=204)
+
+
 class CategoryListView(APIView):
     authentication_classes = [CsrfEnforcedAuthentication]
     permission_classes = [IsAuthenticated]
@@ -588,10 +730,11 @@ def _page_payload(results, total, page, pages, stats, extra=None):
 
 def _named_rows(request, queryset, text_field, parent=False):
     query = str(request.GET.get("q", "")).strip()
-    if query:
-        lookup = Q(name__icontains=query) | Q(**{f"{text_field}__icontains": query})
+    tokens = [part for part in query.split() if part]
+    for token in tokens:
+        lookup = Q(name__icontains=token) | Q(**{f"{text_field}__icontains": token})
         if parent:
-            lookup |= Q(parent__name__icontains=query)
+            lookup |= Q(parent__name__icontains=token)
         queryset = queryset.filter(lookup)
     order = "-name" if request.GET.get("tri") == "za" else "name"
     return queryset.order_by(order, "pk")
@@ -627,6 +770,17 @@ def _author_stats():
         "with_books": with_books,
         "without_books": total - with_books,
         "linked": Book.authors.through.objects.count(),
+    }
+
+
+def _publisher_stats():
+    total = Publisher.objects.count()
+    with_books = Publisher.objects.filter(books__isnull=False).distinct().count()
+    return {
+        "total": total,
+        "with_books": with_books,
+        "without_books": total - with_books,
+        "linked": Book.objects.exclude(publisher_id=None).count(),
     }
 
 
@@ -710,7 +864,7 @@ class BookListView(APIView):
         total = books.count()
         start, end, number, pages = _bounds(request, total)
         page = (
-            books.select_related("category", "category__parent", "cover_image")
+            books.select_related("category", "category__parent", "cover_image", "publisher")
             .prefetch_related("authors")
             .with_copy_counts()[start:end]
         )
@@ -756,7 +910,7 @@ class BookDetailView(APIView):
             return denied
         book = (
             Book.objects.filter(pk=pk)
-            .select_related("category", "category__parent", "cover_image")
+            .select_related("category", "category__parent", "cover_image", "publisher")
             .prefetch_related("authors", "copies", "copies__register_row", "keywords")
             .first()
         )

@@ -20,6 +20,10 @@ LIBRARIAN_PERMISSIONS = (
     ("catalog", "add_author"),
     ("catalog", "change_author"),
     ("catalog", "delete_author"),
+    ("catalog", "view_publisher"),
+    ("catalog", "add_publisher"),
+    ("catalog", "change_publisher"),
+    ("catalog", "delete_publisher"),
     ("catalog", "view_category"),
     ("catalog", "add_category"),
     ("catalog", "change_category"),
@@ -50,6 +54,8 @@ ADMIN_PERMISSIONS = (
     ("accounts", "change_user"),
     ("visitor_messages", "view_visitormessage"),
     ("accounts", "view_staffaction"),
+    ("library_info", "view_library"),
+    ("library_info", "change_library"),
 )
 
 

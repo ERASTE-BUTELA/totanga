@@ -300,7 +300,8 @@ class StaffMessageListView(APIView):
                 {
                     "id": message.pk,
                     "name": message.name,
-                    "email": message.email,
+                    "email": message.email or "",
+                    "whatsapp": message.whatsapp or "",
                     "subject": message.get_subject_display(),
                     "body": message.body,
                     "created_at": message.created_at.isoformat(),

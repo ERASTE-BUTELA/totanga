@@ -1,5 +1,9 @@
-import { useId, useState } from "react"
-import { Bell, BookOpen, CalendarDays, Check, Database, Globe, ImagePlus, Info, Library, Mail, MapPin, Phone, RotateCcw, Settings, Shield, Wrench } from "lucide-react"
+import { useEffect, useId, useState } from "react"
+import { Bell, BookOpen, CalendarDays, Check, Database, Globe, ImagePlus, Library, Mail, MapPin, Pencil, Phone, Settings, Shield, X } from "lucide-react"
+import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
+import { setSiteFavicon } from "../lib/favicon.js"
+import { busyPhase } from "../lib/saveAndGo.js"
+import { getLibrarySettings, mapLibrarySettings, saveLibrarySettings } from "../api/settings.js"
 import { RichTextEditor } from "./RichTextEditor.jsx"
 
 const TABS = [
@@ -12,18 +16,21 @@ const TABS = [
   { id: "backup", label: "Sauvegarde", icon: Database },
 ]
 
-const ABOUT = "<p>La Bibliothèque Totanga informe le public : catalogue, annonces, publications et événements. Les ouvrages se consultent sur place.</p>"
 const MAX_IMAGE = 2 * 1024 * 1024
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "w-full rounded-control border border-line bg-white px-3 disabled:cursor-default disabled:bg-canvas disabled:text-heading"
+const DEFAULT_LOGO = "/images/logo.png"
 
-const INITIAL = {
-  name: "Bibliothèque Totanga",
-  slogan: "Centre de lecture, de savoir et de culture",
-  address: "12, avenue des Exemples, Kinshasa",
-  phone: "+243 800 000 000",
-  email: "contact@exemple.totanga.test",
-  website: "",
-  about: ABOUT,
+const EMPTY = {
+  name: "",
+  slogan: "",
+  address: "",
+  city: "Kinshasa",
+  phone: "",
+  email: "",
+  facebookUrl: "",
+  whatsappUrl: "",
+  mapsUrl: "",
+  about: "",
   language: "Français",
   theme: "Violet (Totanga)",
   darkMode: false,
@@ -31,18 +38,25 @@ const INITIAL = {
   dateFormat: "31 déc. 2026",
   timeFormat: "24 heures (14:30)",
   pageSize: "10",
-  maintenance: false,
 }
 
-function Switch({ checked, label, onClick }) {
+function Switch({ checked, label, onClick, disabled }) {
   return (
-    <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`relative h-8 w-14 shrink-0 rounded-full ${checked ? "bg-violet" : "bg-line"}`} onClick={onClick}>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      className={`relative h-8 w-14 shrink-0 rounded-full disabled:cursor-default disabled:opacity-70 ${checked ? "bg-violet" : "bg-line"}`}
+      onClick={onClick}
+    >
       <span className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white ${checked ? "translate-x-6" : ""}`} />
     </button>
   )
 }
 
-function readImage(file, setError, setPreview) {
+function readImage(file, setError, setPreview, setFile) {
   if (!file) return
   const allowed = ["image/jpeg", "image/png", "image/webp"]
   if (!allowed.includes(file.type)) {
@@ -54,65 +68,199 @@ function readImage(file, setError, setPreview) {
     return
   }
   setError("")
+  setFile(file)
   setPreview((current) => {
     if (current.startsWith("blob:")) URL.revokeObjectURL(current)
     return URL.createObjectURL(file)
   })
 }
 
+function applyMapped(mapped, setters) {
+  const { setForm, setLogo, setLogoFile, setClearLogo, setLogoError, setVersion } = setters
+  setForm({
+    name: mapped.name,
+    slogan: mapped.slogan,
+    address: mapped.address,
+    city: mapped.city,
+    phone: mapped.phone,
+    email: mapped.email,
+    facebookUrl: mapped.facebookUrl,
+    whatsappUrl: mapped.whatsappUrl,
+    mapsUrl: mapped.mapsUrl,
+    about: mapped.about,
+    language: mapped.language,
+    theme: mapped.theme,
+    darkMode: mapped.darkMode,
+    timezone: mapped.timezone,
+    dateFormat: mapped.dateFormat,
+    timeFormat: mapped.timeFormat,
+    pageSize: mapped.pageSize,
+  })
+  setLogo(mapped.logo)
+  setLogoFile(null)
+  setClearLogo(false)
+  setLogoError("")
+  setVersion((current) => current + 1)
+}
+
 export function SettingsPage() {
   const logoInput = useId()
-  const iconInput = useId()
   const [tab, setTab] = useState("general")
-  const [form, setForm] = useState(INITIAL)
-  const [logo, setLogo] = useState("/images/logo.png")
-  const [icon, setIcon] = useState("/images/logo.png")
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState(EMPTY)
+  const [logo, setLogo] = useState(DEFAULT_LOGO)
+  const [logoFile, setLogoFile] = useState(null)
+  const [clearLogo, setClearLogo] = useState(false)
   const [logoError, setLogoError] = useState("")
-  const [iconError, setIconError] = useState("")
   const [notice, setNotice] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [phase, setPhase] = useState(null)
   const [version, setVersion] = useState(0)
+  const busy = busyPhase(phase)
+  const locked = !editing || busy
+
+  const setters = {
+    setForm,
+    setLogo,
+    setLogoFile,
+    setClearLogo,
+    setLogoError,
+    setVersion,
+  }
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    getLibrarySettings().then((result) => {
+      if (!active) return
+      if (!result.ok) {
+        setNotice(result.error)
+        setLoading(false)
+        return
+      }
+      applyMapped(mapLibrarySettings(result.data), setters)
+      setNotice("")
+      setLoading(false)
+    })
+    return () => {
+      active = false
+    }
+    // Chargement initial uniquement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function set(key, value) {
+    if (locked) return
     setForm((current) => ({ ...current, [key]: value }))
     setNotice("")
   }
 
-  function reset() {
-    setForm(INITIAL)
-    setLogo("/images/logo.png")
-    setIcon("/images/logo.png")
-    setLogoError("")
-    setIconError("")
+  async function cancelEdit() {
     setNotice("")
-    setVersion((current) => current + 1)
+    setLoading(true)
+    const result = await getLibrarySettings()
+    if (!result.ok) {
+      setNotice(result.error)
+      setLoading(false)
+      return
+    }
+    applyMapped(mapLibrarySettings(result.data), setters)
+    setEditing(false)
+    setLoading(false)
   }
 
-  function save(event) {
+  async function save(event) {
     event.preventDefault()
-    if (form.website && !/^https?:\/\//i.test(form.website.trim())) {
-      setNotice("Le site web doit commencer par http:// ou https://.")
+    if (!editing || busy) return
+    if (form.facebookUrl && !/^https?:\/\//i.test(form.facebookUrl.trim())) {
+      setNotice("Le lien Facebook doit commencer par http:// ou https://.")
+      return
+    }
+    if (form.mapsUrl && !/^https?:\/\//i.test(form.mapsUrl.trim())) {
+      setNotice("Le lien Google Maps doit commencer par http:// ou https://.")
       return
     }
     if (!form.name.trim()) {
       setNotice("Le nom de la bibliothèque est obligatoire.")
       return
     }
-    setNotice("L'affichage est mis à jour sur cet écran. Le site public garde les exemples fictifs.")
+    if (!form.email.trim()) {
+      setNotice("L'adresse électronique de contact est obligatoire.")
+      return
+    }
+    setPhase("saving")
+    setNotice("")
+    const body = new FormData()
+    body.set("name", form.name.trim())
+    body.set("slogan", form.slogan.trim())
+    body.set("address", form.address.trim())
+    body.set("city", form.city.trim() || "Kinshasa")
+    body.set("phone", form.phone.trim())
+    body.set("email", form.email.trim())
+    body.set("facebook_url", form.facebookUrl.trim())
+    body.set("whatsapp_url", form.whatsappUrl.trim())
+    body.set("maps_url", form.mapsUrl.trim())
+    body.set("about", form.about)
+    body.set("language", form.language)
+    body.set("theme", form.theme)
+    body.set("dark_mode", form.darkMode ? "true" : "false")
+    body.set("timezone", form.timezone)
+    body.set("date_format", form.dateFormat)
+    body.set("time_format", form.timeFormat)
+    body.set("page_size", form.pageSize)
+    if (clearLogo) body.set("clear_logo", "true")
+    if (logoFile) body.set("logo", logoFile)
+    const result = await saveLibrarySettings(body)
+    if (!result.ok) {
+      setPhase(null)
+      setNotice(result.error)
+      return
+    }
+    const mapped = mapLibrarySettings(result.data)
+    applyMapped(mapped, setters)
+    setSiteFavicon(mapped.logo)
+    setPhase("done")
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 750)
+    })
+    setPhase(null)
+    setEditing(false)
+    setNotice("Les paramètres généraux ont été enregistrés.")
+  }
+
+  if (loading) {
+    return <p className="text-muted">Chargement des paramètres…</p>
   }
 
   return (
     <form className="grid gap-4" onSubmit={save}>
-      <div className="flex gap-2 overflow-x-auto">
-        {TABS.map((item) => {
-          const Icon = item.icon
-          const active = tab === item.id
-          return (
-            <button key={item.id} type="button" className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-control px-4 font-semibold ${active ? "bg-violet text-white" : "bg-white text-violet"}`} onClick={() => setTab(item.id)}>
-              <Icon aria-hidden="true" size={18} />
-              {item.label}
-            </button>
-          )
-        })}
+      {phase ? <FormSaveOverlay phase={phase} /> : null}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2 overflow-x-auto">
+          {TABS.map((item) => {
+            const Icon = item.icon
+            const active = tab === item.id
+            return (
+              <button key={item.id} type="button" className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-control px-4 font-semibold ${active ? "bg-violet text-white" : "bg-white text-violet"}`} onClick={() => setTab(item.id)}>
+                <Icon aria-hidden="true" size={18} />
+                {item.label}
+              </button>
+            )
+          })}
+        </div>
+        {tab === "general" && !editing ? (
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white"
+            onClick={() => {
+              setNotice("")
+              setEditing(true)
+            }}
+          >
+            <Pencil aria-hidden="true" size={18} />
+            Modifier
+          </button>
+        ) : null}
       </div>
       {tab === "general" ? (
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
@@ -125,76 +273,88 @@ export function SettingsPage() {
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1">
                 <span className="font-semibold text-heading">Nom de la bibliothèque *</span>
-                <input className={fieldClass} value={form.name} onChange={(event) => set("name", event.target.value)} required />
+                <input className={fieldClass} value={form.name} onChange={(event) => set("name", event.target.value)} required disabled={locked} />
               </label>
               <label className="grid gap-1">
                 <span className="font-semibold text-heading">Slogan</span>
-                <input className={fieldClass} value={form.slogan} onChange={(event) => set("slogan", event.target.value)} />
+                <input className={fieldClass} value={form.slogan} onChange={(event) => set("slogan", event.target.value)} disabled={locked} />
               </label>
               <label className="grid gap-1">
                 <span className="font-semibold text-heading">Adresse</span>
                 <span className="relative">
                   <MapPin aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-violet" />
-                  <input className={`${fieldClass} pl-10`} value={form.address} onChange={(event) => set("address", event.target.value)} />
+                  <input className={`${fieldClass} pl-10`} value={form.address} onChange={(event) => set("address", event.target.value)} disabled={locked} />
                 </span>
               </label>
               <label className="grid gap-1">
                 <span className="font-semibold text-heading">Téléphone</span>
                 <span className="relative">
                   <Phone aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-violet" />
-                  <input className={`${fieldClass} pl-10`} value={form.phone} onChange={(event) => set("phone", event.target.value)} />
+                  <input className={`${fieldClass} pl-10`} value={form.phone} onChange={(event) => set("phone", event.target.value)} disabled={locked} />
                 </span>
               </label>
               <label className="grid gap-1">
                 <span className="font-semibold text-heading">Email de contact</span>
                 <span className="relative">
                   <Mail aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-violet" />
-                  <input className={`${fieldClass} pl-10`} type="email" value={form.email} onChange={(event) => set("email", event.target.value)} />
+                  <input className={`${fieldClass} pl-10`} type="email" value={form.email} onChange={(event) => set("email", event.target.value)} disabled={locked} />
                 </span>
               </label>
               <label className="grid gap-1">
-                <span className="font-semibold text-heading">Site web (facultatif)</span>
+                <span className="font-semibold text-heading">Facebook (facultatif)</span>
+                <input className={fieldClass} value={form.facebookUrl} onChange={(event) => set("facebookUrl", event.target.value)} placeholder="https://facebook.com/…" disabled={locked} />
+              </label>
+              <label className="grid gap-1">
+                <span className="font-semibold text-heading">WhatsApp (facultatif)</span>
+                <input className={fieldClass} value={form.whatsappUrl} onChange={(event) => set("whatsappUrl", event.target.value)} placeholder="+243800000000 ou https://wa.me/…" disabled={locked} />
+              </label>
+              <label className="grid gap-1 sm:col-span-2">
+                <span className="font-semibold text-heading">Localisation Google Maps (facultatif)</span>
                 <span className="relative">
-                  <Globe aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-violet" />
-                  <input className={`${fieldClass} pl-10`} value={form.website} onChange={(event) => set("website", event.target.value)} placeholder="https://" />
+                  <MapPin aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-violet" />
+                  <input
+                    className={`${fieldClass} pl-10`}
+                    value={form.mapsUrl}
+                    onChange={(event) => set("mapsUrl", event.target.value)}
+                    placeholder="https://maps.google.com/… ou https://maps.app.goo.gl/…"
+                    disabled={locked}
+                  />
                 </span>
+                <span className="text-muted">Collez le lien de partage Google Maps. Il s'affiche sur le site public (sans carte intégrée).</span>
               </label>
             </div>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="font-semibold text-heading">Logo de la bibliothèque</p>
-                <img src={logo} alt="Logo de la Bibliothèque Totanga" className="mt-2 h-16 w-auto rounded-control bg-white" />
+            <div className="mt-4">
+              <p className="font-semibold text-heading">Logo de la bibliothèque</p>
+              <p className="text-muted">Ce logo sert aussi d'icône du site (favicon).</p>
+              <img src={logo} alt="Logo de la Bibliothèque Totanga" className="mt-2 h-16 w-auto rounded-control bg-white" />
+              {editing ? (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <input id={logoInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => readImage(event.target.files?.[0], setLogoError, setLogo)} />
+                  <input id={logoInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => {
+                    setClearLogo(false)
+                    readImage(event.target.files?.[0], setLogoError, setLogo, setLogoFile)
+                    event.target.value = ""
+                  }} />
                   <label htmlFor={logoInput} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-line px-3 font-semibold text-violet">
                     <ImagePlus aria-hidden="true" size={18} />
                     Changer le logo
                   </label>
-                  <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable" onClick={() => setLogo("/images/logo.png")}>
+                  <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable" disabled={busy} onClick={() => {
+                    setClearLogo(true)
+                    setLogoFile(null)
+                    setLogo(DEFAULT_LOGO)
+                    setLogoError("")
+                  }}>
                     Supprimer
                   </button>
                 </div>
-                <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 2 Mo.</p>
-                {logoError ? <p role="alert" className="mt-2 text-unavailable">{logoError}</p> : null}
-              </div>
-              <div>
-                <p className="font-semibold text-heading">Favicon (icône du site)</p>
-                <img src={icon} alt="" className="mt-2 h-16 w-16 rounded-control bg-violet-dark object-contain p-2" />
-                <div className="mt-3">
-                  <input id={iconInput} className="sr-only" type="file" accept="image/png,image/webp" onChange={(event) => readImage(event.target.files?.[0], setIconError, setIcon)} />
-                  <label htmlFor={iconInput} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-line px-3 font-semibold text-violet">
-                    <ImagePlus aria-hidden="true" size={18} />
-                    Changer
-                  </label>
-                </div>
-                <p className="mt-2 text-muted">Formats : PNG, WebP. Taille max. : 2 Mo.</p>
-                {iconError ? <p role="alert" className="mt-2 text-unavailable">{iconError}</p> : null}
-              </div>
+              ) : null}
+              {editing ? <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 2 Mo.</p> : null}
+              {logoError ? <p role="alert" className="mt-2 text-unavailable">{logoError}</p> : null}
             </div>
             <div className="mt-4">
               <p className="font-semibold text-heading">À propos de la bibliothèque</p>
               <div className="mt-2">
-                <RichTextEditor key={version} label="À propos de la bibliothèque" value={form.about} onChange={(about) => set("about", about)} />
+                <RichTextEditor key={`${version}-${editing ? "edit" : "view"}`} label="À propos de la bibliothèque" value={form.about} onChange={(about) => set("about", about)} disabled={locked} />
               </div>
             </div>
           </article>
@@ -206,19 +366,19 @@ export function SettingsPage() {
               </h2>
               <label className="mt-4 grid gap-1">
                 <span className="font-semibold text-heading">Langue par défaut</span>
-                <select className={fieldClass} value={form.language} onChange={(event) => set("language", event.target.value)}>
+                <select className={fieldClass} value={form.language} onChange={(event) => set("language", event.target.value)} disabled={locked}>
                   <option>Français</option>
                 </select>
               </label>
               <label className="mt-3 grid gap-1">
                 <span className="font-semibold text-heading">Thème de l'interface</span>
-                <select className={fieldClass} value={form.theme} onChange={(event) => set("theme", event.target.value)}>
+                <select className={fieldClass} value={form.theme} onChange={(event) => set("theme", event.target.value)} disabled={locked}>
                   <option>Violet (Totanga)</option>
                 </select>
               </label>
               <div className="mt-4 flex items-center justify-between gap-3">
                 <p className="font-semibold text-heading">Mode clair / sombre</p>
-                <Switch checked={form.darkMode} label="Mode clair ou sombre" onClick={() => set("darkMode", !form.darkMode)} />
+                <Switch checked={form.darkMode} label="Mode clair ou sombre" disabled={locked} onClick={() => set("darkMode", !form.darkMode)} />
               </div>
             </article>
             <article className="rounded-panel border border-line bg-white p-5 shadow-card">
@@ -226,50 +386,33 @@ export function SettingsPage() {
               <div className="mt-4 grid gap-3">
                 <label className="grid gap-1">
                   <span className="font-semibold text-heading">Fuseau horaire</span>
-                  <select className={fieldClass} value={form.timezone} onChange={(event) => set("timezone", event.target.value)}>
+                  <select className={fieldClass} value={form.timezone} onChange={(event) => set("timezone", event.target.value)} disabled={locked}>
                     <option>(UTC+01:00) Kinshasa</option>
                   </select>
                 </label>
                 <label className="grid gap-1">
                   <span className="font-semibold text-heading">Format de date</span>
-                  <select className={fieldClass} value={form.dateFormat} onChange={(event) => set("dateFormat", event.target.value)}>
+                  <select className={fieldClass} value={form.dateFormat} onChange={(event) => set("dateFormat", event.target.value)} disabled={locked}>
                     <option>31 déc. 2026</option>
                     <option>31/12/2026</option>
                   </select>
                 </label>
                 <label className="grid gap-1">
                   <span className="font-semibold text-heading">Format d'heure</span>
-                  <select className={fieldClass} value={form.timeFormat} onChange={(event) => set("timeFormat", event.target.value)}>
+                  <select className={fieldClass} value={form.timeFormat} onChange={(event) => set("timeFormat", event.target.value)} disabled={locked}>
                     <option>24 heures (14:30)</option>
                     <option>12 heures (02:30 PM)</option>
                   </select>
                 </label>
                 <label className="grid gap-1">
                   <span className="font-semibold text-heading">Nombre d'éléments par page</span>
-                  <select className={fieldClass} value={form.pageSize} onChange={(event) => set("pageSize", event.target.value)}>
+                  <select className={fieldClass} value={form.pageSize} onChange={(event) => set("pageSize", event.target.value)} disabled={locked}>
                     <option>10</option>
                     <option>25</option>
                     <option>50</option>
                   </select>
                 </label>
               </div>
-            </article>
-            <article className="rounded-panel border border-line bg-white p-5 shadow-card">
-              <h2 className="flex items-center gap-2 text-section text-heading">
-                <Wrench aria-hidden="true" className="text-violet" size={22} />
-                Maintenance
-              </h2>
-              <div className="mt-4 flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-heading">Mode maintenance</p>
-                  <p className="text-muted">Désactiver temporairement l'accès au site public.</p>
-                </div>
-                <Switch checked={form.maintenance} label="Mode maintenance" onClick={() => set("maintenance", !form.maintenance)} />
-              </div>
-              <p className="mt-4 flex gap-2 rounded-control bg-[#e7eefc] p-3 text-[#1d4ed8]">
-                <Info aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
-                Le site public n'est pas coupé depuis cet écran. Le personnel reste connecté à l'administration.
-              </p>
             </article>
           </div>
         </div>
@@ -279,17 +422,19 @@ export function SettingsPage() {
           <p className="mt-2 text-muted">Ces réglages se préparent. Les informations générales restent dans l'onglet Général.</p>
         </article>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-violet" onClick={reset}>
-          <RotateCcw aria-hidden="true" size={18} />
-          Réinitialiser
-        </button>
-        <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
-          <Check aria-hidden="true" size={18} />
-          Enregistrer les paramètres
-        </button>
-      </div>
-      {notice ? <p className={notice.startsWith("L'affichage") ? "text-muted" : "text-unavailable"} role={notice.startsWith("L'affichage") ? undefined : "alert"}>{notice}</p> : null}
+      {tab === "general" && editing ? (
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-heading" onClick={cancelEdit} disabled={busy}>
+            <X aria-hidden="true" size={18} />
+            Annuler
+          </button>
+          <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white disabled:opacity-60" disabled={busy}>
+            <Check aria-hidden="true" size={18} />
+            Enregistrer les paramètres
+          </button>
+        </div>
+      ) : null}
+      {notice ? <p className={notice.includes("enregistr") ? "text-muted" : "text-unavailable"} role={notice.includes("enregistr") ? undefined : "alert"}>{notice}</p> : null}
     </form>
   )
 }

@@ -13,7 +13,7 @@ const SUBJECTS = [
   { value: "autre", label: "Autre" },
 ]
 
-const EMPTY_FORM = { name: "", email: "", subject: "", body: "" }
+const EMPTY_FORM = { name: "", contactVia: "email", email: "", whatsapp: "", subject: "", body: "" }
 
 export function HomeContact() {
   const libraryState = useAsync(getLibraryInfo, [])
@@ -68,8 +68,20 @@ export function HomeContact() {
     event.preventDefault()
     setStatus("sending")
     setNotice("")
+    const payload = {
+      name: form.name,
+      subject: form.subject,
+      body: form.body,
+      email: form.contactVia === "email" ? form.email.trim() : "",
+      whatsapp: form.contactVia === "whatsapp" ? form.whatsapp.trim() : "",
+    }
+    if (!payload.email && !payload.whatsapp) {
+      setStatus("idle")
+      setNotice("Indiquez une adresse électronique ou un numéro WhatsApp.")
+      return
+    }
     try {
-      await sendVisitorMessage(form)
+      await sendVisitorMessage(payload)
       const items = await getVisitorMessages()
       setMessages(items)
       setForm(EMPTY_FORM)
@@ -136,7 +148,38 @@ export function HomeContact() {
             </h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <Field label="Nom complet" name="name" value={form.name} onChange={update} placeholder="Votre nom" required />
-              <Field label="Email" name="email" type="email" value={form.email} onChange={update} placeholder="votre@email.com" required autoComplete="email" />
+              <fieldset className="min-w-0 sm:col-span-2">
+                <legend className="mb-1.5 block text-meta font-bold text-heading">
+                  Vous joindre par <span className="text-violet">*</span>
+                </legend>
+                <div className="flex flex-wrap gap-4">
+                  <label className="inline-flex items-center gap-2 text-body text-heading">
+                    <input
+                      type="radio"
+                      name="contactVia"
+                      value="email"
+                      checked={form.contactVia === "email"}
+                      onChange={update}
+                    />
+                    Email
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-body text-heading">
+                    <input
+                      type="radio"
+                      name="contactVia"
+                      value="whatsapp"
+                      checked={form.contactVia === "whatsapp"}
+                      onChange={update}
+                    />
+                    WhatsApp
+                  </label>
+                </div>
+              </fieldset>
+              {form.contactVia === "email" ? (
+                <Field label="Email" name="email" type="email" value={form.email} onChange={update} placeholder="votre@email.com" required autoComplete="email" className="sm:col-span-2" />
+              ) : (
+                <Field label="Numéro WhatsApp" name="whatsapp" type="tel" value={form.whatsapp} onChange={update} placeholder="+243 800 000 000" required autoComplete="tel" className="sm:col-span-2" />
+              )}
               <label className="block min-w-0 sm:col-span-2">
                 <span className="mb-1.5 block text-meta font-bold text-heading">
                   Sujet <span className="text-violet">*</span>
@@ -166,7 +209,7 @@ export function HomeContact() {
                 />
               </label>
             </div>
-            <p className="mt-3 text-meta text-muted">Votre nom et votre message apparaîtront sur l'accueil. Votre adresse électronique reste réservée à la bibliothèque.</p>
+            <p className="mt-3 text-meta text-muted">Votre nom et votre message apparaîtront sur l'accueil. Votre email ou WhatsApp reste réservé à la bibliothèque.</p>
             {notice ? (
               <p className="mt-3 text-body text-heading" role="status">
                 {notice}
@@ -200,7 +243,10 @@ export function HomeContact() {
                   </Coordinate>
                 ) : null}
               </ul>
-              <MapCard place={[library.address, library.city].filter(Boolean).join(", ")} />
+              <MapCard
+                place={[library.address, library.city].filter(Boolean).join(", ")}
+                mapsUrl={library.mapsUrl}
+              />
               </>
             ) : (
               <p className="mt-5 text-body text-muted">Les coordonnées ne sont pas disponibles pour le moment.</p>
@@ -212,29 +258,29 @@ export function HomeContact() {
   )
 }
 
-function Field({ label, name, type = "text", ...props }) {
+function Field({ label, name, type = "text", className = "", ...props }) {
   return (
-    <label className="block min-w-0">
+    <label className={`block min-w-0 ${className}`}>
       <span className="mb-1.5 block text-meta font-bold text-heading">
         {label} <span className="text-violet">*</span>
       </span>
-      <input name={name} type={type} maxLength={name === "name" ? 80 : 254} className="w-full rounded-control border border-line bg-white px-3 text-body text-heading" {...props} />
+      <input name={name} type={type} maxLength={name === "name" ? 80 : name === "whatsapp" ? 40 : 254} className="w-full rounded-control border border-line bg-white px-3 text-body text-heading" {...props} />
     </label>
   )
 }
 
-function MapCard({ place }) {
-  if (!place) return null
-  const href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`
+function MapCard({ place, mapsUrl }) {
+  const href = mapsUrl || (place ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}` : "")
+  if (!href) return null
   return (
     <ExternalLink
       href={href}
-      label={`Ouvrir ${place} dans Google Maps`}
+      label={`Ouvrir ${place || "la bibliothèque"} dans Google Maps`}
       className="mt-6 flex min-h-36 flex-col items-center justify-center gap-2 rounded-2xl bg-lavender p-4 text-center"
     >
       <MapPin className="h-8 w-8 text-violet" aria-hidden="true" />
       <span className="text-body font-bold text-violet">Voir sur Google Maps</span>
-      <span className="text-meta text-heading">{place}</span>
+      {place ? <span className="text-meta text-heading">{place}</span> : null}
     </ExternalLink>
   )
 }

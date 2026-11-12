@@ -118,6 +118,21 @@ class Author(models.Model):
         return self.name
 
 
+class Publisher(models.Model):
+    """Maison d'édition. Remplie aussi depuis le répertoire Excel/CSV."""
+
+    name = models.CharField("nom", max_length=200)
+    notes = models.TextField("notes", blank=True)
+
+    class Meta:
+        verbose_name = "éditeur"
+        verbose_name_plural = "éditeurs"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
 class Category(AutoSlug):
     name = models.CharField("nom", max_length=120)
     parent = models.ForeignKey(
@@ -240,7 +255,14 @@ class Book(AutoSlug):
         choices=BookLanguage.choices,
         default=BookLanguage.FRENCH,
     )
-    publisher = models.CharField("éditeur", max_length=200, blank=True)
+    publisher = models.ForeignKey(
+        Publisher,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="books",
+        verbose_name="éditeur",
+    )
     isbn = models.CharField("ISBN", max_length=20, null=True, blank=True)
     page_count = models.PositiveIntegerField(
         "nombre de pages",

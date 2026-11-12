@@ -37,6 +37,7 @@ def main():
     call_command("sync_roles")
     call_command("create_admin")
     call_command("import_repertoire", si_vide=True)
+    call_command("sync_publishers")
     if not settings.DEBUG:
         call_command("collectstatic", interactive=False, verbosity=0)
 

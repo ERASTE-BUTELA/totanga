@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useListNotice } from "../lib/useListNotice.js"
 import { Archive, BookOpen, Layers, Library } from "lucide-react"
 import { archiveBook, listBooks } from "../api/catalog.js"
 import { bookNotices } from "./texts.js"
@@ -41,7 +42,7 @@ function figure(stats, key) {
 
 export function BooksPage() {
   const { data, error, onPageRequest, reload } = usePagedCatalog(loadBooks)
-  const [notice, setNotice] = useState("")
+  const [notice, setNotice] = useListNotice()
   const [actionError, setActionError] = useState("")
   const rows = data?.results || []
   const stats = data?.stats

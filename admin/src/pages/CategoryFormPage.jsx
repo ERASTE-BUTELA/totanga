@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import { ArrowLeft, Pencil, Save, Tag } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
 import { getCategory, listCategories, saveCategory } from "../api/catalog.js"
+import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
+import { busyPhase, saveAndGo } from "../lib/saveAndGo.js"
 
 const fieldClass = "w-full rounded-control border border-line bg-white px-3"
 
@@ -14,7 +16,9 @@ export function CategoryFormPage({ mode = "create" }) {
   const [classes, setClasses] = useState([])
   const [problems, setProblems] = useState([])
   const [ready, setReady] = useState(false)
+  const [phase, setPhase] = useState(null)
   const viewing = mode === "view"
+  const busy = busyPhase(phase)
 
   useEffect(() => {
     let gone = false
@@ -44,26 +48,35 @@ export function CategoryFormPage({ mode = "create" }) {
 
   async function save(event) {
     event.preventDefault()
+    if (busy) return
     if (!name.trim()) {
       setProblems(["Le nom est obligatoire."])
       return
     }
+    setPhase("saving")
     const result = await saveCategory(mode === "edit" ? categoryId : null, {
       name: name.trim(),
       description: description.trim(),
       parent_id: parentId || null,
     })
     if (!result.ok) {
+      setPhase(null)
       setProblems([result.error])
       return
     }
-    navigate("/catalogue/categories")
+    await saveAndGo({
+      setPhase,
+      navigate,
+      to: "/catalogue/categories",
+      notice: "La catégorie a été enregistrée.",
+    })
   }
 
   if (!ready) return <p>Chargement…</p>
 
   return (
     <form className="grid max-w-3xl gap-4" onSubmit={save}>
+      {phase ? <FormSaveOverlay phase={phase} /> : null}
       {problems.length > 0 ? (
         <div role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
           {problems.map((problem) => <p key={problem}>{problem}</p>)}
@@ -102,9 +115,9 @@ export function CategoryFormPage({ mode = "create" }) {
             Modifier
           </Link>
         ) : (
-          <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+          <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy}>
             <Save aria-hidden="true" size={18} />
-            Enregistrer
+            {busy ? "Enregistrement…" : "Enregistrer"}
           </button>
         )}
       </div>

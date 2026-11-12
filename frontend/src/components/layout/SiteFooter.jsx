@@ -14,9 +14,6 @@ const QUICK_LINKS = [
 const INFO_LINKS = [
   { to: "/a-propos#horaires-bibliotheque", label: "Horaires d'ouverture" },
   { to: "/reglement", label: "Règlement intérieur" },
-  { to: "/a-propos#services", label: "Services" },
-  { to: "/faq", label: "FAQ" },
-  { to: "/a-propos#contact-bibliotheque", label: "Nous contacter" },
 ]
 
 const LEGAL_LINKS = [
@@ -27,9 +24,7 @@ const LEGAL_LINKS = [
 
 const SOCIAL_ICONS = {
   Facebook: IconFacebook,
-  X: IconX,
-  Instagram: IconInstagram,
-  YouTube: IconYouTube,
+  WhatsApp: IconWhatsApp,
 }
 
 const linkClass = "inline-flex py-0.5 text-meta text-lavender hover:text-white focus-visible:outline-gold-bright"
@@ -170,28 +165,10 @@ function IconFacebook({ className }) {
   )
 }
 
-function IconX({ className }) {
+function IconWhatsApp({ className }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
-      <path d="M4 4h4.2l3.3 4.6L15.4 4H20l-6.1 7.2L20.3 20h-4.2l-3.6-5L8.4 20H4l6.4-7.6L4 4z" />
-    </svg>
-  )
-}
-
-function IconInstagram({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.4" cy="6.6" r="0.9" fill="currentColor" stroke="none" />
-    </svg>
-  )
-}
-
-function IconYouTube({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
-      <path d="M22 12.2s0-3.2-.4-4.6c-.2-.9-.9-1.6-1.8-1.8C18.2 5.4 12 5.4 12 5.4s-6.2 0-7.8.4c-.9.2-1.6.9-1.8 1.8C2 9 2 12.2 2 12.2s0 3.2.4 4.6c.2.9.9 1.6 1.8 1.8 1.6.4 7.8.4 7.8.4s6.2 0 7.8-.4c.9-.2 1.6-.9 1.8-1.8.4-1.4.4-4.6.4-4.6zM10 15.5v-6.6l5.2 3.3-5.2 3.3z" />
+      <path d="M12 3.2c-4.8 0-8.7 3.9-8.7 8.7 0 1.5.4 3 1.1 4.3L3 21l4.9-1.3c1.3.7 2.7 1.1 4.1 1.1 4.8 0 8.7-3.9 8.7-8.7S16.8 3.2 12 3.2zm0 15.9c-1.3 0-2.6-.3-3.7-.9l-.3-.2-2.9.8.8-2.8-.2-.3c-.7-1.1-1-2.4-1-3.7 0-3.9 3.2-7.1 7.1-7.1s7.1 3.2 7.1 7.1-3.2 7.1-7.1 7.1zm4-5.3c-.2-.1-1.3-.6-1.5-.7-.2-.1-.4-.1-.5.1-.2.2-.6.7-.7.8-.1.1-.3.2-.5.1-.2-.1-.9-.3-1.7-1.1-.6-.6-1.1-1.3-1.2-1.5-.1-.2 0-.4.1-.5l.4-.5c.1-.1.2-.3.2-.4 0-.1 0-.3-.1-.4-.1-.1-.5-1.3-.7-1.8-.2-.5-.4-.4-.5-.4h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.3c.1.2 1.6 2.5 3.9 3.4.5.2.9.4 1.3.5.5.2 1 .1 1.3.1.4-.1 1.3-.5 1.5-1 .2-.5.2-.9.1-1 0-.1-.2-.2-.4-.3z" />
     </svg>
   )
 }

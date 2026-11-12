@@ -129,6 +129,9 @@ class RolePermissionTests(TestCase):
         self.assertFalse(editor.has_perm("announcements.delete_announcement"))
         self.assertFalse(librarian.has_perm("announcements.view_announcement"))
         self.assertTrue(admin.has_perm("events.add_event"))
+        self.assertTrue(admin.has_perm("library_info.view_library"))
+        self.assertTrue(admin.has_perm("library_info.change_library"))
+        self.assertFalse(librarian.has_perm("library_info.change_library"))
         self.assertEqual(editor.groups.get().permissions.count(), 6)
 
 

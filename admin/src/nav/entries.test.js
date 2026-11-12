@@ -5,6 +5,7 @@ import { canOpen, visibleNav } from "./entries.js"
 const librarian = [
   "catalog.view_book",
   "catalog.view_author",
+  "catalog.view_publisher",
   "catalog.view_category",
   "catalog.change_book",
 ]
@@ -20,7 +21,7 @@ test("librarian sees the catalogue and not the accounts", () => {
   assert.deepEqual(labels, ["Tableau de bord", "Catalogue"])
   assert.deepEqual(
     nav[1].children.map((entry) => entry.label),
-    ["Livres", "Auteurs", "Catégories"],
+    ["Livres", "Auteurs", "Éditeurs", "Catégories"],
   )
   assert.equal(canOpen(librarian, "accounts.view_user"), false)
 })

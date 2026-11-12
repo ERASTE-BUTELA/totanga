@@ -25,10 +25,17 @@ export function queryBooks(books, criteria = {}) {
     if (yearMin != null && (year == null || year < yearMin)) return false
     if (yearMax != null && (year == null || year > yearMax)) return false
     if (!query) return true
-    const haystack = [book.title, book.summary, book.category?.name, ...(book.authors || []).map((author) => author.name)]
+    const haystack = [
+      book.title,
+      book.summary,
+      book.category?.name,
+      book.publisher,
+      ...(book.authors || []).map((author) => author.name),
+    ]
       .join(" ")
       .toLocaleLowerCase("fr")
-    return haystack.includes(query)
+    const tokens = query.split(/\s+/).filter(Boolean)
+    return tokens.every((token) => haystack.includes(token))
   })
 
   if (criteria.sort === "titre") {

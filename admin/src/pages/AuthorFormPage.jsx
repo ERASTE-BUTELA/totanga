@@ -2,6 +2,8 @@ import { useEffect, useId, useState } from "react"
 import { ArrowLeft, Pencil, Save, UserRound } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
 import { getAuthor, saveAuthor } from "../api/catalog.js"
+import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
+import { busyPhase, saveAndGo } from "../lib/saveAndGo.js"
 
 const MAX_IMAGE = 2 * 1024 * 1024
 const fieldClass = "w-full rounded-control border border-line bg-white px-3"
@@ -17,7 +19,9 @@ export function AuthorFormPage({ mode = "create" }) {
   const [photoError, setPhotoError] = useState("")
   const [problems, setProblems] = useState([])
   const [ready, setReady] = useState(mode === "create")
+  const [phase, setPhase] = useState(null)
   const viewing = mode === "view"
+  const busy = busyPhase(phase)
 
   useEffect(() => {
     if (mode === "create") return undefined
@@ -65,26 +69,35 @@ export function AuthorFormPage({ mode = "create" }) {
 
   async function save(event) {
     event.preventDefault()
+    if (busy) return
     if (!name.trim()) {
       setProblems(["Le nom est obligatoire."])
       return
     }
+    setPhase("saving")
     const body = new FormData()
     body.set("name", name.trim())
     body.set("biography", biography.trim())
     if (photoFile) body.set("photo", photoFile)
     const result = await saveAuthor(mode === "edit" ? authorId : null, body)
     if (!result.ok) {
+      setPhase(null)
       setProblems([result.error])
       return
     }
-    navigate("/catalogue/auteurs")
+    await saveAndGo({
+      setPhase,
+      navigate,
+      to: "/catalogue/auteurs",
+      notice: "L'auteur a été enregistré.",
+    })
   }
 
   if (!ready) return <p>Chargement…</p>
 
   return (
     <form className="grid gap-4" onSubmit={save}>
+      {phase ? <FormSaveOverlay phase={phase} /> : null}
       {problems.length > 0 ? (
         <div role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
           {problems.map((problem) => <p key={problem}>{problem}</p>)}
@@ -140,9 +153,9 @@ export function AuthorFormPage({ mode = "create" }) {
             Modifier
           </Link>
         ) : (
-          <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+          <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy}>
             <Save aria-hidden="true" size={18} />
-            Enregistrer
+            {busy ? "Enregistrement…" : "Enregistrer"}
           </button>
         )}
       </div>

@@ -7,7 +7,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import F
 
-from apps.catalog.models import REGISTER_FIELDS, Author, Book, BookLanguage, BookState, Category, Copy, CopyStatus, Keyword, RegisterRow
+from apps.catalog.models import REGISTER_FIELDS, Author, Book, BookLanguage, BookState, Category, Copy, CopyStatus, Keyword, Publisher, RegisterRow
+from apps.catalog.publishers import get_or_create_publisher, sync_publishers
 from apps.catalog.repertoire import (
     acquisition_price,
     anomaly_rows,
@@ -53,6 +54,7 @@ class Command(BaseCommand):
                 call_command("reset_demo_catalog")
                 Author.objects.update(photo="")
                 Author.objects.all().delete()
+                Publisher.objects.all().delete()
                 Category.objects.filter(parent__isnull=False).delete()
                 Category.objects.all().delete()
         rows = read_repertoire(path)
@@ -65,8 +67,10 @@ class Command(BaseCommand):
         with transaction.atomic():
             _store_register(decisions)
             _build_catalog(decisions)
+        publishers = sync_publishers(path)
         self.stdout.write(
-            f"Registre : {totals['lignes']} lignes. Livres : {totals['livres']}. Exemplaires : {totals['exemplaires']}."
+            f"Registre : {totals['lignes']} lignes. Livres : {totals['livres']}. "
+            f"Exemplaires : {totals['exemplaires']}. Éditeurs : {publishers['total']}."
         )
 
 
@@ -118,11 +122,13 @@ def _store_register(decisions):
 def _build_catalog(decisions):
     authors = {}
     categories = {}
+    publishers = {}
     books = {}
-    for book in Book.objects.filter(imported_at__isnull=False).prefetch_related("authors"):
+    for book in Book.objects.filter(imported_at__isnull=False).select_related("publisher").prefetch_related("authors"):
         names = list(book.authors.all())
         author_name = names[0].name if names else ""
-        books[group_key(book.title, author_name, book.publisher)] = book
+        publisher_name = book.publisher.name if book.publisher_id else ""
+        books[group_key(book.title, author_name, publisher_name)] = book
     touched_books = set()
     touched_copies = set()
     for item in decisions:
@@ -136,11 +142,11 @@ def _build_catalog(decisions):
             book = existing.book if existing else None
         book_locked = book is not None and _diverged(book)
         if book is None:
-            book = _new_book(cells, categories)
+            book = _new_book(cells, categories, publishers)
             book.authors.add(_author(cells["Auteur"], authors))
             touched_books.add(book.pk)
         elif not book_locked:
-            _fill_book(book, cells, categories)
+            _fill_book(book, cells, categories, publishers)
             book.authors.add(_author(cells["Auteur"], authors))
             touched_books.add(book.pk)
         if not book_locked:
@@ -207,11 +213,11 @@ def _category_of(cells, cache):
     return _category(None, "Sans classe", cache)
 
 
-def _new_book(cells, categories):
+def _new_book(cells, categories, publishers):
     year, _invalid = publication_year(cells["Date publ."])
     book = Book(
         title=tidy(cells["Titre"])[:400],
-        publisher=tidy(cells["Editeur"])[:200],
+        publisher=get_or_create_publisher(cells["Editeur"], publishers),
         publication_year=year,
         summary=summary_text(cells["Resumé"]),
         language=BookLanguage.FRENCH,
@@ -222,7 +228,7 @@ def _new_book(cells, categories):
     return book
 
 
-def _fill_book(book, cells, categories):
+def _fill_book(book, cells, categories, publishers):
     proposed = _category_of(cells, categories)
     if proposed.parent_id == book.category_id:
         book.category = proposed
@@ -231,6 +237,8 @@ def _fill_book(book, cells, categories):
     if book.publication_year is None:
         year, _invalid = publication_year(cells["Date publ."])
         book.publication_year = year
+    if book.publisher_id is None:
+        book.publisher = get_or_create_publisher(cells["Editeur"], publishers)
     book.save()
 
 

@@ -12,11 +12,15 @@ from .gestion_views import (
     CategoryListView,
     CopyDetailView,
     CopyListView,
+    PublisherDetailView,
+    PublisherListView,
 )
 
 urlpatterns = [
     path("auteurs/", AuthorListView.as_view(), name="staff-authors"),
     path("auteurs/<int:pk>/", AuthorDetailView.as_view(), name="staff-author"),
+    path("editeurs/", PublisherListView.as_view(), name="staff-publishers"),
+    path("editeurs/<int:pk>/", PublisherDetailView.as_view(), name="staff-publisher"),
     path("categories/", CategoryListView.as_view(), name="staff-categories"),
     path("categories/<int:pk>/", CategoryDetailView.as_view(), name="staff-category"),
     path("livres/", BookListView.as_view(), name="staff-books"),

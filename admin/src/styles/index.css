@@ -194,4 +194,47 @@
     border: 1px solid var(--color-line);
     padding: 0.5rem;
   }
+
+  @keyframes form-save-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes form-save-pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.86);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes form-save-check {
+    0% {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    60% {
+      transform: scale(1.08);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .form-save-spin {
+    animation: form-save-spin 0.8s linear infinite;
+  }
+
+  .form-save-card {
+    animation: form-save-pop 0.28s ease-out;
+  }
+
+  .form-save-check {
+    animation: form-save-check 0.4s ease-out;
+  }
 }

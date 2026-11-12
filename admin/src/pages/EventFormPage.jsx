@@ -2,6 +2,8 @@ import { useEffect, useId, useState } from "react"
 import { ArrowLeft, CalendarDays, Check, Eye, ImagePlus, Pencil, Plus, Save, Trash2 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
 import { getEvent, saveEvent } from "../api/content.js"
+import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
+import { busyPhase, saveAndGo } from "../lib/saveAndGo.js"
 import { contentNotices } from "./texts.js"
 
 const TYPES = [
@@ -57,6 +59,8 @@ export function EventFormPage({ mode }) {
   const [problems, setProblems] = useState([])
   const [loading, setLoading] = useState(mode !== "create")
   const [missing, setMissing] = useState(false)
+  const [phase, setPhase] = useState(null)
+  const busy = busyPhase(phase)
 
   useEffect(() => {
     if (mode === "create") return undefined
@@ -144,6 +148,7 @@ export function EventFormPage({ mode }) {
 
   async function save(event, state) {
     event.preventDefault()
+    if (busy) return
     const next = []
     if (!form.title.trim()) next.push("Le titre est obligatoire.")
     if (!form.summary.trim()) next.push("Le résumé est obligatoire.")
@@ -153,6 +158,7 @@ export function EventFormPage({ mode }) {
     if (form.speakers.some((speaker) => !speaker.name.trim())) next.push("Chaque intervenant a un nom.")
     setProblems(next)
     if (next.length > 0) return
+    setPhase("saving")
     const body = new FormData()
     body.set("title", form.title.trim())
     body.set("summary", form.summary.trim())
@@ -177,10 +183,16 @@ export function EventFormPage({ mode }) {
     }
     const result = await saveEvent(mode === "create" ? null : eventId, body)
     if (!result.ok) {
+      setPhase(null)
       setProblems([result.error])
       return
     }
-    navigate("/evenements")
+    await saveAndGo({
+      setPhase,
+      navigate,
+      to: "/evenements",
+      notice: state === "draft" ? "L'événement est enregistré en brouillon." : "L'événement a été publié.",
+    })
   }
 
   if (loading) return <p>Chargement…</p>
@@ -197,6 +209,7 @@ export function EventFormPage({ mode }) {
 
   return (
     <form className="grid gap-4" onSubmit={(event) => (viewing ? event.preventDefault() : save(event, "published"))}>
+      {phase ? <FormSaveOverlay phase={phase} /> : null}
       {problems.length > 0 ? (
         <div role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
           {problems.map((problem) => <p key={problem}>{problem}</p>)}
@@ -320,13 +333,13 @@ export function EventFormPage({ mode }) {
           ) : null}
           {viewing ? null : (
             <>
-              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" onClick={(event) => save(event, "draft")}>
+              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" disabled={busy} onClick={(event) => save(event, "draft")}>
                 <Save aria-hidden="true" size={18} />
-                Enregistrer en brouillon
+                {busy ? "Enregistrement…" : "Enregistrer en brouillon"}
               </button>
-              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy}>
                 <Check aria-hidden="true" size={18} />
-                Publier
+                {busy ? "Publication…" : "Publier"}
               </button>
             </>
           )}

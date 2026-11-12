@@ -21,6 +21,9 @@ export default defineConfig(({ mode }) => ({
       "/api": {
         target: process.env.VITE_PROXY_TARGET || "http://backend:8000",
       },
+      "/media": {
+        target: process.env.VITE_PROXY_TARGET || "http://backend:8000",
+      },
     },
   },
 }))

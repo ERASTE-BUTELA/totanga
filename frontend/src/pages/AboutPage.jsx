@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react"
-import { BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, Eye, Gem, Mail, MapPin, Megaphone, Newspaper, Phone, Target } from "lucide-react"
+import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, Mail, MapPin, Megaphone, Newspaper, Phone } from "lucide-react"
 import { Link } from "react-router"
 import { getAnnouncements, getBooks, getEvents, getLibraryInfo, getPublications } from "../api/client.js"
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
 import { QueryState } from "../components/ui/QueryState.jsx"
+import { SafeHtml } from "../components/ui/SafeHtml.jsx"
+import { richTextIsEmpty } from "../lib/richText.js"
 import { useAsync } from "../lib/useAsync.js"
 import { usePageTitle } from "../lib/usePageTitle.js"
-
-const VALUES = ["Accès pour tous", "Partage du savoir", "Innovation", "Inclusion", "Service à la communauté"]
 
 const PHOTOS = [
   "/images/hero/hero-960.webp",
@@ -69,50 +69,13 @@ function AboutContent({ library, counts }) {
             <span className="h-6 w-1 rounded-full bg-violet" aria-hidden="true" />
             Notre bibliothèque
           </h2>
-          <div className="mt-4 space-y-4 text-article text-ink">
-            <p>
-              La Bibliothèque Totanga est un lieu de lecture et de rencontre à Kinshasa, porté par les Sœurs des pauvres de Bergame. On y vient pour ouvrir un livre, chercher une information et passer un moment au calme.
-            </p>
-            <p>
-              L'histoire de la bibliothèque est celle d'un accueil. Les lecteurs sont reçus sur place. Les ouvrages du catalogue se consultent dans les rayons, les annonces informent la communauté, et les rencontres rassemblent ceux qui veulent lire ou écouter ensemble.
-            </p>
-            <p>
-              Ce site prolonge la bibliothèque sans la remplacer. Il présente le catalogue, les annonces, les publications et les événements. La lecture des livres se fait à la bibliothèque.
-            </p>
-          </div>
+          {richTextIsEmpty(library.about) ? (
+            <p className="mt-4 text-article text-muted">La présentation de la bibliothèque sera publiée prochainement.</p>
+          ) : (
+            <SafeHtml html={library.about} className="rich-text mt-4 space-y-4 text-article text-ink" />
+          )}
         </div>
       </section>
-
-      <ul id="services" className="mt-6 grid gap-4 lg:grid-cols-3">
-        <li className="rounded-2xl border border-line bg-white p-5 shadow-card">
-          <h2 className="flex items-center gap-2 text-card text-heading">
-            <Target className="h-5 w-5 text-violet" aria-hidden="true" />
-            Notre mission
-          </h2>
-          <p className="mt-3 text-body text-ink">Faciliter l'accès à la lecture et à la culture pour tous, et promouvoir le développement du savoir.</p>
-        </li>
-        <li className="rounded-2xl border border-line bg-white p-5 shadow-card">
-          <h2 className="flex items-center gap-2 text-card text-heading">
-            <Eye className="h-5 w-5 text-violet" aria-hidden="true" />
-            Notre vision
-          </h2>
-          <p className="mt-3 text-body text-ink">Être une bibliothèque accueillante, reconnue pour sa place dans la vie culturelle à Kinshasa.</p>
-        </li>
-        <li className="rounded-2xl border border-line bg-white p-5 shadow-card">
-          <h2 className="flex items-center gap-2 text-card text-heading">
-            <Gem className="h-5 w-5 text-violet" aria-hidden="true" />
-            Nos valeurs
-          </h2>
-          <ul className="mt-3 space-y-2">
-            {VALUES.map((value) => (
-              <li key={value} className="flex items-start gap-2 text-body text-ink">
-                <Check className="mt-1 h-4 w-4 shrink-0 text-violet" aria-hidden="true" />
-                {value}
-              </li>
-            ))}
-          </ul>
-        </li>
-      </ul>
 
       <section className="mt-8" aria-labelledby="chiffres">
         <h2 id="chiffres" className="text-section text-heading">

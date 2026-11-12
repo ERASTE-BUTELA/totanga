@@ -2,6 +2,8 @@ import { useEffect, useId, useState } from "react"
 import { ArrowLeft, Check, Eye, ImagePlus, Info, Megaphone, Pencil, Save, Trash2 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
 import { getAnnouncement, saveAnnouncement } from "../api/content.js"
+import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
+import { busyPhase, saveAndGo } from "../lib/saveAndGo.js"
 import { contentNotices } from "./texts.js"
 
 const CATEGORIES = [
@@ -45,6 +47,8 @@ export function AnnouncementFormPage({ mode }) {
   const [problems, setProblems] = useState([])
   const [loading, setLoading] = useState(mode !== "create")
   const [missing, setMissing] = useState(false)
+  const [phase, setPhase] = useState(null)
+  const busy = busyPhase(phase)
 
   useEffect(() => {
     if (mode === "create") return undefined
@@ -102,6 +106,7 @@ export function AnnouncementFormPage({ mode }) {
 
   async function save(event, state) {
     event.preventDefault()
+    if (busy) return
     const next = []
     if (!form.title.trim()) next.push("Le titre est obligatoire.")
     if (!form.body.trim()) next.push("Le texte est obligatoire.")
@@ -111,6 +116,7 @@ export function AnnouncementFormPage({ mode }) {
     }
     setProblems(next)
     if (next.length > 0) return
+    setPhase("saving")
     const body = new FormData()
     body.set("title", form.title.trim())
     body.set("body", form.body.trim())
@@ -124,10 +130,16 @@ export function AnnouncementFormPage({ mode }) {
     if (removeImage) body.set("remove_image", "true")
     const result = await saveAnnouncement(mode === "create" ? null : announcementId, body)
     if (!result.ok) {
+      setPhase(null)
       setProblems([result.error])
       return
     }
-    navigate("/annonces")
+    await saveAndGo({
+      setPhase,
+      navigate,
+      to: "/annonces",
+      notice: state === "draft" ? "L'annonce est enregistrée en brouillon." : "L'annonce a été publiée.",
+    })
   }
 
   if (loading) return <p>Chargement…</p>
@@ -144,6 +156,7 @@ export function AnnouncementFormPage({ mode }) {
 
   return (
     <form className="grid gap-4" onSubmit={(event) => (viewing ? event.preventDefault() : save(event, "published"))}>
+      {phase ? <FormSaveOverlay phase={phase} /> : null}
       {problems.length > 0 ? (
         <div role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
           {problems.map((problem) => <p key={problem}>{problem}</p>)}
@@ -247,13 +260,13 @@ export function AnnouncementFormPage({ mode }) {
           ) : null}
           {viewing ? null : (
             <>
-              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" onClick={(event) => save(event, "draft")}>
+              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" disabled={busy} onClick={(event) => save(event, "draft")}>
                 <Save aria-hidden="true" size={18} />
-                Enregistrer en brouillon
+                {busy ? "Enregistrement…" : "Enregistrer en brouillon"}
               </button>
-              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy}>
                 <Check aria-hidden="true" size={18} />
-                Publier
+                {busy ? "Publication…" : "Publier"}
               </button>
             </>
           )}

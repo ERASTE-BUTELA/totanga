@@ -212,4 +212,45 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
+
+  .rich-text p {
+    margin-block: 0.75rem;
+  }
+
+  .rich-text ul,
+  .rich-text ol {
+    margin-block: 0.75rem;
+    padding-left: 1.5rem;
+  }
+
+  .rich-text ul {
+    list-style: disc;
+  }
+
+  .rich-text ol {
+    list-style: decimal;
+  }
+
+  .rich-text blockquote {
+    margin-block: 0.75rem;
+    border-left: 3px solid var(--color-violet);
+    background: var(--color-lavender);
+    padding: 0.75rem 1rem;
+  }
+
+  .rich-text a {
+    color: var(--color-violet);
+    text-decoration: underline;
+  }
+
+  .rich-text table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .rich-text td,
+  .rich-text th {
+    border: 1px solid var(--color-line);
+    padding: 0.5rem;
+  }
 }

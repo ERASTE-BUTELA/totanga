@@ -11,7 +11,8 @@ class VisitorMessage(models.Model):
     )
 
     name = models.CharField("nom", max_length=80)
-    email = models.EmailField("adresse électronique", max_length=254)
+    email = models.EmailField("adresse électronique", max_length=254, blank=True)
+    whatsapp = models.CharField("WhatsApp", max_length=40, blank=True)
     subject = models.CharField("sujet", max_length=20, choices=SUBJECTS)
     body = models.TextField("message", max_length=1000)
     created_at = models.DateTimeField("envoyé le", auto_now_add=True)

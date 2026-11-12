@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { BookOpen, UserRound, Users } from "lucide-react"
 import { deleteAuthor, listAuthors } from "../api/catalog.js"
+import { useListNotice } from "../lib/useListNotice.js"
 import { RowActions } from "../components/RowActions.jsx"
 import { CatalogListPage } from "./CatalogListPage.jsx"
 import { usePagedCatalog } from "./usePagedCatalog.js"
@@ -25,6 +26,7 @@ function figure(stats, key) {
 
 export function AuthorsPage() {
   const { data, error, onPageRequest, reload } = usePagedCatalog(loadAuthors)
+  const [notice] = useListNotice()
   const [actionError, setActionError] = useState("")
   const rows = data?.results || []
   const stats = data?.stats
@@ -43,6 +45,7 @@ export function AuthorsPage() {
   return (
     <>
       {error || actionError ? <p role="alert" className="mb-4 rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error || actionError}</p> : null}
+      {notice ? <p role="status" className="mb-4 rounded-panel border border-available bg-available-soft p-4 text-available">{notice}</p> : null}
       <CatalogListPage
         heading="Liste des auteurs"
         one="auteur"

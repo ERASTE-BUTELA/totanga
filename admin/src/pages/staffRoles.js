@@ -4,7 +4,7 @@ export const STAFF_ROLES = [
     label: "Administrateur",
     chip: "bg-lavender text-violet",
     permissions: [
-      "Gérer le catalogue : livres, auteurs, catégories et exemplaires.",
+      "Gérer le catalogue : livres, auteurs, éditeurs, catégories et exemplaires.",
       "Voir, ajouter et modifier les comptes du personnel.",
       "Lire les messages des visiteurs.",
       "Consulter le journal des actions.",
@@ -16,7 +16,7 @@ export const STAFF_ROLES = [
     label: "Bibliothécaire",
     chip: "bg-available-soft text-available",
     permissions: [
-      "Voir, ajouter et modifier les livres, les auteurs et les catégories.",
+      "Voir, ajouter et modifier les livres, les auteurs, les éditeurs et les catégories.",
       "Gérer les exemplaires.",
       "Archiver un livre. Personne ne peut le supprimer.",
     ],

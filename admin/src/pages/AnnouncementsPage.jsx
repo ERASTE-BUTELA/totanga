@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { AlertTriangle, Megaphone } from "lucide-react"
 import { listAnnouncements, setAnnouncementState } from "../api/content.js"
 import { RowActions } from "../components/RowActions.jsx"
+import { useListNotice } from "../lib/useListNotice.js"
 import { CatalogListPage } from "./CatalogListPage.jsx"
 import { contentNotices } from "./texts.js"
 
@@ -41,7 +42,7 @@ function statusClass(status) {
 export function AnnouncementsPage() {
   const [rows, setRows] = useState(null)
   const [error, setError] = useState("")
-  const [notice, setNotice] = useState("")
+  const [notice, setNotice] = useListNotice()
 
   useEffect(() => {
     listAnnouncements().then((result) => {

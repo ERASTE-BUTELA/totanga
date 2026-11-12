@@ -3,6 +3,7 @@ import {
   BadgeCheck,
   Bell,
   BookOpen,
+  Building2,
   CalendarDays,
   ChevronDown,
   CircleQuestionMark,
@@ -19,16 +20,19 @@ import {
   Tag,
   User,
   Users,
+  Wrench,
 } from "lucide-react"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router"
+import { getLibrarySettings, setMaintenanceMode } from "../api/settings.js"
 import { LOGIN_PATH, normalizeAdminPath } from "../lib/paths.js"
-import { PAGES, visibleNav } from "../nav/entries.js"
+import { canOpen, PAGES, visibleNav } from "../nav/entries.js"
 import { useSession } from "../session/SessionContext.jsx"
 
 const SUBTITLES = {
   "/": "Vue d'ensemble des activités de la bibliothèque",
   "/catalogue/livres": "Gérez le catalogue des livres de la bibliothèque.",
   "/catalogue/auteurs": "Gérez les auteurs du catalogue de la bibliothèque.",
+  "/catalogue/editeurs": "Gérez les maisons d'édition du catalogue.",
   "/catalogue/categories": "Gérez les catégories de classification des livres.",
   "/annonces": "Gérez les annonces de la bibliothèque (avis, nouveautés, horaires, informations importantes, etc.).",
   "/publications": "Gérez les publications de la bibliothèque.",
@@ -84,12 +88,14 @@ const ICONS = {
 const CHILD_ICONS = {
   books: BookOpen,
   authors: Users,
+  publishers: Building2,
   categories: Tag,
 }
 
 const CRUMBS = {
   "/catalogue/livres": "Livres",
   "/catalogue/auteurs": "Auteurs",
+  "/catalogue/editeurs": "Éditeurs",
   "/catalogue/categories": "Catégories",
 }
 
@@ -101,6 +107,10 @@ const FORM_TRAILS = {
   "/catalogue/auteurs/nouveau": {
     parts: ["Auteurs", "Nouvel auteur"],
     subtitle: "Ajoutez un auteur au catalogue.",
+  },
+  "/catalogue/editeurs/nouveau": {
+    parts: ["Éditeurs", "Nouvel éditeur"],
+    subtitle: "Ajoutez une maison d'édition au catalogue.",
   },
   "/catalogue/categories/nouveau": {
     parts: ["Catégories", "Nouvelle catégorie"],
@@ -130,6 +140,8 @@ function trailFor(pathname) {
     [/^\/catalogue\/livres\/\d+$/, ["Livres", "Voir un livre"], "Fiche du livre et de ses exemplaires."],
     [/^\/catalogue\/auteurs\/\d+\/modifier$/, ["Auteurs", "Modifier un auteur"], "Mettez à jour cet auteur."],
     [/^\/catalogue\/auteurs\/\d+$/, ["Auteurs", "Voir un auteur"], "Fiche de l'auteur."],
+    [/^\/catalogue\/editeurs\/\d+\/modifier$/, ["Éditeurs", "Modifier un éditeur"], "Mettez à jour cet éditeur."],
+    [/^\/catalogue\/editeurs\/\d+$/, ["Éditeurs", "Voir un éditeur"], "Fiche de l'éditeur."],
     [/^\/catalogue\/categories\/\d+\/modifier$/, ["Catégories", "Modifier une catégorie"], "Mettez à jour cette catégorie."],
     [/^\/catalogue\/categories\/\d+$/, ["Catégories", "Voir une catégorie"], "Fiche de la catégorie."],
   ]
@@ -156,11 +168,31 @@ export function AdminShell() {
   const panelRef = useRef(null)
   const [open, setOpen] = useState(false)
   const [catalogueOpen, setCatalogueOpen] = useState(false)
+  const [maintenance, setMaintenance] = useState(false)
+  const [maintenanceBusy, setMaintenanceBusy] = useState(false)
+  const [maintenanceError, setMaintenanceError] = useState("")
   const nav = visibleNav(session.account?.permissions ?? [], session.account?.role)
+  const canToggleMaintenance = canOpen(
+    session.account?.permissions ?? [],
+    "library_info.change_library",
+    session.account?.role,
+  )
 
   useEffect(() => {
     setOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    if (!canToggleMaintenance) return undefined
+    let active = true
+    getLibrarySettings().then((result) => {
+      if (!active || !result.ok) return
+      setMaintenance(Boolean(result.data?.maintenance))
+    })
+    return () => {
+      active = false
+    }
+  }, [canToggleMaintenance])
 
   useEffect(() => {
     if (!open) return undefined
@@ -185,6 +217,20 @@ export function AdminShell() {
   async function onLogout() {
     await session.signOut()
     navigate(LOGIN_PATH, { replace: true })
+  }
+
+  async function onToggleMaintenance() {
+    if (!canToggleMaintenance || maintenanceBusy) return
+    const next = !maintenance
+    setMaintenanceBusy(true)
+    setMaintenanceError("")
+    const result = await setMaintenanceMode(next)
+    setMaintenanceBusy(false)
+    if (!result.ok) {
+      setMaintenanceError(result.error)
+      return
+    }
+    setMaintenance(Boolean(result.data?.maintenance))
   }
 
   const path = normalizeAdminPath(location.pathname)
@@ -291,6 +337,36 @@ export function AdminShell() {
                     })}
                   </div>
                 ))}
+                {canToggleMaintenance ? (
+                  <div className="mt-1 border-t border-line pt-1">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-3 rounded-control px-3 py-2 font-semibold text-heading hover:bg-lavender disabled:opacity-60"
+                      disabled={maintenanceBusy}
+                      onClick={onToggleMaintenance}
+                    >
+                      <Wrench aria-hidden="true" size={18} className="text-violet" />
+                      <span className="min-w-0 flex-1 text-left">
+                        <span className="block">Mode maintenance</span>
+                        <span className="block text-muted font-normal">
+                          {maintenanceBusy
+                            ? "Enregistrement…"
+                            : maintenance
+                              ? "Site public coupé — cliquer pour rouvrir"
+                              : "Site public ouvert — cliquer pour couper"}
+                        </span>
+                      </span>
+                      <span
+                        className={`relative h-7 w-12 shrink-0 rounded-full ${maintenance ? "bg-violet" : "bg-line"}`}
+                        aria-hidden="true"
+                      >
+                        <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white ${maintenance ? "translate-x-5" : ""}`} />
+                      </span>
+                    </button>
+                    {maintenanceError ? <p className="px-3 pb-2 text-unavailable" role="alert">{maintenanceError}</p> : null}
+                  </div>
+                ) : null}
                 <div className="mt-1 border-t border-line pt-1">
                   <button
                     type="button"

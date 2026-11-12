@@ -1,4 +1,4 @@
-import { RotateCcw, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, RotateCcw, Search } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router"
 import { getCatalog } from "../api/client.js"
@@ -18,34 +18,60 @@ function pageNumber(value) {
   return page
 }
 
+function buildParams({ q, dispo, anneeMin, anneeMax, tri, categorie }) {
+  const params = new URLSearchParams()
+  const query = String(q || "").trim()
+  if (query) params.set("q", query)
+  if (dispo) params.set("dispo", dispo)
+  if (anneeMin) params.set("anneeMin", anneeMin)
+  if (anneeMax) params.set("anneeMax", anneeMax)
+  if (tri) params.set("tri", tri)
+  if (categorie) params.set("categorie", categorie)
+  return params
+}
+
+function sameFilters(a, b) {
+  for (const key of ["q", "dispo", "anneeMin", "anneeMax", "tri", "categorie"]) {
+    if ((a.get(key) || "") !== (b.get(key) || "")) return false
+  }
+  return true
+}
+
 export default function CatalogPage() {
   usePageTitle("Catalogue")
   const [searchParams, setSearchParams] = useSearchParams()
   const [state, setState] = useState({ status: "loading", data: null, error: "" })
-  const criteria = {
-    q: searchParams.get("q") || "",
-    availability: searchParams.get("dispo") || "",
-    yearMin: searchParams.get("anneeMin") || "",
-    yearMax: searchParams.get("anneeMax") || "",
-    sort: searchParams.get("tri") || "",
-  }
+  const [q, setQ] = useState(() => searchParams.get("q") || "")
+  const [dispo, setDispo] = useState(() => searchParams.get("dispo") || "")
+  const [anneeMin, setAnneeMin] = useState(() => searchParams.get("anneeMin") || "")
+  const [anneeMax, setAnneeMax] = useState(() => searchParams.get("anneeMax") || "")
+  const [tri, setTri] = useState(() => searchParams.get("tri") || "")
 
-  function onSubmit(event) {
-    event.preventDefault()
-    const data = new FormData(event.currentTarget)
-    const params = new URLSearchParams()
-    const q = String(data.get("q") || "").trim()
-    const dispo = String(data.get("dispo") || "")
-    const anneeMin = String(data.get("anneeMin") || "").trim()
-    const anneeMax = String(data.get("anneeMax") || "").trim()
-    const tri = String(data.get("tri") || "")
-    if (q) params.set("q", q)
-    if (dispo) params.set("dispo", dispo)
-    if (anneeMin) params.set("anneeMin", anneeMin)
-    if (anneeMax) params.set("anneeMax", anneeMax)
-    if (tri) params.set("tri", tri)
-    setSearchParams(params)
-  }
+  useEffect(() => {
+    setQ(searchParams.get("q") || "")
+    setDispo(searchParams.get("dispo") || "")
+    setAnneeMin(searchParams.get("anneeMin") || "")
+    setAnneeMax(searchParams.get("anneeMax") || "")
+    setTri(searchParams.get("tri") || "")
+  }, [searchParams])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearchParams((current) => {
+        const next = buildParams({
+          q,
+          dispo,
+          anneeMin: anneeMin.trim(),
+          anneeMax: anneeMax.trim(),
+          tri,
+          categorie: current.get("categorie") || "",
+        })
+        if (sameFilters(current, next)) return current
+        return next
+      }, { replace: true })
+    }, 220)
+    return () => window.clearTimeout(timer)
+  }, [q, dispo, anneeMin, anneeMax, tri, setSearchParams])
 
   useEffect(() => {
     let active = true
@@ -74,6 +100,15 @@ export default function CatalogPage() {
     setSearchParams(params)
   }
 
+  function reset() {
+    setQ("")
+    setDispo("")
+    setAnneeMin("")
+    setAnneeMax("")
+    setTri("")
+    setSearchParams(new URLSearchParams())
+  }
+
   return (
     <div className="bg-canvas">
       <header className="relative overflow-hidden bg-violet text-white">
@@ -90,8 +125,8 @@ export default function CatalogPage() {
         <Breadcrumb withHome items={[{ label: "Accueil", to: "/" }, { label: "Catalogue" }]} />
         <QueryState status={state.data ? "ready" : state.status} error={state.error}>
           {state.data ? (
-            <form key={searchParams.toString()} onSubmit={onSubmit} className="mt-6">
-              <div className="flex min-w-0 flex-nowrap items-center gap-2">
+            <div className="mt-6">
+              <div className="flex min-w-0 flex-nowrap items-center gap-2" role="search">
                 <label htmlFor="recherche-catalogue" className="sr-only">
                   Rechercher un livre
                 </label>
@@ -99,17 +134,18 @@ export default function CatalogPage() {
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" aria-hidden="true" />
                   <input
                     id="recherche-catalogue"
-                    name="q"
                     type="search"
-                    defaultValue={criteria.q}
+                    value={q}
+                    onChange={(event) => setQ(event.target.value)}
                     placeholder="Rechercher un livre (titre, auteur, mot-clé...)"
                     className="w-full rounded-full border border-line bg-white py-3 pl-12 pr-4"
+                    autoComplete="off"
                   />
                 </div>
                 <select
-                  name="dispo"
                   aria-label="Disponibilité"
-                  defaultValue={criteria.availability}
+                  value={dispo}
+                  onChange={(event) => setDispo(event.target.value)}
                   className="w-32 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
                 >
                   <option value="">Disponibilité</option>
@@ -117,53 +153,49 @@ export default function CatalogPage() {
                   <option value="indisponible">Indisponible</option>
                 </select>
                 <input
-                  name="anneeMin"
                   aria-label="Année de début"
                   inputMode="numeric"
-                  defaultValue={criteria.yearMin}
+                  value={anneeMin}
+                  onChange={(event) => setAnneeMin(event.target.value)}
                   placeholder="De"
                   className="w-16 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
                 />
                 <input
-                  name="anneeMax"
                   aria-label="Année de fin"
                   inputMode="numeric"
-                  defaultValue={criteria.yearMax}
+                  value={anneeMax}
+                  onChange={(event) => setAnneeMax(event.target.value)}
                   placeholder="À"
                   className="w-16 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
                 />
                 <select
-                  name="tri"
                   aria-label="Trier par"
-                  defaultValue={criteria.sort}
+                  value={tri}
+                  onChange={(event) => setTri(event.target.value)}
                   className="w-32 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
-                  onChange={(event) => event.currentTarget.form?.requestSubmit()}
                 >
                   <option value="">Pertinence</option>
                   <option value="titre">Titre</option>
                   <option value="annee">Année</option>
                 </select>
-                <button type="submit" className="shrink-0 rounded-xl bg-violet px-4 font-semibold text-white">
-                  Rechercher
-                </button>
                 <button
                   type="button"
                   aria-label="Réinitialiser"
                   className="inline-flex shrink-0 items-center justify-center rounded-xl border border-line bg-white px-3 text-ink"
-                  onClick={() => setSearchParams(new URLSearchParams())}
+                  onClick={reset}
                 >
                   <RotateCcw className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
 
               <p className="mt-5 text-body font-semibold text-ink" aria-live="polite">
-                {state.status === "loading" ? "Chargement…" : countLabel(state.data.count)}
+                {state.status === "loading" ? "Recherche…" : countLabel(state.data.count)}
               </p>
 
               {visible.length === 0 ? (
                 <p className="mt-6 text-muted">Aucun livre ne correspond à cette recherche.</p>
               ) : (
-                <ul className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                <ul className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
                   {visible.map((book) => (
                     <li key={book.id}>
                       <BookCard book={book} dense />
@@ -173,7 +205,7 @@ export default function CatalogPage() {
               )}
 
               <PageField page={page} pageCount={pageCount} onPage={goToPage} />
-            </form>
+            </div>
           ) : null}
         </QueryState>
       </div>
@@ -190,8 +222,20 @@ function PageField({ page, pageCount, onPage }) {
     onPage(Math.min(pageCount, typed))
   }
 
+  const previousDisabled = page <= 1
+  const nextDisabled = page >= pageCount
+
   return (
-    <div className="mt-8 flex items-center justify-center gap-3 text-body text-ink">
+    <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-body text-ink">
+      <button
+        type="button"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-white text-violet disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label="Page précédente"
+        disabled={previousDisabled}
+        onClick={() => onPage(page - 1)}
+      >
+        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+      </button>
       <label htmlFor="page-catalogue" className="font-semibold">
         Page
       </label>
@@ -199,9 +243,10 @@ function PageField({ page, pageCount, onPage }) {
         id="page-catalogue"
         type="text"
         inputMode="numeric"
+        key={page}
         defaultValue={String(page)}
         aria-describedby="page-catalogue-total"
-        className="w-24 rounded-xl border border-line bg-white px-3 py-2 text-center"
+        className="w-20 rounded-xl border border-line bg-white px-3 py-2 text-center"
         onKeyDown={(event) => {
           if (event.key !== "Enter") return
           event.preventDefault()
@@ -209,6 +254,15 @@ function PageField({ page, pageCount, onPage }) {
         }}
       />
       <span id="page-catalogue-total">sur {pageCount.toLocaleString("fr-FR")}</span>
+      <button
+        type="button"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-white text-violet disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label="Page suivante"
+        disabled={nextDisabled}
+        onClick={() => onPage(page + 1)}
+      >
+        <ChevronRight className="h-5 w-5" aria-hidden="true" />
+      </button>
     </div>
   )
 }

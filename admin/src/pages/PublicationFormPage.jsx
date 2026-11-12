@@ -1,6 +1,8 @@
 import { useId, useState } from "react"
 import { ArrowLeft, BookOpen, Check, Eye, FileText, ImagePlus, Info, Pencil, Pin, Save, Star, Trash2 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
+import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
+import { busyPhase, saveAndGo } from "../lib/saveAndGo.js"
 import { RichTextEditor } from "./RichTextEditor.jsx"
 import { readPublication, savePublication } from "./contentStore.js"
 import { richTextIsEmpty, sanitizeRichText } from "./richText.js"
@@ -48,6 +50,8 @@ export function PublicationFormPage({ mode }) {
   const [form, setForm] = useState(existing || EMPTY)
   const [preview, setPreview] = useState("")
   const [imageError, setImageError] = useState("")
+  const [phase, setPhase] = useState(null)
+  const busy = busyPhase(phase)
   const [problems, setProblems] = useState([])
   const authors = AUTHORS.includes(form.author) ? AUTHORS : [form.author, ...AUTHORS]
 
@@ -74,8 +78,9 @@ export function PublicationFormPage({ mode }) {
     })
   }
 
-  function save(event, status) {
+  async function save(event, status) {
     event.preventDefault()
+    if (busy) return
     const content = sanitizeRichText(form.content)
     const next = []
     if (!form.title.trim()) next.push("Le titre est obligatoire.")
@@ -86,6 +91,7 @@ export function PublicationFormPage({ mode }) {
     if (form.excerpt.trim().length > MAX_EXCERPT) next.push("Le résumé ne dépasse pas 250 caractères.")
     setProblems(next)
     if (next.length > 0) return
+    setPhase("saving")
     savePublication({
       ...form,
       id: existing?.id,
@@ -96,7 +102,12 @@ export function PublicationFormPage({ mode }) {
       excerpt: form.excerpt.trim(),
       content,
     })
-    navigate("/publications")
+    await saveAndGo({
+      setPhase,
+      navigate,
+      to: "/publications",
+      notice: status === "Brouillon" ? "La publication est enregistrée en brouillon." : "La publication a été publiée.",
+    })
   }
 
   if (!existing && mode !== "create") {
@@ -110,6 +121,7 @@ export function PublicationFormPage({ mode }) {
 
   return (
     <form className="grid gap-4 pb-28" onSubmit={(event) => (viewing ? event.preventDefault() : save(event, "Publié"))}>
+      {phase ? <FormSaveOverlay phase={phase} /> : null}
       {problems.length > 0 ? (
         <div role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
           {problems.map((problem) => <p key={problem}>{problem}</p>)}
@@ -259,13 +271,13 @@ export function PublicationFormPage({ mode }) {
             </Link>
           ) : (
             <>
-              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" onClick={(event) => save(event, "Brouillon")}>
+              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" disabled={busy} onClick={(event) => save(event, "Brouillon")}>
                 <Save aria-hidden="true" size={18} />
-                Enregistrer en brouillon
+                {busy ? "Enregistrement…" : "Enregistrer en brouillon"}
               </button>
-              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy}>
                 <Check aria-hidden="true" size={18} />
-                Publier
+                {busy ? "Publication…" : "Publier"}
               </button>
             </>
           )}

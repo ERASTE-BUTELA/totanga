@@ -113,6 +113,6 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Pas de HTML brut, pas de secret et pas de ressource externe dans le frontend | Appliqué |
 | Build de production sans source maps ni `console` | Appliqué |
 | Versions du frontend verrouillées (`package-lock.json`) | Appliqué |
-| Nettoyage d'un contenu HTML riche | À faire |
+| Nettoyage d'un contenu HTML riche | Partiel. Le champ « À propos » des paramètres généraux est nettoyé côté serveur (même famille de balises que l'éditeur). Les publications riches restent à brancher. |
 
-Le formulaire de publication accepte un texte mis en forme. Le navigateur ne garde que quelques balises (paragraphe, gras, italique, souligné, listes, citation, lien http ou https, tableau simple). Le nettoyage côté serveur reste à faire lorsque ce contenu sera enregistré.
+Le formulaire de publication accepte un texte mis en forme. Le navigateur ne garde que quelques balises (paragraphe, gras, italique, souligné, listes, citation, lien http ou https, tableau simple). Le nettoyage côté serveur est en place pour la fiche bibliothèque ; il reste à l'appliquer aux publications.

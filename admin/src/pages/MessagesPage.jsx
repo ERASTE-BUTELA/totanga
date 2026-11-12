@@ -14,6 +14,25 @@ function formatWhen(value) {
   })
 }
 
+function contactLine(row) {
+  if (row.email) {
+    return (
+      <a href={`mailto:${row.email}`} className="font-semibold text-violet">
+        {row.email}
+      </a>
+    )
+  }
+  if (row.whatsapp) {
+    const digits = String(row.whatsapp).replace(/\D/g, "")
+    return (
+      <a href={`https://wa.me/${digits}`} className="font-semibold text-violet" target="_blank" rel="noopener noreferrer">
+        WhatsApp {row.whatsapp}
+      </a>
+    )
+  }
+  return <span className="text-muted">Contact non indiqué</span>
+}
+
 export function MessagesPage() {
   const [rows, setRows] = useState(null)
   const [error, setError] = useState("")
@@ -21,8 +40,13 @@ export function MessagesPage() {
 
   useEffect(() => {
     listMessages().then((result) => {
-      if (!result.ok) setError(result.error)
-      else setRows(result.data)
+      if (!result.ok) {
+        setError(result.error)
+        setRows([])
+        return
+      }
+      const data = Array.isArray(result.data) ? result.data : []
+      setRows(data)
     })
   }, [])
 
@@ -32,6 +56,7 @@ export function MessagesPage() {
 
   return (
     <div className="grid gap-3">
+      <p className="text-muted">{rows.length.toLocaleString("fr-FR")} message{rows.length > 1 ? "s" : ""} reçu{rows.length > 1 ? "s" : ""}.</p>
       {rows.map((row) => (
         <article key={row.id} className="rounded-panel border border-line bg-white p-4 shadow-card">
           <button type="button" className="flex w-full items-start justify-between gap-3 text-left" onClick={() => setOpen(open === row.id ? null : row.id)}>
@@ -43,7 +68,7 @@ export function MessagesPage() {
           </button>
           {open === row.id ? (
             <div className="mt-3 border-t border-line pt-3">
-              <p className="text-muted">{row.email}</p>
+              <p className="text-muted">Contact : {contactLine(row)}</p>
               <p className="mt-2 whitespace-pre-wrap">{row.body}</p>
             </div>
           ) : null}

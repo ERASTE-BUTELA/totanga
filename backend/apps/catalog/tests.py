@@ -1,5 +1,6 @@
 import tempfile
 from io import BytesIO
+from pathlib import Path
 
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
@@ -20,8 +21,11 @@ from apps.catalog.models import (
     Category,
     Copy,
     CopyStatus,
+    Publisher,
+    RegisterRow,
     StoredImage,
 )
+from apps.catalog.publishers import sync_publishers
 from apps.catalog.validators import validate_catalog_image
 
 TEST_MEDIA_ROOT = tempfile.mkdtemp(prefix="totanga-catalog-tests-")
@@ -306,6 +310,53 @@ class StaffCatalogApiTests(TestCase):
         self.assertEqual(categories.json()["results"][0]["name"], "Roman africain")
         self.assertGreaterEqual(categories.json()["results"][0]["books"], 2)
         self.assertIsInstance(self.client.get("/api/gestion/catalogue/categories/").json(), list)
+
+        Publisher.objects.create(name="Presence Africaine")
+        publishers = self.client.get("/api/gestion/catalogue/editeurs/?page=1&page_size=1&q=Presence")
+        self.assertEqual(publishers.status_code, 200)
+        self.assertEqual(publishers.json()["results"][0]["name"], "Presence Africaine")
+        self.assertIsInstance(self.client.get("/api/gestion/catalogue/editeurs/").json(), list)
+
+    def test_book_form_uses_publisher_autocomplete_choice(self):
+        self.login(self.librarian)
+        publisher = Publisher.objects.create(name="Seuil")
+        created = self.client.post(
+            "/api/gestion/catalogue/livres/",
+            {
+                "title": "Livre avec editeur",
+                "category_id": self.category.pk,
+                "author_ids": f"[{self.author.pk}]",
+                "publisher_id": str(publisher.pk),
+                "published": "false",
+                "copies": "[]",
+            },
+            format="multipart",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        body = created.json()
+        self.assertEqual(body["publisher"], "Seuil")
+        self.assertEqual(body["publisher_id"], publisher.pk)
+        self.assertEqual(body["publisher_choice"]["name"], "Seuil")
+        blocked = self.client.delete(
+            f"/api/gestion/catalogue/editeurs/{publisher.pk}/",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(blocked.status_code, 409)
+
+    def test_sync_publishers_is_idempotent(self):
+        RegisterRow.objects.create(
+            source_line=9001,
+            publisher="  Maison Totanga  ",
+            title="Exemple",
+        )
+        # Fichier absent : ne lit que le registre, pas le CSV monte.
+        absent = Path("/tmp/totanga-absent-repertoire.csv")
+        first = sync_publishers(absent)
+        second = sync_publishers(absent)
+        self.assertEqual(first["created"], 1)
+        self.assertEqual(second["created"], 0)
+        self.assertEqual(Publisher.objects.filter(name__iexact="Maison Totanga").count(), 1)
 
     def test_saved_book_keeps_the_lengths_and_copy_fields_of_the_database(self):
         self.login(self.librarian)

@@ -18,6 +18,8 @@ import { BookFormPage } from "../pages/BookFormPage.jsx"
 import { BooksPage } from "../pages/BooksPage.jsx"
 import { CategoriesPage } from "../pages/CategoriesPage.jsx"
 import { CategoryFormPage } from "../pages/CategoryFormPage.jsx"
+import { PublisherFormPage } from "../pages/PublisherFormPage.jsx"
+import { PublishersPage } from "../pages/PublishersPage.jsx"
 import { DashboardPage } from "../pages/DashboardPage.jsx"
 import { EventFormPage } from "../pages/EventFormPage.jsx"
 import { EventsPage } from "../pages/EventsPage.jsx"
@@ -58,6 +60,7 @@ function GuardedPage() {
   if (page.to === "/") return <DashboardPage />
   if (page.to === "/catalogue/livres") return <BooksPage />
   if (page.to === "/catalogue/auteurs") return <AuthorsPage />
+  if (page.to === "/catalogue/editeurs") return <PublishersPage />
   if (page.to === "/catalogue/categories") return <CategoriesPage />
   if (page.to === "/annonces") return <AnnouncementsPage />
   if (page.to === "/publications") return <PublicationsPage />
@@ -92,6 +95,9 @@ export const router = createBrowserRouter(
             { path: "catalogue/auteurs/nouveau", element: <Allowed permission="catalog.add_author"><AuthorFormPage mode="create" /></Allowed> },
             { path: "catalogue/auteurs/:authorId/modifier", element: <Allowed permission="catalog.change_author"><AuthorFormPage mode="edit" /></Allowed> },
             { path: "catalogue/auteurs/:authorId", element: <Allowed permission="catalog.view_author"><AuthorFormPage mode="view" /></Allowed> },
+            { path: "catalogue/editeurs/nouveau", element: <Allowed permission="catalog.add_publisher"><PublisherFormPage mode="create" /></Allowed> },
+            { path: "catalogue/editeurs/:publisherId/modifier", element: <Allowed permission="catalog.change_publisher"><PublisherFormPage mode="edit" /></Allowed> },
+            { path: "catalogue/editeurs/:publisherId", element: <Allowed permission="catalog.view_publisher"><PublisherFormPage mode="view" /></Allowed> },
             { path: "catalogue/categories/nouveau", element: <Allowed permission="catalog.add_category"><CategoryFormPage mode="create" /></Allowed> },
             { path: "catalogue/categories/:categoryId/modifier", element: <Allowed permission="catalog.change_category"><CategoryFormPage mode="edit" /></Allowed> },
             { path: "catalogue/categories/:categoryId", element: <Allowed permission="catalog.view_category"><CategoryFormPage mode="view" /></Allowed> },
@@ -120,5 +126,9 @@ export const router = createBrowserRouter(
     },
     { path: "*", element: <NotFoundPage /> },
   ],
-  { basename: ADMIN_BASENAME },
+  {
+    basename: ADMIN_BASENAME,
+    // Sans ça, React Router peut passer de /admin/ à /admin ; le F5 Vite échoue.
+    trailingSlash: "ignore",
+  },
 )

@@ -7,9 +7,54 @@ const privateHeaders = {
   "X-Robots-Tag": "noindex, nofollow, noarchive",
 }
 
+/**
+ * Vite exige le préfixe /admin/. Sans slash final (/admin) ou hors préfixe
+ * (/parametres), le serveur affiche une page d'erreur au F5.
+ * On redirige vers l'URL correcte sous /admin/.
+ */
+function adminBaseRedirect() {
+  return {
+    name: "admin-base-redirect",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const raw = req.url || "/"
+        const q = raw.indexOf("?")
+        const path = q === -1 ? raw : raw.slice(0, q)
+        const query = q === -1 ? "" : raw.slice(q)
+
+        if (path === "/admin") {
+          res.statusCode = 302
+          res.setHeader("Location", `/admin/${query}`)
+          res.end()
+          return
+        }
+
+        if (
+          path.startsWith("/admin/") ||
+          path.startsWith("/api/") ||
+          path.startsWith("/media/") ||
+          path.startsWith("/@") ||
+          path.startsWith("/node_modules") ||
+          path.startsWith("/src/") ||
+          path === "/favicon.ico" ||
+          path === "/favicon.svg"
+        ) {
+          next()
+          return
+        }
+
+        const target = path === "/" ? `/admin/${query}` : `/admin${path}${query}`
+        res.statusCode = 302
+        res.setHeader("Location", target)
+        res.end()
+      })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => ({
   base: "/admin/",
-  plugins: [react(), tailwindcss()],
+  plugins: [adminBaseRedirect(), react(), tailwindcss()],
   build: {
     sourcemap: false,
   },

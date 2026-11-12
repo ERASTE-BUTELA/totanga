@@ -10,6 +10,7 @@ from django.db import transaction
 from PIL import Image
 
 from apps.catalog.models import Author, Book, BookLanguage, BookState, Category, Copy, CopyStatus, StoredImage
+from apps.catalog.publishers import get_or_create_publisher
 
 
 CATEGORIES = (
@@ -301,7 +302,7 @@ class Command(BaseCommand):
                     category=categories[category_name],
                     publication_year=year,
                     language=language,
-                    publisher=publisher,
+                    publisher=get_or_create_publisher(publisher),
                     summary=summary,
                     state=BookState.ARCHIVED if archived else BookState.PUBLISHED,
                     cover_image=cover,

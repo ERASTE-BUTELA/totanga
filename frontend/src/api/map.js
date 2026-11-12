@@ -123,6 +123,12 @@ export function mapLibraryInfo(raw) {
     phone: text(raw.phone),
     email: text(raw.email),
     notice: text(raw.notice),
+    logo: text(raw.logo) || "/images/logo.png",
+    about: text(raw.about),
+    facebookUrl: text(raw.facebook_url),
+    whatsappUrl: text(raw.whatsapp_url),
+    mapsUrl: text(raw.maps_url),
+    maintenance: Boolean(raw.maintenance),
     hoursSummary: text(raw.hours_summary),
     socials: (Array.isArray(raw.social_links) ? raw.social_links : [])
       .map((item) => ({ label: text(item.label), url: toSafeExternalUrl(item.url) }))

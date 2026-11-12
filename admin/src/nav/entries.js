@@ -2,6 +2,7 @@ export const PAGES = [
   { id: "dashboard", label: "Tableau de bord", to: "/", permission: null },
   { id: "books", label: "Livres", to: "/catalogue/livres", permission: "catalog.view_book", group: "Catalogue" },
   { id: "authors", label: "Auteurs", to: "/catalogue/auteurs", permission: "catalog.view_author", group: "Catalogue" },
+  { id: "publishers", label: "Éditeurs", to: "/catalogue/editeurs", permission: "catalog.view_publisher", group: "Catalogue" },
   { id: "categories", label: "Catégories", to: "/catalogue/categories", permission: "catalog.view_category", group: "Catalogue" },
   { id: "announcements", label: "Annonces", to: "/annonces", permission: "announcements.view_announcement" },
   { id: "publications", label: "Publications", to: "/publications", permission: "posts.view_post" },
@@ -9,7 +10,7 @@ export const PAGES = [
   { id: "users", label: "Utilisateurs et rôles", to: "/utilisateurs", permission: "accounts.view_user" },
   { id: "journal", label: "Journal", to: "/journal", permission: "accounts.view_staffaction" },
   { id: "messages", label: "Messages", to: "/messages", permission: "visitor_messages.view_visitormessage" },
-  { id: "settings", label: "Paramètres", to: "/parametres", permission: "library_info.view_librarypage" },
+  { id: "settings", label: "Paramètres", to: "/parametres", permission: "library_info.view_library" },
 ]
 
 export function canOpen(permissions, permission, role) {

@@ -13,7 +13,7 @@ import {
  * Le catalogue, les annonces et les événements lisent l'API.
  * Les exemples fictifs ne servent que si VITE_USE_FIXTURES=true,
  * et jamais dans une construction de production.
- * Les publications et la fiche de la bibliothèque restent des exemples.
+ * Les publications restent des exemples tant que leur API n'est pas branchée.
  */
 function catalogUsesFixtures() {
   if (import.meta.env.PROD) return false
@@ -46,7 +46,22 @@ function mapPublicBook(raw) {
 }
 
 export async function getLibraryInfo() {
-  return mapLibraryInfo(fixtures.library)
+  if (catalogUsesFixtures()) return mapLibraryInfo(fixtures.library)
+  try {
+    const payload = await catalogRequest("/api/bibliotheque/")
+    const mapped = mapLibraryInfo(payload)
+    const fallback = mapLibraryInfo(fixtures.library)
+    return {
+      ...mapped,
+      hours: mapped.hours.length ? mapped.hours : fallback.hours,
+      hoursSummary: mapped.hoursSummary || fallback.hoursSummary,
+      // Réseaux : uniquement ceux enregistrés (Facebook / WhatsApp), pas les exemples fictifs.
+      socials: mapped.socials,
+      notice: mapped.notice || fallback.notice,
+    }
+  } catch {
+    return mapLibraryInfo(fixtures.library)
+  }
 }
 
 export async function getCategories() {
@@ -177,7 +192,8 @@ function csrfToken() {
 }
 
 function mapPublicMessage(item) {
-  if (!item || typeof item !== "object" || "email" in item) return null
+  // Jamais d'email ni de WhatsApp côté public.
+  if (!item || typeof item !== "object" || "email" in item || "whatsapp" in item) return null
   if (typeof item.name !== "string" || typeof item.body !== "string") return null
   return {
     id: item.id,
@@ -214,7 +230,8 @@ export async function sendVisitorMessage(fields) {
       },
       body: JSON.stringify({
         name: fields.name,
-        email: fields.email,
+        email: fields.email || "",
+        whatsapp: fields.whatsapp || "",
         subject: fields.subject,
         body: fields.body,
       }),

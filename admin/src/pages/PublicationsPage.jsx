@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { CheckCircle2, FileText, Star, StarOff } from "lucide-react"
 import { RowActions } from "../components/RowActions.jsx"
+import { useListNotice } from "../lib/useListNotice.js"
 import { CatalogListPage } from "./CatalogListPage.jsx"
 import { readPublications, removePublication, savePublication } from "./contentStore.js"
 
@@ -27,6 +28,7 @@ function when(value) {
 
 export function PublicationsPage() {
   const [rows, setRows] = useState(() => readPublications())
+  const [notice] = useListNotice()
 
   function toggleFeatured(row) {
     savePublication({ ...row, featured: !row.featured })
@@ -44,6 +46,8 @@ export function PublicationsPage() {
   const featured = rows.filter((row) => row.featured).length
 
   return (
+    <>
+      {notice ? <p role="status" className="mb-4 rounded-panel border border-available bg-available-soft p-4 text-available">{notice}</p> : null}
     <CatalogListPage
       heading="Liste des publications"
       headingIcon={FileText}
@@ -129,5 +133,6 @@ export function PublicationsPage() {
         },
       ]}
     />
+    </>
   )
 }

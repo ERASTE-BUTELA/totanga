@@ -53,6 +53,24 @@ export function deleteAuthor(id) {
   return request(`/api/gestion/catalogue/auteurs/${id}/`, { method: "DELETE" }).then(finish)
 }
 
+export function listPublishers(params) {
+  const suffix = params ? pageQuery({ page: params.page || 1, page_size: params.pageSize || 10, q: params.q, tri: params.sort }) : ""
+  return request(`/api/gestion/catalogue/editeurs/${suffix}`).then(finish)
+}
+
+export function getPublisher(id) {
+  return request(`/api/gestion/catalogue/editeurs/${id}/`).then(finish)
+}
+
+export function savePublisher(id, body) {
+  const path = id ? `/api/gestion/catalogue/editeurs/${id}/` : "/api/gestion/catalogue/editeurs/"
+  return request(path, { method: id ? "PATCH" : "POST", body: JSON.stringify(body) }).then(finish)
+}
+
+export function deletePublisher(id) {
+  return request(`/api/gestion/catalogue/editeurs/${id}/`, { method: "DELETE" }).then(finish)
+}
+
 export function listCategories(params) {
   const suffix = params ? pageQuery({ page: params.page || 1, page_size: params.pageSize || 10, q: params.q, tri: params.sort }) : ""
   return request(`/api/gestion/catalogue/categories/${suffix}`).then(finish)

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { CalendarDays } from "lucide-react"
 import { listEvents, setEventState } from "../api/content.js"
 import { RowActions } from "../components/RowActions.jsx"
+import { useListNotice } from "../lib/useListNotice.js"
 import { CatalogListPage } from "./CatalogListPage.jsx"
 import { contentNotices } from "./texts.js"
 
@@ -37,7 +38,7 @@ function statusClass(status) {
 export function EventsPage() {
   const [rows, setRows] = useState(null)
   const [error, setError] = useState("")
-  const [notice, setNotice] = useState("")
+  const [notice, setNotice] = useListNotice()
 
   useEffect(() => {
     listEvents().then((result) => {

@@ -1,8 +1,23 @@
 import { Fragment, useEffect, useId, useRef, useState } from "react"
 import { Archive, ArrowLeft, BookOpen, Check, Eye, Layers, Pencil, Plus, Save } from "lucide-react"
 import { Link, useLocation, useNavigate, useParams } from "react-router"
-import { archiveBook, getBook, listAuthors, listCategories, saveBook } from "../api/catalog.js"
+import { archiveBook, getBook, listAuthors, listCategories, listPublishers, saveBook } from "../api/catalog.js"
+import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
+import { SearchSelect } from "../components/SearchSelect.jsx"
+import { busyPhase, saveAndGo } from "../lib/saveAndGo.js"
 import { bookNotices } from "./texts.js"
+
+function searchAuthors(query) {
+  return listAuthors({ q: query, page: 1, pageSize: 20 })
+}
+
+function searchCategories(query) {
+  return listCategories({ q: query, page: 1, pageSize: 20 })
+}
+
+function searchPublishers(query) {
+  return listPublishers({ q: query, page: 1, pageSize: 20 })
+}
 
 const LANGUAGES = [
   ["fr", "Français"],
@@ -27,15 +42,20 @@ const STATUS_CLASS = {
 
 const fieldClass = "w-full rounded-control border border-line bg-white px-3"
 
+function categoryLabel(item) {
+  if (!item) return ""
+  return item.parent_name ? `${item.parent_name} — ${item.name}` : item.name
+}
+
 function starting(book) {
   if (!book) {
     return {
       id: null,
       title: "",
       authors: [],
-      category: "",
+      category: null,
       year: "",
-      publisher: "",
+      publisher: null,
       isbn: "",
       language: "fr",
       pages: "",
@@ -50,9 +70,9 @@ function starting(book) {
     id: book.id,
     title: book.title,
     authors: book.author_choices || [],
-    category: String(book.category_id),
+    category: book.category_choice || (book.category_id ? { id: book.category_id, name: book.category || "", parent_name: "" } : null),
     year: book.year,
-    publisher: book.publisher,
+    publisher: book.publisher_choice || null,
     isbn: book.isbn,
     language: book.language,
     pages: book.pages ? String(book.pages) : "",
@@ -88,16 +108,14 @@ export function BookFormPage({ mode }) {
 
   useEffect(() => {
     let gone = false
-    Promise.all([
-      listCategories(),
-      mode === "create" ? Promise.resolve({ ok: true, data: null }) : getBook(bookId),
-    ]).then(([categories, book]) => {
+    const load = mode === "create" ? Promise.resolve({ ok: true, data: null }) : getBook(bookId)
+    load.then((book) => {
       if (gone) return
-      if (!categories.ok || !book.ok) {
-        setError(book.error || categories.error)
+      if (!book.ok) {
+        setError(book.error)
         return
       }
-      setState({ categories: categories.data, book: book.data })
+      setState({ book: book.data })
     })
     return () => {
       gone = true
@@ -110,19 +128,16 @@ export function BookFormPage({ mode }) {
     <BookForm
       key={`${mode}-${bookId || "nouveau"}`}
       initial={starting(state.book)}
-      categories={state.categories}
       creating={mode === "create"}
       viewing={mode === "view"}
     />
   )
 }
 
-function BookForm({ initial, categories, creating, viewing }) {
+function BookForm({ initial, creating, viewing }) {
   const coverInput = useId()
   const [title, setTitle] = useState(initial.title)
   const [authors, setAuthors] = useState(initial.authors)
-  const [authorQuery, setAuthorQuery] = useState("")
-  const [authorHits, setAuthorHits] = useState([])
   const [category, setCategory] = useState(initial.category)
   const [year, setYear] = useState(initial.year)
   const [publisher, setPublisher] = useState(initial.publisher)
@@ -147,37 +162,12 @@ function BookForm({ initial, categories, creating, viewing }) {
   const [coverFile, setCoverFile] = useState(null)
   const [coverError, setCoverError] = useState("")
   const [problems, setProblems] = useState([])
+  const [phase, setPhase] = useState(null)
+  const busy = busyPhase(phase)
 
   useEffect(() => () => {
     if (coverUrl) URL.revokeObjectURL(coverUrl)
   }, [coverUrl])
-
-  useEffect(() => {
-    const text = authorQuery.trim()
-    if (text.length < 2) {
-      setAuthorHits([])
-      return undefined
-    }
-    let gone = false
-    const timer = setTimeout(() => {
-      listAuthors({ q: text, page: 1, pageSize: 8 }).then((result) => {
-        if (gone || !result.ok) return
-        const chosen = new Set(authors.map((item) => item.id))
-        setAuthorHits((result.data.results || []).filter((item) => !chosen.has(item.id)))
-      })
-    }, 250)
-    return () => {
-      gone = true
-      clearTimeout(timer)
-    }
-  }, [authorQuery, authors])
-
-  function addAuthor(person) {
-    if (!person || authors.some((item) => item.id === person.id)) return
-    setAuthors((current) => [...current, { id: person.id, name: person.name }])
-    setAuthorQuery("")
-    setAuthorHits([])
-  }
 
   function addKeyword(event) {
     if (event.key !== "Enter") return
@@ -239,7 +229,7 @@ function BookForm({ initial, categories, creating, viewing }) {
 
   async function save(event) {
     event.preventDefault()
-    if (viewing) return
+    if (viewing || busy) return
     const next = []
     if (!title.trim()) next.push("Le titre est obligatoire.")
     if (authors.length === 0) next.push("Indiquez au moins un auteur.")
@@ -254,14 +244,15 @@ function BookForm({ initial, categories, creating, viewing }) {
     }
     setProblems(next)
     if (next.length > 0) return
+    setPhase("saving")
     const body = new FormData()
     body.set("title", title.trim())
     body.set("summary", summary.trim())
-    body.set("category_id", category)
+    body.set("category_id", category.id)
     body.set("author_ids", JSON.stringify(authors.map((person) => person.id)))
     body.set("year", year)
     body.set("language", language)
-    body.set("publisher", publisher.trim())
+    body.set("publisher_id", publisher ? String(publisher.id) : "")
     body.set("isbn", isbn.trim())
     body.set("pages", pages)
     body.set("keywords", JSON.stringify(keywords))
@@ -281,19 +272,22 @@ function BookForm({ initial, categories, creating, viewing }) {
     if (coverFile) body.set("cover", coverFile)
     const result = await saveBook(initial.id, body)
     if (!result.ok) {
+      setPhase(null)
       setProblems([result.error])
       return
     }
     const message = publish.current ? bookNotices.published : bookNotices.draft
-    if (creating) {
-      navigate(`/catalogue/livres/${result.data.id}/modifier`, { state: { notice: message } })
-      return
-    }
-    setNotice(message)
+    await saveAndGo({
+      setPhase,
+      navigate,
+      to: "/catalogue/livres",
+      notice: message,
+    })
   }
 
   return (
     <form className="grid gap-4" onSubmit={save}>
+      {phase ? <FormSaveOverlay phase={phase} label={phase === "done" ? (publish.current ? "Publié" : "Enregistré") : undefined} /> : null}
       {notice ? <p role="status" className="rounded-panel border border-available bg-available-soft p-4 text-available">{notice}</p> : null}
       {problems.length > 0 ? (
         <div role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
@@ -312,57 +306,45 @@ function BookForm({ initial, categories, creating, viewing }) {
               <span className="font-semibold text-heading">Titre *</span>
               <input className={fieldClass} value={title} onChange={(event) => setTitle(event.target.value)} maxLength={400} required disabled={viewing} />
             </label>
-            <div className="grid gap-1">
-              <span className="font-semibold text-heading">Auteurs *</span>
-              <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-control border border-line px-2">
-                {authors.map((person) => (
-                  <span key={person.id} className="inline-flex items-center gap-1 rounded-full bg-lavender px-2 py-1 font-semibold text-violet">
-                    {person.name}
-                    {viewing ? null : <button type="button" aria-label={`Retirer ${person.name}`} onClick={() => setAuthors(authors.filter((item) => item.id !== person.id))}>×</button>}
-                  </span>
-                ))}
-                {viewing ? null : (
-                  <input
-                    className="min-w-40 flex-1 border-0 bg-transparent py-2"
-                    value={authorQuery}
-                    aria-label="Rechercher un auteur"
-                    placeholder="Rechercher un auteur"
-                    onChange={(event) => setAuthorQuery(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") event.preventDefault()
-                    }}
-                  />
-                )}
-              </div>
-              {authorHits.length > 0 ? (
-                <ul className="rounded-control border border-line bg-white">
-                  {authorHits.map((person) => (
-                    <li key={person.id}>
-                      <button type="button" className="w-full px-3 py-2 text-left hover:bg-lavender" onClick={() => addAuthor(person)}>
-                        {person.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
+            <SearchSelect
+              label="Auteurs"
+              multiple
+              values={authors}
+              onChange={setAuthors}
+              search={searchAuthors}
+              labelOf={(item) => item.name}
+              placeholder="Choisir un auteur"
+              required
+              disabled={viewing}
+              clearable={false}
+            />
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <label className="grid gap-1">
-              <span className="font-semibold text-heading">Catégorie *</span>
-              <select className={fieldClass} value={category} onChange={(event) => setCategory(event.target.value)} required disabled={viewing}>
-                <option value="">Choisir</option>
-                {categories.map((item) => <option key={item.id} value={item.id}>{item.parent_name ? `${item.parent_name} — ${item.name}` : item.name}</option>)}
-              </select>
-            </label>
+            <SearchSelect
+              label="Catégorie"
+              value={category}
+              onChange={setCategory}
+              search={searchCategories}
+              labelOf={categoryLabel}
+              placeholder="Choisir une catégorie"
+              required
+              disabled={viewing}
+              clearable={!viewing}
+            />
             <label className="grid gap-1">
               <span className="font-semibold text-heading">Année de publication (facultatif)</span>
               <input className={fieldClass} inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} maxLength={4} disabled={viewing} />
             </label>
-            <label className="grid gap-1">
-              <span className="font-semibold text-heading">Éditeur (facultatif)</span>
-              <input className={fieldClass} value={publisher} onChange={(event) => setPublisher(event.target.value)} maxLength={200} disabled={viewing} />
-            </label>
+            <SearchSelect
+              label="Éditeur (facultatif)"
+              value={publisher}
+              onChange={setPublisher}
+              search={searchPublishers}
+              labelOf={(item) => item.name}
+              placeholder="Choisir un éditeur"
+              disabled={viewing}
+              clearable={!viewing}
+            />
             <label className="grid gap-1">
               <span className="font-semibold text-heading">ISBN (facultatif)</span>
               <input className={fieldClass} value={isbn} onChange={(event) => setIsbn(event.target.value)} maxLength={24} disabled={viewing} />
@@ -597,13 +579,13 @@ function BookForm({ initial, categories, creating, viewing }) {
             </Link>
           ) : (
             <>
-              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" onClick={() => { publish.current = false }}>
+              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" disabled={busy} onClick={() => { publish.current = false }}>
                 <Save aria-hidden="true" size={18} />
-                Enregistrer en brouillon
+                {busy && !publish.current ? "Enregistrement…" : "Enregistrer en brouillon"}
               </button>
-              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" onClick={() => { publish.current = true }}>
+              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy} onClick={() => { publish.current = true }}>
                 <Check aria-hidden="true" size={18} />
-                Publier
+                {busy && publish.current ? "Publication…" : "Publier"}
               </button>
             </>
           )}

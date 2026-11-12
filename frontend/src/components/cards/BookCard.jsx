@@ -15,10 +15,10 @@ export function BookCard({ book, compact = false, plain = false, catalog = false
   const authors = authorNames(book.authors)
   if (dense) {
     return (
-      <article className="flex h-full flex-col rounded-xl border border-line bg-white p-2 shadow-card">
+      <article className="flex h-full flex-col rounded-xl border border-line bg-white p-1.5 shadow-card sm:p-2">
         <Link to={`/catalogue/${book.slug}`} className="flex h-full flex-col rounded-control">
-          <Cover book={book} className="h-28 w-full rounded-md object-cover" />
-          <h3 className="mt-1.5 line-clamp-2 text-meta font-semibold leading-snug text-heading">{book.title}</h3>
+          <Cover book={book} className="aspect-[3/4] w-full rounded-md object-cover" />
+          <h3 className="mt-1.5 line-clamp-2 text-badge font-semibold leading-snug text-heading sm:text-meta">{book.title}</h3>
           <p className="mt-0.5 line-clamp-1 text-badge text-muted">{authors || "Auteur non indiqué"}</p>
           <span className="mt-1">
             <BookStatus book={book} />

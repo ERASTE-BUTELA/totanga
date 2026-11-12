@@ -24,7 +24,7 @@ class CatalogReadThrottle(SimpleRateThrottle):
 def _published():
     return (
         Book.objects.published()
-        .select_related("category", "category__parent", "cover_image")
+        .select_related("category", "category__parent", "cover_image", "publisher")
         .prefetch_related("authors", "copies", "keywords")
         .with_copy_counts()
     )
@@ -80,7 +80,7 @@ def _public_book(book, *, with_copies=False, brief=False):
         {
             "summary": book.summary,
             "language": book.language,
-            "publisher": book.publisher,
+            "publisher": book.publisher.name if book.publisher_id else "",
             "isbn": book.isbn or "",
             "page_count": book.page_count,
             "keywords": [item.label for item in book.keywords.all()],

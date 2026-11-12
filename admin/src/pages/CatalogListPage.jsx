@@ -36,7 +36,7 @@ export function CatalogListPage({
   const [sentQuery, setSentQuery] = useState("")
 
   useEffect(() => {
-    const timer = setTimeout(() => setSentQuery(query), 250)
+    const timer = setTimeout(() => setSentQuery(query), 180)
     return () => clearTimeout(timer)
   }, [query])
 
@@ -48,8 +48,13 @@ export function CatalogListPage({
   const visible = useMemo(() => {
     if (onPageRequest) return rows
     const needle = query.trim().toLocaleLowerCase("fr")
+    const tokens = needle.split(/\s+/).filter(Boolean)
     const next = rows.filter((row) => {
-      if (needle && !searchOf(row).toLocaleLowerCase("fr").includes(needle)) return false
+      if (tokens.length > 0) {
+        const haystack = searchOf(row).toLocaleLowerCase("fr")
+        // Tous les mots saisis doivent apparaître (recherche plus précise).
+        if (!tokens.every((token) => haystack.includes(token))) return false
+      }
       if (period && !period.match(row, from, to)) return false
       return filters.every((filter) => {
         const value = chosen[filter.id] || ""

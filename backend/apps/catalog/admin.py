@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.db import models
 from django.utils.html import format_html
 
-from .models import Author, Book, BookState, Category, Copy, CopyStatus, RegisterRow
+from .models import Author, Book, BookState, Category, Copy, CopyStatus, Publisher, RegisterRow
 
 
 class CatalogImageAdmin(admin.ModelAdmin):
@@ -54,6 +54,13 @@ class AuthorAdmin(CatalogImageAdmin):
         )
 
 
+@admin.register(Publisher)
+class PublisherAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+    fields = ("name", "notes")
+
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ("name", "parent", "slug")
@@ -75,7 +82,7 @@ class BookAdmin(CatalogImageAdmin):
         "state",
     )
     list_filter = ("category", "state", CopyStatusFilter)
-    search_fields = ("title", "authors__name", "isbn", "copies__call_number")
+    search_fields = ("title", "authors__name", "publisher__name", "isbn", "copies__call_number")
     search_help_text = "Titre, auteur, ISBN ou cote."
     filter_horizontal = ("authors",)
     readonly_fields = (
