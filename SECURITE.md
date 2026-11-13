@@ -40,6 +40,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 - **Contenu riche.** Si un champ accepte du HTML, il est nettoyé côté serveur avant enregistrement.
 - **Base.** Pas de SQL écrit à la main : l'ORM Django construit les requêtes. L'utilisateur PostgreSQL de l'application n'est pas super-utilisateur.
 - **Journaux.** Pas de mot de passe, de clé secrète, d'adresse électronique, d'adresse IP ni de corps de message. Le journal du personnel note qui a fait quoi, sur quel objet, et quand. Des sauvegardes régulières de la base sont prévues et restaurées à l'essai.
+- **Fréquentation du site.** Mesure anonyme côté serveur. Aucune IP stockée, aucun cookie de suivi, aucun traceur ni service externe. Les visiteurs uniques sont estimés par une empreinte quotidienne (IP + navigateur + sel secret du jour), jamais enregistrée en clair. Robots connus ignorés. Événements détaillés purgés après 90 jours ; compteurs agrégés conservés. Recherches : termes fréquents agrégés seulement, sans e-mail ni téléphone. Lecture réservée à la permission `analytics.view_sitestat` (administrateur et super-administrateur).
 
 ## Docker et déploiement
 
@@ -88,6 +89,9 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Session du personnel : 30 minutes d'inactivité, 10 heures au maximum, cookie de session illisible par un script | Appliqué |
 | Limitation des tentatives de connexion : 5 échecs, puis 15 minutes, même réponse si le compte n'existe pas | Appliqué |
 | Journal des actions du personnel : qui, quoi, quel objet, quand, sans mot de passe, clé, adresse ni message | Appliqué |
+| Statistiques de fréquentation : empreinte quotidienne (jamais d'IP en base), agrégats, purge des événements à 90 jours, permission `analytics.view_sitestat` | Appliqué |
+| Limitation des envois de visites (`site_visits`, 60 par minute, adresse de connexion) | Appliqué |
+| Statistiques absentes de l'API publique | Appliqué |
 | Administration Django `/admin/` absente en production ; API du personnel sous `/api/gestion/` | Appliqué |
 | Port PostgreSQL non publié vers la machine | Appliqué |
 | `.env` exclu de Git et de l'image Docker | Appliqué |

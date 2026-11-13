@@ -196,6 +196,46 @@ function csrfToken() {
   return match ? decodeURIComponent(match[1]) : ""
 }
 
+/**
+ * Fréquentation anonyme : le backend calcule une empreinte quotidienne.
+ * Aucun cookie de suivi, aucun localStorage, échec silencieux.
+ */
+export function recordSiteVisit(pathname) {
+  if (catalogUsesFixtures()) return
+  const path = pathname || "/"
+  const referrer = typeof document === "undefined" ? "" : document.referrer || ""
+  const search = (() => {
+    try {
+      return new URLSearchParams(window.location.search).get("q") || ""
+    } catch {
+      return ""
+    }
+  })()
+  const send = () => {
+    fetch("/api/visites/", {
+      method: "POST",
+      credentials: "same-origin",
+      keepalive: true,
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrfToken(),
+      },
+      body: JSON.stringify({ path, referrer, search }),
+    }).catch(() => {})
+  }
+  try {
+    if (!csrfToken()) {
+      fetch("/api/visites/", { credentials: "same-origin" })
+        .then(() => send())
+        .catch(() => {})
+      return
+    }
+    send()
+  } catch {
+    // La visite ne doit jamais bloquer la navigation.
+  }
+}
+
 function mapPublicMessage(item) {
   // Jamais d'email ni de WhatsApp côté public.
   if (!item || typeof item !== "object" || "email" in item || "whatsapp" in item) return null

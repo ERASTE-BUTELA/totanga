@@ -83,6 +83,7 @@ export const router = createBrowserRouter(
             // https://bibtotanga.com/admin/  et  /admin/dashboard
             { index: true, element: <DashboardPage /> },
             { path: DASHBOARD_ALIAS.slice(1), element: <DashboardPage /> },
+            { path: "statistiques", element: <Navigate to="/journal?onglet=statistiques" replace /> },
             ...PAGES.filter((page) => page.to !== DASHBOARD_PATH).map((page) => ({
               path: page.to.slice(1),
               element: <GuardedPage />,

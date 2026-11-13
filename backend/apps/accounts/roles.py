@@ -58,6 +58,7 @@ ADMIN_PERMISSIONS = (
     ("accounts", "change_user"),
     ("visitor_messages", "view_visitormessage"),
     ("accounts", "view_staffaction"),
+    ("analytics", "view_sitestat"),
     ("library_info", "view_library"),
     ("library_info", "change_library"),
 )

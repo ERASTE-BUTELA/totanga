@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Outlet, useLocation } from "react-router"
-import { getLibraryInfo } from "../../api/client.js"
+import { getLibraryInfo, recordSiteVisit } from "../../api/client.js"
 import { setSiteFavicon } from "../../lib/favicon.js"
 import { MaintenancePage } from "../../pages/MaintenancePage.jsx"
 import { SiteFooter } from "./SiteFooter.jsx"
@@ -56,6 +56,12 @@ export function RootLayout() {
   useEffect(() => {
     setSiteFavicon(library?.logo)
   }, [library?.logo])
+
+  useEffect(() => {
+    if (!ready || library?.maintenance) return undefined
+    recordSiteVisit(location.pathname)
+    return undefined
+  }, [ready, library?.maintenance, location.pathname])
 
   if (!ready) {
     return (

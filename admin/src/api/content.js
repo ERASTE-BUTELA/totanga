@@ -93,6 +93,14 @@ export function listJournal() {
   return request("/api/gestion/journal/").then(finish)
 }
 
+export function getSiteStatistics({ from = "", to = "" } = {}) {
+  const params = new URLSearchParams()
+  if (from) params.set("from", from)
+  if (to) params.set("to", to)
+  const query = params.toString()
+  return request(`/api/gestion/statistiques/${query ? `?${query}` : ""}`).then(finish)
+}
+
 export function listMessages() {
   return request("/api/gestion/messages/").then(finish).then((result) => {
     if (!result.ok) return result

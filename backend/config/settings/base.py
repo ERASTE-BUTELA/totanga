@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.events",
     "apps.library_info",
     "apps.visitor_messages",
+    "apps.analytics",
 ]
 
 MIDDLEWARE = [
@@ -157,6 +158,7 @@ REST_FRAMEWORK = {
         "visitor_messages": "8/hour",
         "catalog_read": "120/minute",
         "content_read": "120/minute",
+        "site_visits": "60/minute",
     },
 }
 

@@ -8,6 +8,7 @@ export const STAFF_ROLES = [
       "Voir, ajouter et modifier les comptes du personnel.",
       "Lire les messages des visiteurs.",
       "Consulter le journal des actions.",
+      "Consulter les statistiques de fréquentation du site public.",
       "Voir, ajouter, modifier et supprimer les annonces et les publications.",
       "Voir, ajouter et modifier les événements (archivage, sans suppression).",
     ],

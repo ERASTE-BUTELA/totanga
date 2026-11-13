@@ -20,6 +20,7 @@ def build_urlpatterns(*, django_admin, debug):
     patterns = [
         path("api/sante/", health),
         path("api/messages/", include("apps.visitor_messages.urls")),
+        path("api/visites/", include("apps.analytics.public_urls")),
         path("api/catalogue/", include("apps.catalog.public_urls")),
         path("api/annonces/", include("apps.announcements.public_urls")),
         path("api/evenements/", include("apps.events.public_urls")),
@@ -31,6 +32,7 @@ def build_urlpatterns(*, django_admin, debug):
         path("api/gestion/", include("apps.events.gestion_urls")),
         path("api/gestion/", include("apps.posts.gestion_urls")),
         path("api/gestion/", include("apps.library_info.gestion_urls")),
+        path("api/gestion/", include("apps.analytics.gestion_urls")),
     ]
     if django_admin:
         patterns.insert(0, path("admin/", admin.site.urls))

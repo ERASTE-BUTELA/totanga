@@ -202,6 +202,16 @@ class PublicBookListView(APIView):
             .prefetch_related("authors")
             .with_copy_counts()[start:end]
         )
+        query = str(request.GET.get("q", "")).strip()
+        if query:
+            from apps.analytics.interest import note_search
+
+            note_search(request, query)
+        if selected is not None:
+            from apps.analytics.interest import note_category_consult
+
+            for category in selected[:3]:
+                note_category_consult(request, category)
         return Response(
             {
                 "count": total,
@@ -229,6 +239,9 @@ class PublicBookDetailView(APIView):
         )
         payload = _public_book(book, with_copies=True)
         payload["similar"] = [_public_book(item) for item in similar]
+        from apps.analytics.interest import note_book_consult
+
+        note_book_consult(request, book)
         return Response(payload)
 
 

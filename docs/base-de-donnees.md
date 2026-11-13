@@ -416,6 +416,16 @@ Déjà en place. On ne le change pas dans ce plan.
 
 Le visiteur peut créer un message. Il ne peut ni le lire en liste, ni le modifier, ni le supprimer.
 
+### Fréquentation (`analytics_*`)
+
+Mesure anonyme du site public, lue depuis le menu **Statistiques** (permission `analytics.view_sitestat`).
+
+Événement détaillé (`analytics_trafficevent`) : jour, empreinte quotidienne (SHA-256, jamais l'IP), chemin, type de page, livre/catégorie éventuels, terme de recherche nettoyé, appareil, origine, instant. Purge après 90 jours.
+
+Compteurs agrégés conservés : trafic journalier, pages, livres, catégories, recherches, appareils, origines.
+
+Aucune adresse IP, aucun cookie de suivi, aucun compte lecteur.
+
 ## 3. Correspondance avec les écrans
 
 « Calculé » signifie que la base ne stocke pas cette valeur : on la obtient en comptant ou en comparant des dates.
@@ -479,6 +489,8 @@ Le visiteur peut créer un message. Il ne peut ni le lire en liste, ni le modifi
 | Mon profil | adresse électronique affichée, téléphone, adresse personnelle, portrait | pas prévus : l'adresse du compte n'est pas montrée, le reste n'est pas nécessaire |
 | Préférences | langue d'écran, thème, densité, alertes | pas en base : elles ne survivent pas au rechargement tant qu'on n'a pas décidé de les garder |
 | Notifications | liste, pastille, compteurs | pas de table : il n'y a pas encore de flux à enregistrer ; le journal pourra les nourrir plus tard |
+| Journal | onglet Actions | Journal des actions |
+| Journal | onglet Statistiques | Fréquentation (anonyme) |
 | Changer le mot de passe | nouveau mot de passe | empreinte du Compte, quand l'écran sera réellement branché |
 | Aide | texte d'aide | pas une table |
 
@@ -562,7 +574,7 @@ On n'enregistre que ceci de personnel :
 - le message d'un visiteur : nom, adresse électronique, texte ;
 - le compte du personnel : identifiant, nom, empreinte du mot de passe, adresse électronique si elle a été posée à la création du compte Django.
 
-L'adresse d'un visiteur et le corps de son message ne sortent pas vers le site public et n'entrent pas dans le journal. L'adresse d'un compte du personnel ne figure pas dans la liste des comptes. Le prix d'acquisition des exemplaires et le registre d'import ne sortent pas dans l'API publique. Aucune adresse IP. Pas de compteur de vues. Pas de téléphone ni d'adresse de domicile du personnel.
+L'adresse d'un visiteur et le corps de son message ne sortent pas vers le site public et n'entrent pas dans le journal. L'adresse d'un compte du personnel ne figure pas dans la liste des comptes. Le prix d'acquisition des exemplaires et le registre d'import ne sortent pas dans l'API publique. Aucune adresse IP en base. La fréquentation du site est anonyme (empreinte quotidienne + agrégats ; détails 90 jours). Pas de téléphone ni d'adresse de domicile du personnel.
 
 Le contact public de la bibliothèque (téléphone, adresse, courriel de la fiche) est un contenu affiché, pas une donnée de compte.
 

@@ -39,7 +39,7 @@ const SUBTITLES = {
   "/publications": "Gérez les publications de la bibliothèque.",
   "/evenements": "Gérez les événements, ateliers, conférences et activités de la bibliothèque.",
   "/utilisateurs": "Gérez les comptes du personnel, leurs rôles et leurs permissions.",
-  "/journal": "Actions du personnel : qui, quoi, quel objet, quand.",
+  "/journal": "Actions du personnel et statistiques de fréquentation.",
   "/parametres": "Configurez la bibliothèque, ses fonctionnalités et son fonctionnement.",
   "/compte/profil": "Consultez et mettez à jour vos informations personnelles.",
   "/compte/mot-de-passe": "Compte du personnel",

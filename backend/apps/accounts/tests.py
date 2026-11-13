@@ -133,7 +133,10 @@ class RolePermissionTests(TestCase):
         self.assertTrue(admin.has_perm("events.add_event"))
         self.assertTrue(admin.has_perm("library_info.view_library"))
         self.assertTrue(admin.has_perm("library_info.change_library"))
+        self.assertTrue(admin.has_perm("analytics.view_sitestat"))
         self.assertFalse(librarian.has_perm("library_info.change_library"))
+        self.assertFalse(librarian.has_perm("analytics.view_sitestat"))
+        self.assertFalse(editor.has_perm("analytics.view_sitestat"))
         self.assertEqual(editor.groups.get().permissions.count(), 11)
 
 

@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react"
+import { useSearchParams } from "react-router"
+import { ChartColumn, ScrollText } from "lucide-react"
 import { listJournal } from "../api/content.js"
+import { canOpen } from "../nav/entries.js"
+import { useSession } from "../session/SessionContext.jsx"
+import { StatsPanel } from "./StatsPage.jsx"
 
 function formatWhen(value) {
   const date = new Date(value)
@@ -14,7 +19,23 @@ function formatWhen(value) {
   })
 }
 
-export function JournalPage() {
+function SectionTab({ icon: Icon, label, selected, onClick }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={`inline-flex min-h-11 items-center gap-2 rounded-control px-4 font-semibold ${
+        selected ? "bg-violet text-white" : "bg-lavender text-violet"
+      }`}
+    >
+      <Icon aria-hidden="true" size={18} />
+      {label}
+    </button>
+  )
+}
+
+function ActionsPanel() {
   const [rows, setRows] = useState(null)
   const [error, setError] = useState("")
 
@@ -51,6 +72,60 @@ export function JournalPage() {
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+export function JournalPage() {
+  const session = useSession()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const permissions = session.account?.permissions ?? []
+  const role = session.account?.role
+  const canActions = canOpen(permissions, "accounts.view_staffaction", role)
+  const canStats = canOpen(permissions, "analytics.view_sitestat", role)
+
+  const requested = searchParams.get("onglet") === "statistiques" ? "statistiques" : "actions"
+  const section = requested === "statistiques" && canStats
+    ? "statistiques"
+    : canActions
+      ? "actions"
+      : canStats
+        ? "statistiques"
+        : "actions"
+
+  function setSection(next) {
+    if (next === "statistiques") {
+      setSearchParams({ onglet: "statistiques" }, { replace: true })
+      return
+    }
+    setSearchParams({}, { replace: true })
+  }
+
+  if (!canActions && !canStats) {
+    return <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">Accès refusé.</p>
+  }
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex flex-wrap gap-2">
+        {canActions ? (
+          <SectionTab
+            icon={ScrollText}
+            label="Actions du personnel"
+            selected={section === "actions"}
+            onClick={() => setSection("actions")}
+          />
+        ) : null}
+        {canStats ? (
+          <SectionTab
+            icon={ChartColumn}
+            label="Statistiques"
+            selected={section === "statistiques"}
+            onClick={() => setSection("statistiques")}
+          />
+        ) : null}
+      </div>
+      {section === "statistiques" ? <StatsPanel /> : <ActionsPanel />}
     </div>
   )
 }
