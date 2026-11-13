@@ -233,6 +233,9 @@ export function VisitorMessagesPanel() {
                 <span>
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-heading">{row.subject || "Message"}</span>
+                    {row.kind_label ? (
+                      <span className="rounded-full bg-lavender px-2 py-0.5 text-meta font-semibold text-violet">{row.kind_label}</span>
+                    ) : null}
                     {!row.is_read ? (
                       <span className="rounded-full bg-violet px-2 py-0.5 text-meta font-semibold text-on-primary">Non lu</span>
                     ) : null}

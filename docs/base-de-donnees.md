@@ -403,18 +403,18 @@ Rôle : un lien vers une page de la bibliothèque (Facebook, etc.).
 
 ### Message d'un visiteur (`visitor_messages_visitormessage`)
 
-Déjà en place. On ne le change pas dans ce plan.
-
 | Champ | Type | Obligatoire | Contraintes |
 | --- | --- | --- | --- |
+| type (`kind`) | texte, 20 | oui | `contact` (message au personnel) ou `avis` (témoignage public) |
 | nom | texte, 80 | oui | |
-| adresse électronique | texte, 254 | oui | jamais renvoyée au public, jamais recopiée dans le journal |
-| sujet | texte, 20 | oui | question générale, horaires, catalogue, événement, autre |
-| message | texte, 1 000 | oui | pas de HTML ; pas dans le journal |
+| adresse électronique | texte, 254 | non | obligatoire seulement pour un contact (ou WhatsApp) ; jamais renvoyée au public |
+| WhatsApp | texte, 40 | non | obligatoire seulement pour un contact (ou e-mail) |
+| sujet | texte, 20 | oui | contact : question générale, horaires, catalogue, événement, autre ; avis : `avis` |
+| message | texte, 1 000 | oui | pas de HTML ; avis public limité à 280 caractères |
 | lu | oui / non | oui | défaut non ; réservé au personnel |
 | envoyé le | instant | oui | |
 
-Le visiteur peut créer un message. Il ne peut ni le lire en liste, ni le modifier, ni le supprimer.
+L’API publique liste uniquement les `avis`. Les messages `contact` restent réservés au personnel.
 
 ### Fréquentation (`analytics_*`)
 

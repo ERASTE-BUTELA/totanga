@@ -16,18 +16,28 @@ class VisitorMessageApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         return response.cookies["csrftoken"].value
 
-    def test_public_list_hides_the_email(self):
+    def test_public_list_shows_only_avis_and_hides_the_email(self):
         VisitorMessage.objects.create(
+            kind=VisitorMessage.KIND_CONTACT,
+            name="Paul",
+            email="paul@exemple.totanga.test",
+            subject="generale",
+            body="Question privée pour le personnel.",
+        )
+        VisitorMessage.objects.create(
+            kind=VisitorMessage.KIND_AVIS,
             name="Amina",
             email="amina@exemple.totanga.test",
-            subject="generale",
-            body="Bonjour la bibliothèque.",
+            subject="avis",
+            body="J'adore cette bibliothèque et son accueil.",
         )
         response = self.client.get("/api/messages/")
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
         self.assertNotIn("email", response.json()[0])
         self.assertNotIn("amina@exemple.totanga.test", response.content.decode())
-        self.assertEqual(response.json()[0]["subject"], "Question générale")
+        self.assertEqual(response.json()[0]["subject"], "Avis sur la bibliothèque")
+        self.assertEqual(response.json()[0]["name"], "Amina")
 
     def test_post_without_csrf_is_refused(self):
         response = self.client.post(
@@ -135,3 +145,32 @@ class VisitorMessageApiTests(TestCase):
         )
         self.assertEqual(blocked.status_code, 429)
         self.assertEqual(VisitorMessage.objects.count(), 8)
+
+    def test_avis_is_public_without_contact_and_limited(self):
+        token = self.token()
+        ok = self.client.post(
+            "/api/messages/",
+            {
+                "kind": "avis",
+                "name": "Amina",
+                "body": "Un lieu calme et bien tenu pour lire à Kinshasa.",
+            },
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(ok.status_code, 201, ok.data)
+        stored = VisitorMessage.objects.get()
+        self.assertEqual(stored.kind, VisitorMessage.KIND_AVIS)
+        self.assertEqual(stored.subject, "avis")
+        listed = self.client.get("/api/messages/")
+        self.assertEqual(len(listed.json()), 1)
+
+        too_long = "a" * 281
+        refused = self.client.post(
+            "/api/messages/",
+            {"kind": "avis", "name": "Paul", "body": too_long},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(refused.status_code, 400)
+        self.assertEqual(VisitorMessage.objects.filter(kind=VisitorMessage.KIND_AVIS).count(), 1)

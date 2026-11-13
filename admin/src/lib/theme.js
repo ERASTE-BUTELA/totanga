@@ -12,14 +12,16 @@ export function normalizeTheme(value) {
   if (value === "clair") return "light"
   if (value === "sombre") return "dark"
   if (value === "systeme") return "system"
-  return "system"
+  return "light"
 }
 
 export function readStoredTheme() {
   try {
-    return normalizeTheme(localStorage.getItem(THEME_STORAGE_KEY))
+    const stored = localStorage.getItem(THEME_STORAGE_KEY)
+    if (stored == null) return "light"
+    return normalizeTheme(stored)
   } catch {
-    return "system"
+    return "light"
   }
 }
 

@@ -451,10 +451,11 @@ class PublicSurfaceTests(TestCase):
 
         User.objects.create_user("compte-cache-du-personnel", password=PASSWORD)
         VisitorMessage.objects.create(
+            kind=VisitorMessage.KIND_AVIS,
             name="Amina",
             email="cachette@exemple.totanga.test",
-            subject="generale",
-            body="Bonjour, ceci est un message de démonstration.",
+            subject="avis",
+            body="Bonjour, ceci est un avis de démonstration.",
         )
         client = APIClient()
         messages = client.get("/api/messages/")

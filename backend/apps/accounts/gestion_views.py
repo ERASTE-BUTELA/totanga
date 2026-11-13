@@ -381,6 +381,8 @@ class StaffMessageListView(APIView):
             rows.append(
                 {
                     "id": message.pk,
+                    "kind": message.kind,
+                    "kind_label": message.get_kind_display(),
                     "name": message.name,
                     "email": message.email or "",
                     "whatsapp": message.whatsapp or "",

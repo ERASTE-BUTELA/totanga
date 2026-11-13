@@ -16,7 +16,7 @@ function subscribe(onStoreChange) {
 
 export function useTheme() {
   const [ready, setReady] = useState(false)
-  const theme = useSyncExternalStore(subscribe, readStoredTheme, () => "system")
+  const theme = useSyncExternalStore(subscribe, readStoredTheme, () => "light")
   const resolved = useSyncExternalStore(subscribe, () => resolvedTheme(readStoredTheme()), () => "light")
 
   useEffect(() => {

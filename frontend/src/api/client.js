@@ -274,10 +274,11 @@ export async function sendVisitorMessage(fields) {
         "X-CSRFToken": csrfToken(),
       },
       body: JSON.stringify({
+        kind: fields.kind || "contact",
         name: fields.name,
         email: fields.email || "",
         whatsapp: fields.whatsapp || "",
-        subject: fields.subject,
+        subject: fields.subject || "",
         body: fields.body,
       }),
     })
@@ -285,6 +286,8 @@ export async function sendVisitorMessage(fields) {
     throw new Error("Le message n'a pas pu être envoyé.")
   }
   if (response.status === 201) {
+    // Les avis reviennent dans la réponse publique ; les contacts n'ont pas à être listés.
+    if ((fields.kind || "contact") === "contact") return { ok: true }
     const message = mapPublicMessage(await response.json())
     if (!message) throw new Error("Le message n'a pas pu être envoyé.")
     return message
@@ -293,3 +296,5 @@ export async function sendVisitorMessage(fields) {
   if (response.status === 429) throw new Error("Trop de messages ont été envoyés. Réessayez plus tard.")
   throw new Error("Le message n'a pas pu être envoyé.")
 }
+
+export const AVIS_BODY_MAX = 280

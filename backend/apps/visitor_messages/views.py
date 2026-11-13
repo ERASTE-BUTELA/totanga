@@ -31,7 +31,8 @@ class VisitorMessageListCreateView(APIView):
     throttle_classes = [VisitorMessageThrottle]
 
     def get(self, request):
-        messages = VisitorMessage.objects.all()[:40]
+        # Accueil : uniquement les avis publics, pas les messages de contact.
+        messages = VisitorMessage.objects.filter(kind=VisitorMessage.KIND_AVIS)[:40]
         return Response(VisitorMessagePublicSerializer(messages, many=True).data)
 
     def post(self, request):

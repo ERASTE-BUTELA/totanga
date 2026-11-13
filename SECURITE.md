@@ -34,7 +34,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 - **CSRF.** Le middleware CSRF reste actif. Les origines de confiance sont explicites.
 - **Session du personnel.** Déconnexion après 30 minutes sans activité, et au plus tard au bout de 10 heures. Le cookie de session n'est pas lisible par un script. Le cookie CSRF le reste, pour que l'écran d'administration puisse l'envoyer. Cinq échecs de connexion bloquent les suivants pendant 15 minutes. La réponse est la même si le compte n'existe pas.
 - **CORS.** Limité au domaine du site. `CORS_ALLOW_ALL_ORIGINS` reste faux.
-- **API publique.** Lecture seule, sauf une exception : un visiteur peut envoyer un message à la bibliothèque. Il ne peut ni le modifier ni le supprimer. L'adresse électronique ou le numéro WhatsApp est conservé pour le personnel et n'est jamais renvoyé ni affiché au public. L'administration reste réservée au personnel connecté.
+- **API publique.** Lecture seule, sauf une exception : un visiteur peut envoyer un message de contact à la bibliothèque, ou publier un avis public (280 caractères max). Il ne peut ni le modifier ni le supprimer. Seuls les avis sont listés sur l'accueil. L'adresse électronique ou le numéro WhatsApp d'un contact est conservé pour le personnel et n'est jamais renvoyé ni affiché au public. L'administration reste réservée au personnel connecté.
 - **Abus.** Limiter le nombre de requêtes, en particulier sur la connexion. L'adresse de l'administration n'est pas `/admin/`.
 - **Mots de passe.** Validateurs Django actifs (longueur, complexité, mots de passe courants).
 - **Fichiers.** Type et taille contrôlés. Les images du catalogue : JPG, PNG ou WebP, 5 Mo maximum. Aucun envoi de livre (PDF ou autre).

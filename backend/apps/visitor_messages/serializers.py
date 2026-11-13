@@ -4,6 +4,9 @@ from rest_framework import serializers
 
 from .models import VisitorMessage
 
+AVIS_BODY_MAX = 280
+CONTACT_BODY_MAX = 1000
+
 
 def plain_text(value):
     cleaned = " ".join(str(value).split())
@@ -25,9 +28,20 @@ def normalize_whatsapp(value):
 
 
 class VisitorMessageCreateSerializer(serializers.ModelSerializer):
+    kind = serializers.ChoiceField(
+        choices=[VisitorMessage.KIND_CONTACT, VisitorMessage.KIND_AVIS],
+        required=False,
+        default=VisitorMessage.KIND_CONTACT,
+    )
+    subject = serializers.ChoiceField(
+        choices=[choice[0] for choice in VisitorMessage.SUBJECTS],
+        required=False,
+        allow_blank=True,
+    )
+
     class Meta:
         model = VisitorMessage
-        fields = ["name", "email", "whatsapp", "subject", "body"]
+        fields = ["kind", "name", "email", "whatsapp", "subject", "body"]
 
     def validate_name(self, value):
         cleaned = plain_text(value)
@@ -55,12 +69,34 @@ class VisitorMessageCreateSerializer(serializers.ModelSerializer):
         return cleaned
 
     def validate(self, attrs):
+        kind = attrs.get("kind") or VisitorMessage.KIND_CONTACT
+        attrs["kind"] = kind
         email = str(attrs.get("email") or "").strip()
         whatsapp = str(attrs.get("whatsapp") or "").strip()
+        body = attrs.get("body") or ""
+
+        if kind == VisitorMessage.KIND_AVIS:
+            if len(body) > AVIS_BODY_MAX:
+                raise serializers.ValidationError(
+                    {"body": f"L'avis est limité à {AVIS_BODY_MAX} caractères."}
+                )
+            attrs["subject"] = "avis"
+            attrs["email"] = email
+            attrs["whatsapp"] = whatsapp
+            return attrs
+
+        if len(body) > CONTACT_BODY_MAX:
+            raise serializers.ValidationError(
+                {"body": f"Le message est limité à {CONTACT_BODY_MAX} caractères."}
+            )
+        subject = str(attrs.get("subject") or "").strip()
+        if not subject:
+            raise serializers.ValidationError({"subject": "Indiquez un sujet."})
         if not email and not whatsapp:
             raise serializers.ValidationError(
                 "Indiquez une adresse électronique ou un numéro WhatsApp."
             )
+        attrs["subject"] = subject
         attrs["email"] = email
         attrs["whatsapp"] = whatsapp
         return attrs
