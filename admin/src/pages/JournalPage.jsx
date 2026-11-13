@@ -26,7 +26,7 @@ function SectionTab({ icon: Icon, label, selected, onClick }) {
       aria-pressed={selected}
       onClick={onClick}
       className={`inline-flex min-h-11 items-center gap-2 rounded-control px-4 font-semibold ${
-        selected ? "bg-violet text-white" : "bg-lavender text-violet"
+        selected ? "bg-violet text-on-primary" : "bg-lavender text-violet"
       }`}
     >
       <Icon aria-hidden="true" size={18} />
@@ -48,10 +48,10 @@ function ActionsPanel() {
 
   if (error) return <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p>
   if (!rows) return <p>Chargement…</p>
-  if (rows.length === 0) return <p className="rounded-panel border border-line bg-white p-6">Aucune action enregistrée.</p>
+  if (rows.length === 0) return <p className="rounded-panel border border-line bg-panel p-6">Aucune action enregistrée.</p>
 
   return (
-    <div className="overflow-x-auto rounded-panel border border-line bg-white shadow-card">
+    <div className="overflow-x-auto rounded-panel border border-line bg-panel shadow-card">
       <table className="w-full min-w-[40rem] text-left">
         <thead>
           <tr className="border-b border-line text-muted">

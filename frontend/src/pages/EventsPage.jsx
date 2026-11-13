@@ -43,7 +43,7 @@ export default function EventsPage() {
 
   return (
     <div className="bg-canvas">
-      <header className="relative overflow-hidden bg-violet text-white">
+      <header className="relative overflow-hidden bg-violet text-on-primary">
         <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-violet/85" aria-hidden="true" />
         <div className="relative px-4 py-10 sm:px-8 lg:px-14">
@@ -67,7 +67,7 @@ export default function EventsPage() {
                       type="button"
                       aria-pressed={active}
                       className={`inline-flex items-center gap-2 rounded-full px-4 text-body font-semibold ${
-                        active ? "bg-violet text-white" : "border border-line bg-white text-violet"
+                        active ? "bg-violet text-on-primary" : "border border-line bg-panel text-violet"
                       }`}
                       onClick={() => setFilter(value)}
                     >
@@ -96,7 +96,7 @@ export default function EventsPage() {
                   type="search"
                   defaultValue={query}
                   placeholder="Rechercher un événement…"
-                  className="w-full rounded-full border border-line bg-white pr-4 pl-10"
+                  className="w-full rounded-full border border-line bg-panel pr-4 pl-10"
                 />
               </form>
             </div>
@@ -122,7 +122,7 @@ export default function EventsPage() {
 function EventListCard({ event }) {
   const when = eventDay(event.startsAt)
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-card sm:flex-row">
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-card sm:flex-row">
       {event.image ? (
         <img src={event.image} alt="" className="aspect-[16/10] w-full object-cover sm:aspect-auto sm:w-40 sm:shrink-0" />
       ) : when ? (
@@ -155,7 +155,7 @@ function EventListCard({ event }) {
           ) : null}
         </ul>
         <p className="excerpt mt-3 text-body text-muted">{event.summary}</p>
-        <Link to={`/evenements/${event.slug}`} className="mt-auto inline-flex min-h-11 items-center gap-2 self-start rounded-xl bg-violet px-4 font-semibold text-white">
+        <Link to={`/evenements/${event.slug}`} className="mt-auto inline-flex min-h-11 items-center gap-2 self-start rounded-xl bg-violet px-4 font-semibold text-on-primary">
           Voir les détails
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </Link>

@@ -35,7 +35,7 @@ function period(row) {
 
 function statusClass(status) {
   if (status === "Archivé") return "rounded-full bg-canvas px-3 py-1 font-semibold text-muted"
-  if (status === "Brouillon") return "rounded-full bg-[#fde7c7] px-3 py-1 font-semibold text-[#9a3412]"
+  if (status === "Brouillon") return "rounded-full bg-warning-soft px-3 py-1 font-semibold text-warning"
   return "rounded-full bg-available-soft px-3 py-1 font-semibold text-available"
 }
 
@@ -88,8 +88,8 @@ export function AnnouncementsPage() {
         stats={[
           { label: "Annonces", value: String(rows.length), trend: "dans la liste", icon: Megaphone, chip: "bg-lavender text-violet" },
           { label: "Publiées", value: String(published), trend: "visibles", icon: CheckCircle2, chip: "bg-available-soft text-available" },
-          { label: "En brouillon", value: String(drafts), trend: "pas encore publiées", icon: FileText, chip: "bg-[#fde7c7] text-[#9a3412]" },
-          { label: "Importantes", value: String(important), trend: "mises en avant", icon: Star, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
+          { label: "En brouillon", value: String(drafts), trend: "pas encore publiées", icon: FileText, chip: "bg-warning-soft text-warning" },
+          { label: "Importantes", value: String(important), trend: "mises en avant", icon: Star, chip: "bg-info-soft text-info" },
         ]}
         filters={[
           {
@@ -127,7 +127,7 @@ export function AnnouncementsPage() {
             label: "Image",
             render: (row) => row.image
               ? <img src={row.image} alt="" className="h-12 w-16 rounded-md object-cover" />
-              : <span className="inline-flex h-12 w-16 items-center justify-center rounded-md bg-unavailable text-white"><AlertTriangle size={22} /></span>,
+              : <span className="inline-flex h-12 w-16 items-center justify-center rounded-md bg-unavailable text-on-primary"><AlertTriangle size={22} /></span>,
           },
           { key: "title", label: "Titre", render: (row) => <span className="font-semibold text-heading">{row.title}</span> },
           { key: "category", label: "Catégorie", render: (row) => row.category_label },

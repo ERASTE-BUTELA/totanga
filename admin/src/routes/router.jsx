@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react"
 import { Navigate, createBrowserRouter, useLocation } from "react-router"
 import { AdminShell } from "../components/AdminShell.jsx"
 import { RequireAuth } from "../components/RequireAuth.jsx"
@@ -40,6 +41,19 @@ import { UsersPage } from "../pages/UsersPage.jsx"
 import { UserViewPage } from "../pages/UserViewPage.jsx"
 import { useSession } from "../session/SessionContext.jsx"
 
+const ThemeDemoLazy = import.meta.env.DEV
+  ? lazy(() => import("../pages/ThemeDemoPage.jsx"))
+  : null
+
+function DevThemePage() {
+  if (!ThemeDemoLazy) return null
+  return (
+    <Suspense fallback={<p className="p-6 text-muted">Chargement…</p>}>
+      <ThemeDemoLazy />
+    </Suspense>
+  )
+}
+
 function Allowed({ permission, children }) {
   const session = useSession()
   if (!canOpen(session.account?.permissions ?? [], permission, session.account?.role)) {
@@ -74,6 +88,7 @@ export const router = createBrowserRouter(
   [
     { path: LOGIN_PATH, element: <LoginPage /> },
     { path: LOGIN_ALIAS, element: <Navigate to={LOGIN_PATH} replace /> },
+    ...(import.meta.env.DEV ? [{ path: "dev/theme", element: <DevThemePage /> }] : []),
     {
       element: <RequireAuth />,
       children: [

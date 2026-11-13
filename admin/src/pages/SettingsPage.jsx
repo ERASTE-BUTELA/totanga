@@ -18,7 +18,7 @@ const TABS = [
 ]
 
 const MAX_IMAGE = 5 * 1024 * 1024
-const fieldClass = "w-full rounded-control border border-line bg-white px-3 disabled:cursor-default disabled:bg-canvas disabled:text-heading"
+const fieldClass = "w-full rounded-control border border-line bg-panel px-3 disabled:cursor-default disabled:bg-canvas disabled:text-heading"
 const DEFAULT_LOGO = "/images/logo.png"
 
 const EMPTY = {
@@ -54,7 +54,7 @@ function Switch({ checked, label, onClick, disabled }) {
       className={`relative h-8 w-14 shrink-0 rounded-full disabled:cursor-default disabled:opacity-70 ${checked ? "bg-violet" : "bg-line"}`}
       onClick={onClick}
     >
-      <span className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white ${checked ? "translate-x-6" : ""}`} />
+      <span className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-panel ${checked ? "translate-x-6" : ""}`} />
     </button>
   )
 }
@@ -257,7 +257,7 @@ export function SettingsPage() {
             const Icon = item.icon
             const active = tab === item.id
             return (
-              <button key={item.id} type="button" className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-control px-4 font-semibold ${active ? "bg-violet text-white" : "bg-white text-violet"}`} onClick={() => setTab(item.id)}>
+              <button key={item.id} type="button" className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-control px-4 font-semibold ${active ? "bg-violet text-on-primary" : "bg-panel text-violet"}`} onClick={() => setTab(item.id)}>
                 <Icon aria-hidden="true" size={18} />
                 {item.label}
               </button>
@@ -267,7 +267,7 @@ export function SettingsPage() {
         {tab === "general" && !editing ? (
           <button
             type="button"
-            className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white"
+            className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary"
             onClick={() => {
               setNotice("")
               setEditing(true)
@@ -280,7 +280,7 @@ export function SettingsPage() {
       </div>
       {tab === "general" ? (
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-          <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <Settings aria-hidden="true" className="text-violet" size={22} />
               Informations générales
@@ -354,7 +354,7 @@ export function SettingsPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-3 font-semibold text-violet disabled:opacity-60"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-3 font-semibold text-violet disabled:opacity-60"
                     disabled={!mapsQuery && !(form.latitude && form.longitude)}
                     onClick={() => {
                       const coords = parseMapsCoords(form.mapsUrl)
@@ -402,7 +402,7 @@ export function SettingsPage() {
             <div className="mt-4">
               <p className="font-semibold text-heading">Logo de la bibliothèque</p>
               <p className="text-muted">Ce logo sert aussi d'icône du site (favicon).</p>
-              <img src={logo} alt="Logo de la Bibliothèque Totanga" className="mt-2 h-16 w-auto rounded-control bg-white" />
+              <img src={logo} alt="Logo de la Bibliothèque Totanga" className="theme-logo mt-2 h-16 w-auto rounded-control bg-panel" />
               {editing ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <input id={logoInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => {
@@ -435,7 +435,7 @@ export function SettingsPage() {
             </div>
           </article>
           <div className="grid content-start gap-4">
-            <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+            <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
               <h2 className="flex items-center gap-2 text-section text-heading">
                 <Globe aria-hidden="true" className="text-violet" size={22} />
                 Apparence et langue
@@ -457,7 +457,7 @@ export function SettingsPage() {
                 <Switch checked={form.darkMode} label="Mode clair ou sombre" disabled={locked} onClick={() => set("darkMode", !form.darkMode)} />
               </div>
             </article>
-            <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+            <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
               <h2 className="text-section text-heading">Paramètres de fonctionnement</h2>
               <div className="mt-4 grid gap-3">
                 <label className="grid gap-1">
@@ -493,18 +493,18 @@ export function SettingsPage() {
           </div>
         </div>
       ) : (
-        <article className="rounded-panel border border-line bg-white p-6 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-6 shadow-card">
           <h2 className="text-section text-heading">{TABS.find((item) => item.id === tab)?.label}</h2>
           <p className="mt-2 text-muted">Ces réglages se préparent. Les informations générales restent dans l'onglet Général.</p>
         </article>
       )}
       {tab === "general" && editing ? (
         <div className="flex flex-wrap items-center justify-end gap-3">
-          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-heading" onClick={cancelEdit} disabled={busy}>
+          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading" onClick={cancelEdit} disabled={busy}>
             <X aria-hidden="true" size={18} />
             Annuler
           </button>
-          <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white disabled:opacity-60" disabled={busy}>
+          <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary disabled:opacity-60" disabled={busy}>
             <Check aria-hidden="true" size={18} />
             Enregistrer les paramètres
           </button>

@@ -108,8 +108,8 @@ export function DashboardPage() {
       { label: "Exemplaires disponibles", value: formatCount(data.copies_available), icon: Layers, chip: "bg-available-soft text-available" },
       { label: "Exemplaires indisponibles", value: formatCount(data.copies_unavailable), icon: Library, chip: "bg-unavailable-soft text-unavailable" },
       { label: "Annonces publiées", value: formatCount(data.announcements_published), icon: Megaphone, chip: "bg-lavender text-violet" },
-      { label: "Événements à venir", value: formatCount(data.events_upcoming), icon: CalendarDays, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
-      { label: "Contenus en brouillon", value: formatCount(data.drafts), icon: FileText, chip: "bg-[#fde7c7] text-[#9a3412]" },
+      { label: "Événements à venir", value: formatCount(data.events_upcoming), icon: CalendarDays, chip: "bg-info-soft text-info" },
+      { label: "Contenus en brouillon", value: formatCount(data.drafts), icon: FileText, chip: "bg-warning-soft text-warning" },
     ]
   }, [data])
 
@@ -136,7 +136,7 @@ export function DashboardPage() {
 
   return (
     <section className="grid gap-4">
-      <article className="overflow-hidden rounded-panel bg-white shadow-card lg:grid lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <article className="overflow-hidden rounded-panel bg-panel shadow-card lg:grid lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="p-6">
           <h2 className="text-section text-violet">Bonjour, {name}</h2>
           <p className="mt-3 max-w-xl">
@@ -161,7 +161,7 @@ export function DashboardPage() {
         {(loading ? Array.from({ length: 6 }, (_, index) => ({ label: "…", value: "…", icon: BookOpen, chip: "bg-lavender text-violet", key: index })) : figures).map((figure) => {
           const Icon = figure.icon
           return (
-            <article key={figure.label + (figure.key ?? "")} className="rounded-panel border border-line bg-white p-4 shadow-card">
+            <article key={figure.label + (figure.key ?? "")} className="rounded-panel border border-line bg-panel p-4 shadow-card">
               <span className={`inline-flex h-11 w-11 items-center justify-center rounded-control ${figure.chip}`}>
                 <Icon aria-hidden="true" size={22} />
               </span>
@@ -173,7 +173,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <article className="rounded-panel border border-line bg-white p-6 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-6 shadow-card">
           <h2 className="text-section text-heading">Répartition des exemplaires</h2>
           {loading ? (
             <p className="mt-5 text-muted">Chargement…</p>
@@ -218,7 +218,7 @@ export function DashboardPage() {
           )}
         </article>
 
-        <article className="rounded-panel border border-line bg-white p-6 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-6 shadow-card">
           <h2 className="text-section text-heading">Contenus par statut</h2>
           {loading ? (
             <p className="mt-5 text-muted">Chargement…</p>
@@ -233,9 +233,9 @@ export function DashboardPage() {
                         {item.published} publié · {item.draft} brouillon
                       </span>
                     </div>
-                    <div className="flex h-3 overflow-hidden rounded-full bg-[#f3eef8]">
+                    <div className="flex h-3 overflow-hidden rounded-full bg-lavender">
                       <span className="bg-violet" style={{ width: `${((Number(item.published) || 0) / widest) * 100}%` }} />
-                      <span className="bg-[#ddd4ea]" style={{ width: `${((Number(item.draft) || 0) / widest) * 100}%` }} />
+                      <span className="bg-line" style={{ width: `${((Number(item.draft) || 0) / widest) * 100}%` }} />
                     </div>
                   </li>
                 ))}
@@ -245,7 +245,7 @@ export function DashboardPage() {
                   <span className="h-3 w-3 rounded-sm bg-violet" /> Publié
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-sm bg-[#ddd4ea]" /> Brouillon
+                  <span className="h-3 w-3 rounded-sm bg-line" /> Brouillon
                 </span>
               </p>
             </>
@@ -254,7 +254,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(16rem,0.8fr)]">
-        <article className="rounded-panel border border-line bg-white p-6 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-6 shadow-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-section text-heading">Activité récente</h2>
             <Link to="/journal" className="font-semibold text-violet">
@@ -295,7 +295,7 @@ export function DashboardPage() {
           )}
         </article>
 
-        <article className="rounded-panel border border-line bg-white p-6 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-6 shadow-card">
           <h2 className="text-section text-heading">Accès rapides</h2>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {ACTIONS.map((action) => {

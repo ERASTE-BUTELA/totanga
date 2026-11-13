@@ -1,10 +1,10 @@
 import { BookOpen, Clock, Info, Megaphone, Wrench } from "lucide-react"
 
 const GROUPS = {
-  informations: { label: "Informations générales", icon: Info, className: "bg-[#1d4ed8] text-white" },
-  acquisitions: { label: "Nouvelle acquisition", icon: BookOpen, className: "bg-available text-white" },
+  informations: { label: "Informations générales", icon: Info, className: "bg-info text-on-primary" },
+  acquisitions: { label: "Nouvelle acquisition", icon: BookOpen, className: "bg-available text-on-primary" },
   horaires: { label: "Horaires", icon: Clock, className: "bg-gold-bright text-heading" },
-  maintenance: { label: "Maintenance", icon: Wrench, className: "bg-violet text-white" },
+  maintenance: { label: "Maintenance", icon: Wrench, className: "bg-violet text-on-primary" },
 }
 
 export function announcementGroup(item) {
@@ -16,7 +16,7 @@ export function announcementGroup(item) {
 
 export function announcementBadge(item) {
   if (item.important || item.kind === "important") {
-    return { label: "Important", icon: Megaphone, className: "bg-unavailable text-white" }
+    return { label: "Important", icon: Megaphone, className: "bg-unavailable text-on-primary" }
   }
   return GROUPS[announcementGroup(item)]
 }

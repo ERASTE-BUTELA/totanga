@@ -40,7 +40,7 @@ export function EventCard({ event, plain = false }) {
 
   if (event.image) {
     return (
-      <article className={plain ? "flex flex-col gap-4 sm:flex-row sm:items-center" : "overflow-hidden rounded-card border border-line bg-white shadow-card sm:flex sm:items-stretch"}>
+      <article className={plain ? "flex flex-col gap-4 sm:flex-row sm:items-center" : "overflow-hidden rounded-card border border-line bg-panel shadow-card sm:flex sm:items-stretch"}>
         <img
           src={event.image}
           alt=""
@@ -58,7 +58,7 @@ export function EventCard({ event, plain = false }) {
   }
 
   return (
-    <article className={plain ? "flex flex-col gap-4 sm:flex-row sm:items-center" : "rounded-card border border-line bg-white p-4 shadow-card"}>
+    <article className={plain ? "flex flex-col gap-4 sm:flex-row sm:items-center" : "rounded-card border border-line bg-panel p-4 shadow-card"}>
       <div className={plain ? "flex flex-col gap-4 sm:flex-row sm:items-center" : "flex flex-col gap-4 sm:flex-row sm:items-center"}>
         {day ? (
           <p className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-control bg-lavender text-violet">

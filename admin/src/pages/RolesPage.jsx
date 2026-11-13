@@ -127,11 +127,11 @@ export function RolesPage() {
   return (
     <section className="grid gap-4">
       <div className="flex flex-wrap gap-2">
-        <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-white px-4 font-semibold text-violet">
+        <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-panel px-4 font-semibold text-violet">
           <Users aria-hidden="true" size={18} />
           Utilisateurs
         </Link>
-        <Link to="/utilisateurs/roles" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+        <Link to="/utilisateurs/roles" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary">
           <Shield aria-hidden="true" size={18} />
           Rôles et permissions
         </Link>
@@ -140,10 +140,10 @@ export function RolesPage() {
         {[
           ["Rôles au total", roles.length, Users, "bg-lavender text-violet"],
           ["Rôles actifs", activeRoles, ShieldCheck, "bg-available-soft text-available"],
-          ["Utilisateurs associés", associated, Users, "bg-[#e7eefc] text-[#1d4ed8]"],
-          ["Permissions au total", permissionCount(roles), KeyRound, "bg-[#fde7c7] text-[#9a3412]"],
+          ["Utilisateurs associés", associated, Users, "bg-info-soft text-info"],
+          ["Permissions au total", permissionCount(roles), KeyRound, "bg-warning-soft text-warning"],
         ].map(([label, value, CardIcon, chip]) => (
-          <article key={label} className="rounded-panel border border-line bg-white p-4 shadow-card">
+          <article key={label} className="rounded-panel border border-line bg-panel p-4 shadow-card">
             <span className={`inline-flex h-11 w-11 items-center justify-center rounded-control ${chip}`}>
               <CardIcon aria-hidden="true" size={22} />
             </span>
@@ -153,7 +153,7 @@ export function RolesPage() {
         ))}
       </div>
       <div className="grid items-start gap-4 xl:grid-cols-[18rem_minmax(0,1fr)]">
-        <article className="rounded-panel border border-line bg-white p-4 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-4 shadow-card">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-semibold text-heading">Rôles ({roles.length})</h2>
             <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control px-2 font-semibold text-violet" onClick={addRole}>
@@ -171,7 +171,7 @@ export function RolesPage() {
                   <button
                     type="button"
                     aria-pressed={active}
-                    className={`grid w-full gap-1 rounded-panel border p-3 text-left ${active ? "border-violet bg-lavender" : "border-line bg-white"}`}
+                    className={`grid w-full gap-1 rounded-panel border p-3 text-left ${active ? "border-violet bg-lavender" : "border-line bg-panel"}`}
                     onClick={() => setSelected(role.code)}
                   >
                     <span className="flex items-center gap-2 font-semibold text-heading">
@@ -186,7 +186,7 @@ export function RolesPage() {
             })}
           </ul>
         </article>
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <Icon aria-hidden="true" className="text-violet" size={22} />
@@ -255,16 +255,16 @@ export function RolesPage() {
         </article>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-heading">
+        <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading">
           <ArrowLeft aria-hidden="true" size={18} />
           Retour à la liste des rôles
         </Link>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-violet" onClick={() => { setRoles(serverRoles()); setSelected("administrateur"); setNotice("") }}>
+          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-violet" onClick={() => { setRoles(serverRoles()); setSelected("administrateur"); setNotice("") }}>
             <RotateCcw aria-hidden="true" size={18} />
             Réinitialiser
           </button>
-          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" onClick={() => setNotice("L'affichage est mis à jour sur cet écran. Les droits du serveur restent inchangés.")}>
+          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary" onClick={() => setNotice("L'affichage est mis à jour sur cet écran. Les droits du serveur restent inchangés.")}>
             <Check aria-hidden="true" size={18} />
             Enregistrer les modifications
           </button>

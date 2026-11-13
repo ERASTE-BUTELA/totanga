@@ -34,13 +34,13 @@ const MAX_IMAGE = 5 * 1024 * 1024
 
 const STATUS_CLASS = {
   Disponible: "bg-available-soft text-available",
-  Emprunté: "bg-[#e7eefc] text-[#1d4ed8]",
-  Réservé: "bg-[#fde7c7] text-[#9a3412]",
+  Emprunté: "bg-info-soft text-info",
+  Réservé: "bg-warning-soft text-warning",
   "En réparation": "bg-lavender text-violet",
   Perdu: "bg-unavailable-soft text-unavailable",
 }
 
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "w-full rounded-control border border-line bg-panel px-3"
 
 function categoryLabel(item) {
   if (!item) return ""
@@ -309,7 +309,7 @@ function BookForm({ initial, creating, viewing }) {
         </div>
       ) : null}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <BookOpen aria-hidden="true" className="text-violet" size={24} />
             Informations du livre
@@ -395,13 +395,13 @@ function BookForm({ initial, creating, viewing }) {
           </label>
         </article>
 
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="text-section text-heading">Couverture (facultatif)</h2>
           <div className="mt-4 flex items-start gap-4">
             {shownCover ? (
               <img src={shownCover} alt="" className="h-44 w-32 rounded-md object-cover" />
             ) : (
-              <span className="grid h-44 w-32 place-items-center rounded-md bg-violet px-2 text-center font-semibold text-white">{mark(title)}</span>
+              <span className="grid h-44 w-32 place-items-center rounded-md bg-violet px-2 text-center font-semibold text-on-primary">{mark(title)}</span>
             )}
             <div>
               <input id={coverInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={onCover} />
@@ -455,7 +455,7 @@ function BookForm({ initial, creating, viewing }) {
         </article>
       </div>
 
-      <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+      <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <Layers aria-hidden="true" className="text-violet" size={24} />
@@ -481,7 +481,7 @@ function BookForm({ initial, creating, viewing }) {
             <select className={fieldClass} aria-label="Statut de l'exemplaire" value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>
               {COPY_STATUSES.map((status) => <option key={status}>{status}</option>)}
             </select>
-            <button type="button" className="inline-flex min-h-11 items-center rounded-control bg-violet px-4 font-semibold text-white" onClick={addCopy}>Ajouter</button>
+            <button type="button" className="inline-flex min-h-11 items-center rounded-control bg-violet px-4 font-semibold text-on-primary" onClick={addCopy}>Ajouter</button>
             {copyError ? <p role="alert" className="text-unavailable md:col-span-3">{copyError}</p> : null}
           </div>
         ) : null}
@@ -590,29 +590,29 @@ function BookForm({ initial, creating, viewing }) {
       </article>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link to="/catalogue/livres" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-heading">
+        <Link to="/catalogue/livres" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading">
           <ArrowLeft aria-hidden="true" size={18} />
           Retour à la liste
         </Link>
         <div className="flex flex-wrap gap-2">
           {initial.id ? (
-            <Link to={`/catalogue/livres/${initial.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-[#1d4ed8]">
+            <Link to={`/catalogue/livres/${initial.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-info">
               <Eye aria-hidden="true" size={18} />
               Aperçu
             </Link>
           ) : null}
           {viewing ? (
-            <Link to={`/catalogue/livres/${initial.id}/modifier`} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+            <Link to={`/catalogue/livres/${initial.id}/modifier`} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary">
               <Pencil aria-hidden="true" size={18} />
               Modifier
             </Link>
           ) : (
             <>
-              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" disabled={busy} onClick={() => { publish.current = false }}>
+              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-panel px-4 font-semibold text-violet" disabled={busy} onClick={() => { publish.current = false }}>
                 <Save aria-hidden="true" size={18} />
                 {busy && !publish.current ? "Enregistrement…" : "Enregistrer en brouillon"}
               </button>
-              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy} onClick={() => { publish.current = true }}>
+              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary" disabled={busy} onClick={() => { publish.current = true }}>
                 <Check aria-hidden="true" size={18} />
                 {busy && publish.current ? "Publication…" : "Publier"}
               </button>

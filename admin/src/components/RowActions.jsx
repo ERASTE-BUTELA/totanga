@@ -7,11 +7,11 @@ export function RowActions({ viewTo, editTo, onView, onEdit, onRemove, removeLab
   return (
     <span className="flex gap-1">
       {onView ? (
-        <button type="button" aria-label="Voir" className={`${button} text-[#1d4ed8]`} onClick={onView}>
+        <button type="button" aria-label="Voir" className={`${button} text-info`} onClick={onView}>
           <Eye size={18} />
         </button>
       ) : (
-        <Link to={viewTo} aria-label="Voir" className={`${button} text-[#1d4ed8]`}>
+        <Link to={viewTo} aria-label="Voir" className={`${button} text-info`}>
           <Eye size={18} />
         </Link>
       )}

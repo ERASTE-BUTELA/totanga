@@ -52,7 +52,7 @@ function PublicationContent({ item, items }) {
     return (
       <section>
         <Breadcrumb withHome items={[{ label: "Accueil", to: "/" }, { label: "Publications", to: "/publications" }, { label: "Introuvable" }]} />
-        <div className="mt-6 max-w-3xl rounded-2xl border border-line bg-white p-6 shadow-card">
+        <div className="mt-6 max-w-3xl rounded-2xl border border-line bg-panel p-6 shadow-card">
           <h1 className="text-page text-ink">Cette publication est introuvable</h1>
           <Link to="/publications" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full border border-violet px-4 font-semibold text-violet">
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -79,7 +79,7 @@ function PublicationContent({ item, items }) {
         ]}
       />
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <article className="rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
+        <article className="rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6">
           {item.kind ? <span className={`inline-flex rounded-full px-2.5 py-1 text-badge ${badge.className}`}>{item.kind}</span> : null}
           <h1 className="mt-3 text-page text-heading">{item.title}</h1>
           <ul className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted">
@@ -107,7 +107,7 @@ function PublicationContent({ item, items }) {
         </article>
 
         <aside className="space-y-4">
-          <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="autres-publications">
+          <section className="rounded-2xl border border-line bg-panel p-5 shadow-card" aria-labelledby="autres-publications">
             <h2 id="autres-publications" className="flex items-center gap-2 text-card text-heading">
               <Bookmark className="h-5 w-5 text-violet" aria-hidden="true" />
               Autres publications
@@ -150,7 +150,7 @@ function SharePanel({ title }) {
   }, [title])
 
   return (
-    <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="partager-publication">
+    <section className="rounded-2xl border border-line bg-panel p-5 shadow-card" aria-labelledby="partager-publication">
       <h2 id="partager-publication" className="flex items-center gap-2 text-card text-heading">
         <Share2 className="h-5 w-5 text-violet" aria-hidden="true" />
         Partager cette publication
@@ -164,7 +164,7 @@ function SharePanel({ title }) {
                 <ExternalLink
                   href={target.href}
                   label={target.label}
-                  className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 text-badge text-white ${target.className}`}
+                  className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 text-badge text-on-primary ${target.className}`}
                 >
                   <Icon className="h-4 w-4" />
                   {target.name}

@@ -11,7 +11,7 @@ const CATEGORIES = ["Culture", "Actualité", "Conseils", "Événement", "Technol
 const DEFAULT_AUTHOR = "Équipe Totanga"
 const MAX_IMAGE = 5 * 1024 * 1024
 const MAX_EXCERPT = 250
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "w-full rounded-control border border-line bg-panel px-3"
 
 const EMPTY = {
   id: null,
@@ -30,7 +30,7 @@ const EMPTY = {
 function Switch({ checked, label, disabled, onClick }) {
   return (
     <button type="button" role="switch" aria-checked={checked} aria-label={label} disabled={disabled} className={`relative h-8 w-14 shrink-0 rounded-full ${checked ? "bg-violet" : "bg-line"}`} onClick={onClick}>
-      <span className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white ${checked ? "translate-x-6" : ""}`} />
+      <span className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-panel ${checked ? "translate-x-6" : ""}`} />
     </button>
   )
 }
@@ -152,7 +152,7 @@ export function PublicationFormPage({ mode }) {
   if (!ready) return <p>Chargement…</p>
   if (missing) {
     return (
-      <section className="rounded-panel border border-line bg-white p-6 shadow-card">
+      <section className="rounded-panel border border-line bg-panel p-6 shadow-card">
         <p>Cette publication n'existe pas.</p>
         <Link to="/publications" className="mt-4 inline-flex min-h-11 items-center font-semibold text-violet">Retour à la liste</Link>
       </section>
@@ -171,7 +171,7 @@ export function PublicationFormPage({ mode }) {
       ) : null}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="grid content-start gap-4">
-          <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <FileText aria-hidden="true" className="text-violet" size={24} />
               Informations de la publication
@@ -196,7 +196,7 @@ export function PublicationFormPage({ mode }) {
               </label>
             </div>
           </article>
-          <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
             <h2 className="text-section text-heading">Contenu de la publication *</h2>
             <div className="mt-3">
               <RichTextEditor value={form.content} onChange={(content) => set("content", content)} disabled={viewing} />
@@ -216,7 +216,7 @@ export function PublicationFormPage({ mode }) {
           </article>
         </div>
         <div className="grid content-start gap-4">
-          <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <ImagePlus aria-hidden="true" className="text-violet" size={22} />
               Image de la publication
@@ -251,7 +251,7 @@ export function PublicationFormPage({ mode }) {
             <p className="mt-3 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo. Dimension recommandée : 1200 × 630 px.</p>
             {imageError ? <p role="alert" className="mt-2 text-unavailable">{imageError}</p> : null}
           </article>
-          <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
             <h2 className="text-section text-heading">Options de publication</h2>
             <div className="mt-4 flex items-start justify-between gap-3">
               <div className="flex gap-2">
@@ -274,7 +274,7 @@ export function PublicationFormPage({ mode }) {
               <Switch checked={form.pinned} label="Épingler la publication" disabled={viewing} onClick={() => set("pinned", !form.pinned)} />
             </div>
           </article>
-          <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <Info aria-hidden="true" className="text-violet" size={22} />
               Conseils de rédaction
@@ -289,30 +289,30 @@ export function PublicationFormPage({ mode }) {
           </article>
         </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-between gap-3 border-t border-line bg-white px-4 py-3 shadow-card lg:left-[17.5rem]">
-        <Link to="/publications" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-heading">
+      <div className="fixed inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-between gap-3 border-t border-line bg-panel px-4 py-3 shadow-card lg:left-[17.5rem]">
+        <Link to="/publications" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading">
           <ArrowLeft aria-hidden="true" size={18} />
           Retour à la liste
         </Link>
         <div className="flex flex-wrap gap-2">
           {form.id ? (
-            <Link to={`/publications/${form.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-[#1d4ed8]">
+            <Link to={`/publications/${form.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-info">
               <Eye aria-hidden="true" size={18} />
               Aperçu
             </Link>
           ) : null}
           {viewing ? (
-            <Link to={`/publications/${form.id}/modifier`} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+            <Link to={`/publications/${form.id}/modifier`} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary">
               <Pencil aria-hidden="true" size={18} />
               Modifier
             </Link>
           ) : (
             <>
-              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" disabled={busy} onClick={(event) => save(event, "Brouillon")}>
+              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-panel px-4 font-semibold text-violet" disabled={busy} onClick={(event) => save(event, "Brouillon")}>
                 <Save aria-hidden="true" size={18} />
                 {busy ? "Enregistrement…" : "Enregistrer en brouillon"}
               </button>
-              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy}>
+              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary" disabled={busy}>
                 <Check aria-hidden="true" size={18} />
                 {busy ? "Publication…" : "Publier"}
               </button>

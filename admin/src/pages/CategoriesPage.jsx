@@ -67,8 +67,8 @@ export function CategoriesPage() {
         stats={[
           { label: "Catégories", value: figure(stats, "total"), trend: "dans le catalogue", icon: Tag, chip: "bg-lavender text-violet" },
           { label: "Catégories avec des livres", value: figure(stats, "with_books"), trend: "utilisées", icon: Layers, chip: "bg-available-soft text-available" },
-          { label: "Catégories sans livre", value: figure(stats, "without_books"), trend: "encore vides", icon: Tag, chip: "bg-[#fde7c7] text-[#9a3412]" },
-          { label: "Livres classés", value: figure(stats, "classified"), trend: "au total", icon: BookOpen, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
+          { label: "Catégories sans livre", value: figure(stats, "without_books"), trend: "encore vides", icon: Tag, chip: "bg-warning-soft text-warning" },
+          { label: "Livres classés", value: figure(stats, "classified"), trend: "au total", icon: BookOpen, chip: "bg-info-soft text-info" },
         ]}
         oneLine
         filters={[]}

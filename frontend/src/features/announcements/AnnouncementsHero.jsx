@@ -1,7 +1,7 @@
 export function AnnouncementsHero({ titleTag = "h1" }) {
   const Title = titleTag
   return (
-    <header className="relative overflow-hidden bg-violet text-white">
+    <header className="relative overflow-hidden bg-violet text-on-primary">
       <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-violet/85" aria-hidden="true" />
       <div className="relative px-4 py-10 sm:px-8 lg:px-14">

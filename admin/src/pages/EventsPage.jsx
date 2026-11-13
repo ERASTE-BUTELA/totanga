@@ -31,7 +31,7 @@ function formatWhen(value) {
 
 function statusClass(status) {
   if (status === "Archivé") return "rounded-full bg-canvas px-3 py-1 font-semibold text-muted"
-  if (status === "Brouillon") return "rounded-full bg-[#fde7c7] px-3 py-1 font-semibold text-[#9a3412]"
+  if (status === "Brouillon") return "rounded-full bg-warning-soft px-3 py-1 font-semibold text-warning"
   return "rounded-full bg-available-soft px-3 py-1 font-semibold text-available"
 }
 
@@ -91,8 +91,8 @@ export function EventsPage() {
         stats={[
           { label: "Événements", value: String(rows.length), trend: "dans la liste", icon: CalendarDays, chip: "bg-lavender text-violet" },
           { label: "Publiés", value: String(published), trend: "visibles", icon: CheckCircle2, chip: "bg-available-soft text-available" },
-          { label: "En brouillon", value: String(drafts), trend: "pas encore publiés", icon: FileText, chip: "bg-[#fde7c7] text-[#9a3412]" },
-          { label: "À venir", value: String(upcoming), trend: "publiés à venir", icon: Clock, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
+          { label: "En brouillon", value: String(drafts), trend: "pas encore publiés", icon: FileText, chip: "bg-warning-soft text-warning" },
+          { label: "À venir", value: String(upcoming), trend: "publiés à venir", icon: Clock, chip: "bg-info-soft text-info" },
         ]}
         filters={[
           {

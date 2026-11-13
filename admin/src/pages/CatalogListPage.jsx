@@ -91,7 +91,7 @@ export function CatalogListPage({
         {stats.map((item) => {
           const Icon = item.icon
           return (
-            <article key={item.label} className="rounded-panel border border-line bg-white p-4 shadow-card">
+            <article key={item.label} className="rounded-panel border border-line bg-panel p-4 shadow-card">
               <span className={`inline-flex h-11 w-11 items-center justify-center rounded-control ${item.chip}`}>
                 <Icon aria-hidden="true" size={22} />
               </span>
@@ -103,7 +103,7 @@ export function CatalogListPage({
         })}
       </div> : null}
 
-      <article className="rounded-panel border border-line bg-white p-4 shadow-card sm:p-5">
+      <article className="rounded-panel border border-line bg-panel p-4 shadow-card sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex flex-wrap items-center gap-3 text-section text-heading">
             {HeadingIcon ? <HeadingIcon aria-hidden="true" size={26} className="text-violet" /> : null}
@@ -113,17 +113,17 @@ export function CatalogListPage({
             </span>
           </h2>
           {onAdd ? (
-            <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" onClick={onAdd}>
+            <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary" onClick={onAdd}>
               <Plus aria-hidden="true" size={18} />
               {addLabel}
             </button>
           ) : addTo ? (
-            <Link to={addTo} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+            <Link to={addTo} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary">
               <Plus aria-hidden="true" size={18} />
               {addLabel}
             </Link>
           ) : addLabel ? (
-            <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+            <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary">
               <Plus aria-hidden="true" size={18} />
               {addLabel}
             </button>
@@ -141,7 +141,7 @@ export function CatalogListPage({
                 setPage(1)
               }}
               placeholder={placeholder}
-              className="w-full rounded-control border border-line bg-white pr-3 pl-10"
+              className="w-full rounded-control border border-line bg-panel pr-3 pl-10"
             />
           </label>
           {filters.map((filter) => (
@@ -154,7 +154,7 @@ export function CatalogListPage({
                   setChosen((current) => ({ ...current, [filter.id]: event.target.value }))
                   setPage(1)
                 }}
-                className={oneLine ? "w-28 max-w-28 rounded-control border border-line bg-white px-2" : "rounded-control border border-line bg-white px-3"}
+                className={oneLine ? "w-28 max-w-28 rounded-control border border-line bg-panel px-2" : "rounded-control border border-line bg-panel px-3"}
               >
                 {filter.options.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -176,7 +176,7 @@ export function CatalogListPage({
                     setFrom(event.target.value)
                     setPage(1)
                   }}
-                  className="rounded-control border border-line bg-white px-3"
+                  className="rounded-control border border-line bg-panel px-3"
                 />
                 <span className="text-muted">–</span>
                 <input
@@ -187,7 +187,7 @@ export function CatalogListPage({
                     setTo(event.target.value)
                     setPage(1)
                   }}
-                  className="rounded-control border border-line bg-white px-3"
+                  className="rounded-control border border-line bg-panel px-3"
                 />
               </div>
             </fieldset>
@@ -199,7 +199,7 @@ export function CatalogListPage({
                 aria-label="Ordre"
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className={oneLine ? "w-32 max-w-32 rounded-control border border-line bg-white px-2" : "rounded-control border border-line bg-white px-3"}
+                className={oneLine ? "w-32 max-w-32 rounded-control border border-line bg-panel px-2" : "rounded-control border border-line bg-panel px-3"}
               >
                 <option value="az">Nom (A → Z)</option>
                 <option value="za">Nom (Z → A)</option>
@@ -248,7 +248,7 @@ export function CatalogListPage({
                 setPageSize(Number(event.target.value))
                 setPage(1)
               }}
-              className="rounded-control border border-line bg-white px-2"
+              className="rounded-control border border-line bg-panel px-2"
               aria-label="Éléments par page"
             >
               {PAGE_SIZES.map((size) => (
@@ -270,7 +270,7 @@ export function CatalogListPage({
             >
               <ChevronLeft aria-hidden="true" size={18} />
             </button>
-            <span className="inline-flex h-11 min-w-11 items-center justify-center rounded-control bg-violet px-3 font-semibold text-white">
+            <span className="inline-flex h-11 min-w-11 items-center justify-center rounded-control bg-violet px-3 font-semibold text-on-primary">
               {current}
             </span>
             <button

@@ -20,7 +20,8 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 - **Liens issus des contenus.** Une adresse saisie par le personnel (inscription à un événement, par exemple) n'est acceptée que si elle commence par `http://` ou `https://`. Un lien externe s'ouvre avec `rel="noopener noreferrer"`.
 - **Données de l'API.** Titres, résumés, noms et URL sont des données non fiables, même si notre base les a enregistrées.
 - **Un seul accès à l'API.** Un module unique appelle l'API. En cas d'erreur, l'écran affiche un message simple, jamais la trace technique, le code SQL ou le détail du serveur.
-- **Navigateur.** Pas de jeton, de mot de passe ni de donnée personnelle dans `localStorage` ou `sessionStorage`. L'administration lit le cookie CSRF et le renvoie. Le cookie de session reste illisible par un script.
+- **Navigateur.** Pas de jeton, de mot de passe ni de donnée personnelle dans `localStorage` ou `sessionStorage`. **Exception :** la seule préférence d'apparence (`totanga-theme` : clair / sombre / système) peut y être mémorisée ; aucune autre donnée. L'administration lit le cookie CSRF et le renvoie. Le cookie de session reste illisible par un script.
+- **Apparence.** Le choix de thème est appliqué avant le premier rendu via un fichier `theme-boot.js` externe (pas de script écrit dans la page, compatible CSP). L'impression force le rendu clair.
 - **Administration.** Application séparée du site public, sans lien depuis celui-ci, non proposée aux moteurs de recherche. Le menu masque une entrée, mais le serveur décide.
 - **Ressources.** Pas de script, de police ou d'image chargé depuis un site que nous ne maîtrisons pas. Tout est servi par Totanga. **Exception :** la localisation de la bibliothèque peut être affichée via l'API Google Maps Embed (`iframe` vers `google.com/maps/embed`), uniquement pour ce besoin. La clé `VITE_GOOGLE_MAPS_EMBED_KEY` reste dans `.env`, restreinte par référent HTTP, et n'est pas un secret d'administration (elle est exposée au navigateur comme toute clé Embed).
 - **Production.** Pas de `console.log` technique, pas de source maps publiées.
@@ -106,7 +107,8 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Origine CORS et `ALLOWED_HOSTS` du vrai domaine de production | À faire. Les placeholders et l'exemple `bibtotanga.com` sont dans `.env.example` ; les vrais sous-domaines restent à renseigner avant la mise en ligne. |
 | Sauvegardes régulières, avec un essai de restauration | À faire |
 | Application d'administration séparée, sans lien depuis le site public, non référencée | Appliqué |
-| Session d'administration : cookie HttpOnly seulement, jeton CSRF relu à chaque envoi, rien dans localStorage | Appliqué |
+| Session d'administration : cookie HttpOnly seulement, jeton CSRF relu à chaque envoi ; localStorage limité à la préférence d'apparence (`totanga-theme`) | Appliqué |
+| Thème clair/sombre/système : script externe anti-flash, pas de script inline, impression claire | Appliqué |
 | Comptes d'essai des trois rôles et du super-administrateur : commande de développement, refusée lorsque DEBUG est faux | Appliqué |
 | Conteneur frontend lancé sans être administrateur | Appliqué |
 | Conteneur de l'administration lancé sans être administrateur | Appliqué |

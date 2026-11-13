@@ -30,7 +30,7 @@ export function UserViewPage() {
   if (person === undefined) return <p>Chargement…</p>
   if (!person) {
     return (
-      <section className="rounded-panel border border-line bg-white p-6 shadow-card">
+      <section className="rounded-panel border border-line bg-panel p-6 shadow-card">
         <p>Ce compte n'existe pas.</p>
         <Link to="/utilisateurs" className="mt-4 inline-flex min-h-11 items-center font-semibold text-violet">Retour à la liste</Link>
       </section>
@@ -46,7 +46,7 @@ export function UserViewPage() {
   ]
 
   return (
-    <article className="grid max-w-xl gap-4 rounded-panel border border-line bg-white p-5 shadow-card">
+    <article className="grid max-w-xl gap-4 rounded-panel border border-line bg-panel p-5 shadow-card">
       <h2 className="text-section text-heading">{person.name}</h2>
       <dl className="grid gap-3">
         {rows.map(([label, value]) => (

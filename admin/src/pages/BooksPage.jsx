@@ -85,7 +85,7 @@ export function BooksPage() {
           { label: "Livres", value: figure(stats, "books"), trend: "dans le catalogue", icon: BookOpen, chip: "bg-lavender text-violet" },
           { label: "Exemplaires disponibles", value: figure(stats, "available"), trend: "en rayon", icon: Library, chip: "bg-available-soft text-available" },
           { label: "Exemplaires indisponibles", value: figure(stats, "unavailable"), trend: "hors prêt", icon: Archive, chip: "bg-unavailable-soft text-unavailable" },
-          { label: "Exemplaires", value: figure(stats, "copies"), trend: "disponibles et indisponibles", icon: Layers, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
+          { label: "Exemplaires", value: figure(stats, "copies"), trend: "disponibles et indisponibles", icon: Layers, chip: "bg-info-soft text-info" },
         ]}
         oneLine
         filters={[
@@ -124,7 +124,7 @@ export function BooksPage() {
             label: "Couverture",
             render: (row) => row.cover
               ? <img src={row.cover} alt="" className="h-14 w-10 rounded-md object-cover" />
-              : <span className="grid h-14 w-10 place-items-center rounded-md bg-violet text-center font-semibold text-white">{mark(row.title)}</span>,
+              : <span className="grid h-14 w-10 place-items-center rounded-md bg-violet text-center font-semibold text-on-primary">{mark(row.title)}</span>,
           },
           {
             key: "title",

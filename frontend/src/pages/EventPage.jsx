@@ -32,7 +32,7 @@ export default function EventPage() {
 
   return (
     <div className="bg-canvas">
-      <header className="relative overflow-hidden bg-violet text-white">
+      <header className="relative overflow-hidden bg-violet text-on-primary">
         <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-violet/85" aria-hidden="true" />
         <div className="relative px-4 py-10 sm:px-8 lg:px-14">
@@ -59,7 +59,7 @@ function EventContent({ item }) {
     return (
       <section>
         <Breadcrumb withHome items={[{ label: "Accueil", to: "/" }, { label: "Événements", to: "/evenements" }, { label: "Introuvable" }]} />
-        <div className="mt-6 max-w-3xl rounded-2xl border border-line bg-white p-6 shadow-card">
+        <div className="mt-6 max-w-3xl rounded-2xl border border-line bg-panel p-6 shadow-card">
           <h1 className="text-page text-ink">Cet événement est introuvable</h1>
           <Link to="/evenements" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full border border-violet px-4 font-semibold text-violet">
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -88,7 +88,7 @@ function EventContent({ item }) {
         ]}
       />
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <article className="rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
+        <article className="rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6">
           <h1 className="text-page text-heading">{item.title}</h1>
           <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-meta text-muted">
             {facts.map((fact) => (
@@ -154,7 +154,7 @@ function EventContent({ item }) {
 
         <aside className="space-y-4">
           {item.registrationUrl ? (
-            <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="participer-evenement">
+            <section className="rounded-2xl border border-line bg-panel p-5 shadow-card" aria-labelledby="participer-evenement">
               <h2 id="participer-evenement" className="flex items-center gap-2 text-card text-heading">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-lavender text-violet">
                   <CalendarDays className="h-5 w-5" aria-hidden="true" />
@@ -162,14 +162,14 @@ function EventContent({ item }) {
                 Participer à l'événement
               </h2>
               <p className="mt-3 text-body text-muted">L'inscription se fait sur la page indiquée par la bibliothèque.</p>
-              <ExternalLink href={item.registrationUrl} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-violet px-4 font-semibold text-white">
+              <ExternalLink href={item.registrationUrl} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-violet px-4 font-semibold text-on-primary">
                 <SquarePen className="h-4 w-4" aria-hidden="true" />
                 S'inscrire maintenant
               </ExternalLink>
             </section>
           ) : null}
 
-          <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="infos-evenement">
+          <section className="rounded-2xl border border-line bg-panel p-5 shadow-card" aria-labelledby="infos-evenement">
             <h2 id="infos-evenement" className="flex items-center gap-2 text-card text-heading">
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-lavender text-violet">
                 <Info className="h-5 w-5" aria-hidden="true" />
@@ -204,7 +204,7 @@ function SharePanel({ title }) {
   }, [title])
 
   return (
-    <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="partager-evenement">
+    <section className="rounded-2xl border border-line bg-panel p-5 shadow-card" aria-labelledby="partager-evenement">
       <h2 id="partager-evenement" className="flex items-center gap-2 text-card text-heading">
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-lavender text-violet">
           <Share2 className="h-5 w-5" aria-hidden="true" />
@@ -220,7 +220,7 @@ function SharePanel({ title }) {
                 <ExternalLink
                   href={target.href}
                   label={target.label}
-                  className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-line bg-white px-3 text-badge font-semibold ${target.className}`}
+                  className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-line bg-panel px-3 text-badge font-semibold ${target.className}`}
                 >
                   <Icon className="h-4 w-4" />
                   {target.name}

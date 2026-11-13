@@ -111,7 +111,7 @@ export default function CatalogPage() {
 
   return (
     <div className="bg-canvas">
-      <header className="relative overflow-hidden bg-violet text-white">
+      <header className="relative overflow-hidden bg-violet text-on-primary">
         <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-violet/85" aria-hidden="true" />
         <div className="relative px-4 py-10 sm:px-8 lg:px-14">
@@ -138,7 +138,7 @@ export default function CatalogPage() {
                     value={q}
                     onChange={(event) => setQ(event.target.value)}
                     placeholder="Rechercher un livre (titre, auteur, mot-clé...)"
-                    className="w-full rounded-full border border-line bg-white py-3 pl-12 pr-4"
+                    className="w-full rounded-full border border-line bg-panel py-3 pl-12 pr-4"
                     autoComplete="off"
                   />
                 </div>
@@ -146,7 +146,7 @@ export default function CatalogPage() {
                   aria-label="Disponibilité"
                   value={dispo}
                   onChange={(event) => setDispo(event.target.value)}
-                  className="w-32 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
+                  className="w-32 shrink-0 rounded-xl border border-line bg-panel px-2 text-body text-ink"
                 >
                   <option value="">Disponibilité</option>
                   <option value="disponible">Disponible</option>
@@ -158,7 +158,7 @@ export default function CatalogPage() {
                   value={anneeMin}
                   onChange={(event) => setAnneeMin(event.target.value)}
                   placeholder="De"
-                  className="w-16 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
+                  className="w-16 shrink-0 rounded-xl border border-line bg-panel px-2 text-body text-ink"
                 />
                 <input
                   aria-label="Année de fin"
@@ -166,13 +166,13 @@ export default function CatalogPage() {
                   value={anneeMax}
                   onChange={(event) => setAnneeMax(event.target.value)}
                   placeholder="À"
-                  className="w-16 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
+                  className="w-16 shrink-0 rounded-xl border border-line bg-panel px-2 text-body text-ink"
                 />
                 <select
                   aria-label="Trier par"
                   value={tri}
                   onChange={(event) => setTri(event.target.value)}
-                  className="w-32 shrink-0 rounded-xl border border-line bg-white px-2 text-body text-ink"
+                  className="w-32 shrink-0 rounded-xl border border-line bg-panel px-2 text-body text-ink"
                 >
                   <option value="">Pertinence</option>
                   <option value="titre">Titre</option>
@@ -181,7 +181,7 @@ export default function CatalogPage() {
                 <button
                   type="button"
                   aria-label="Réinitialiser"
-                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-line bg-white px-3 text-ink"
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-line bg-panel px-3 text-ink"
                   onClick={reset}
                 >
                   <RotateCcw className="h-4 w-4" aria-hidden="true" />
@@ -229,7 +229,7 @@ function PageField({ page, pageCount, onPage }) {
     <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-body text-ink">
       <button
         type="button"
-        className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-white text-violet disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel text-violet disabled:cursor-not-allowed disabled:opacity-40"
         aria-label="Page précédente"
         disabled={previousDisabled}
         onClick={() => onPage(page - 1)}
@@ -246,7 +246,7 @@ function PageField({ page, pageCount, onPage }) {
         key={page}
         defaultValue={String(page)}
         aria-describedby="page-catalogue-total"
-        className="w-20 rounded-xl border border-line bg-white px-3 py-2 text-center"
+        className="w-20 rounded-xl border border-line bg-panel px-3 py-2 text-center"
         onKeyDown={(event) => {
           if (event.key !== "Enter") return
           event.preventDefault()
@@ -256,7 +256,7 @@ function PageField({ page, pageCount, onPage }) {
       <span id="page-catalogue-total">sur {pageCount.toLocaleString("fr-FR")}</span>
       <button
         type="button"
-        className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-white text-violet disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel text-violet disabled:cursor-not-allowed disabled:opacity-40"
         aria-label="Page suivante"
         disabled={nextDisabled}
         onClick={() => onPage(page + 1)}

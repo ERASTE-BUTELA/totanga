@@ -56,12 +56,12 @@ function MessageModal({ row, onClose }) {
   if (!row) return null
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[rgb(36_24_32_/_0.45)] p-4" role="presentation" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-scrim p-4" role="presentation" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="form-save-card grid w-full max-w-lg gap-4 rounded-panel bg-white p-5 shadow-panel sm:p-6"
+        className="form-save-card grid w-full max-w-lg gap-4 rounded-panel bg-panel p-5 shadow-panel sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -86,7 +86,7 @@ function MessageModal({ row, onClose }) {
         <p className="text-muted">Contact : {contactLine(row)}</p>
         <p className="whitespace-pre-wrap text-heading">{row.body}</p>
         <div className="flex justify-end">
-          <button type="button" className="inline-flex min-h-11 items-center rounded-control bg-violet px-4 font-semibold text-white" onClick={onClose}>
+          <button type="button" className="inline-flex min-h-11 items-center rounded-control bg-violet px-4 font-semibold text-on-primary" onClick={onClose}>
             Fermer
           </button>
         </div>
@@ -194,7 +194,7 @@ export function VisitorMessagesPanel() {
                 key={tab.id}
                 type="button"
                 aria-pressed={selectedFilter}
-                className={`inline-flex min-h-11 items-center gap-2 rounded-control px-4 font-semibold ${selectedFilter ? "bg-violet text-white" : "bg-lavender text-violet"}`}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-control px-4 font-semibold ${selectedFilter ? "bg-violet text-on-primary" : "bg-lavender text-violet"}`}
                 onClick={() => setFilter(tab.id)}
               >
                 <Icon aria-hidden="true" size={18} />
@@ -227,14 +227,14 @@ export function VisitorMessagesPanel() {
           {visible.map((row) => (
             <article
               key={row.id}
-              className={`rounded-panel border p-4 shadow-card ${row.is_read ? "border-line bg-white" : "border-violet/40 bg-lavender/40"}`}
+              className={`rounded-panel border p-4 shadow-card ${row.is_read ? "border-line bg-panel" : "border-violet/40 bg-lavender/40"}`}
             >
               <button type="button" className="flex w-full items-start justify-between gap-3 text-left" onClick={() => openMessage(row)}>
                 <span>
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-heading">{row.subject || "Message"}</span>
                     {!row.is_read ? (
-                      <span className="rounded-full bg-violet px-2 py-0.5 text-meta font-semibold text-white">Non lu</span>
+                      <span className="rounded-full bg-violet px-2 py-0.5 text-meta font-semibold text-on-primary">Non lu</span>
                     ) : null}
                   </span>
                   <span className="text-muted">

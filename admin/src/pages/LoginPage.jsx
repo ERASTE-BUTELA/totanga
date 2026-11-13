@@ -3,11 +3,13 @@ import { ArrowRight, Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react"
 import { Navigate } from "react-router"
 import { LOGIN_FAILED, SESSION_EXPIRED } from "../api/messages.js"
 import { DASHBOARD_PATH } from "../lib/paths.js"
+import { useTheme } from "../lib/useTheme.js"
 import { useSession } from "../session/SessionContext.jsx"
 
 const asset = (path) => `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`
 
 export function LoginPage() {
+  useTheme()
   const session = useSession()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -36,43 +38,44 @@ export function LoginPage() {
 
   return (
     <main className="min-h-dvh bg-lavender lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)]">
-      <section className="relative hidden min-h-dvh overflow-hidden text-white lg:block">
+      <section className="relative hidden min-h-dvh overflow-hidden text-on-bar lg:block">
         <img
           src={asset("images/bibliotheque.webp")}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
+          data-theme-keep=""
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-violet/95 via-violet/72 to-violet/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-violet-dark/95 via-violet-dark/72 to-violet-dark/40" />
         <svg
-          className="absolute top-0 right-0 h-full w-28 text-lavender"
+          className="absolute top-0 right-0 h-full w-28 text-canvas"
           viewBox="0 0 120 800"
           preserveAspectRatio="none"
           aria-hidden="true"
         >
           <path d="M120 0C28 110 28 690 120 800V0Z" fill="currentColor" />
-          <path d="M118 0C30 110 30 690 118 800" fill="none" stroke="#e4ae24" strokeWidth="8" />
+          <path d="M118 0C30 110 30 690 118 800" fill="none" stroke="var(--color-gold-bright)" strokeWidth="8" />
         </svg>
         <div className="relative z-10 flex h-full max-w-2xl flex-col px-12 py-12 xl:px-16">
           <img
             src={asset("images/logo.png")}
             alt=""
-            className="h-20 w-auto self-start rounded-panel bg-white px-3 py-2"
+            className="theme-logo h-20 w-auto self-start rounded-panel bg-panel px-3 py-2"
           />
           <div className="mt-5 h-1 w-16 rounded-full bg-gold-bright" />
           <h1 className="mt-10 text-page">Espace d'administration</h1>
-          <p className="mt-4 max-w-md text-lead text-white/85">
+          <p className="mt-4 max-w-md text-lead text-on-bar/85">
             Gérez le catalogue, les annonces, les publications, les événements et les paramètres de la bibliothèque.
           </p>
         </div>
       </section>
 
       <section className="flex min-h-dvh items-center justify-center px-4 py-10">
-        <div className="w-full max-w-[32rem] rounded-[1.75rem] bg-white px-6 py-8 shadow-panel sm:px-10 sm:py-10">
+        <div className="w-full max-w-[32rem] rounded-[1.75rem] bg-panel px-6 py-8 shadow-panel sm:px-10 sm:py-10">
           <div className="mb-8 flex justify-center">
             <img
               src={asset("images/logo.png")}
               alt="Bibliothèque Totanga, Sœurs des pauvres de Bergame"
-              className="h-24 w-auto"
+              className="theme-logo h-24 w-auto"
             />
           </div>
           <h1 className="text-center text-section text-heading lg:hidden">Espace d'administration</h1>
@@ -109,7 +112,7 @@ export function LoginPage() {
                   required
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
-                  className="w-full rounded-control border border-line bg-white pr-3 pl-11"
+                  className="w-full rounded-control border border-line bg-panel pr-3 pl-11"
                 />
               </span>
             </label>
@@ -130,7 +133,7 @@ export function LoginPage() {
                   required
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-control border border-line bg-white pr-14 pl-11"
+                  className="w-full rounded-control border border-line bg-panel pr-14 pl-11"
                 />
                 <button
                   type="button"
@@ -158,7 +161,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={pending}
-              className="flex w-full items-center justify-center gap-2 rounded-control bg-violet font-semibold text-white disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-control bg-violet font-semibold text-on-primary disabled:opacity-70"
             >
               <ArrowRight aria-hidden="true" size={20} />
               {pending ? "Connexion…" : "Se connecter"}

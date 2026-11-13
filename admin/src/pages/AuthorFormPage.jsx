@@ -6,7 +6,7 @@ import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
 import { busyPhase, saveAndGo } from "../lib/saveAndGo.js"
 
 const MAX_IMAGE = 5 * 1024 * 1024
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "w-full rounded-control border border-line bg-panel px-3"
 
 export function AuthorFormPage({ mode = "create" }) {
   const { authorId } = useParams()
@@ -104,7 +104,7 @@ export function AuthorFormPage({ mode = "create" }) {
         </div>
       ) : null}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <UserRound aria-hidden="true" className="text-violet" size={24} />
             Informations de l'auteur
@@ -119,7 +119,7 @@ export function AuthorFormPage({ mode = "create" }) {
             <textarea className="min-h-40 w-full rounded-control border border-line px-3 py-2" value={biography} onChange={(event) => setBiography(event.target.value)} disabled={viewing} />
           </label>
         </article>
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="text-section text-heading">Photo (facultatif)</h2>
           <div className="mt-4">
             {photoUrl ? (
@@ -143,17 +143,17 @@ export function AuthorFormPage({ mode = "create" }) {
         </article>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link to="/catalogue/auteurs" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-heading">
+        <Link to="/catalogue/auteurs" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading">
           <ArrowLeft aria-hidden="true" size={18} />
           Retour à la liste
         </Link>
         {viewing ? (
-          <Link to={`/catalogue/auteurs/${authorId}/modifier`} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+          <Link to={`/catalogue/auteurs/${authorId}/modifier`} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary">
             <Pencil aria-hidden="true" size={18} />
             Modifier
           </Link>
         ) : (
-          <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy}>
+          <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary" disabled={busy}>
             <Save aria-hidden="true" size={18} />
             {busy ? "Enregistrement…" : "Enregistrer"}
           </button>

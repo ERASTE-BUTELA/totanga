@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { ChevronDown, X } from "lucide-react"
 
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "w-full rounded-control border border-line bg-panel px-3"
 
 /**
  * Select filtrable : les options viennent de la base via `search(query)`.
@@ -178,7 +178,7 @@ export function SearchSelect({
             <ul
               id={listId}
               role="listbox"
-              className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-control border border-line bg-white shadow-card"
+              className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-control border border-line bg-panel shadow-card"
             >
               {loading ? (
                 <li className="px-3 py-2 text-muted">Recherche…</li>

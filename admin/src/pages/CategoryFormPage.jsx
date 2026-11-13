@@ -5,7 +5,7 @@ import { getCategory, listCategories, saveCategory } from "../api/catalog.js"
 import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
 import { busyPhase } from "../lib/saveAndGo.js"
 
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "w-full rounded-control border border-line bg-panel px-3"
 
 /** Formulaire catégorie (modal). mode: create | edit | view */
 export function CategoryFormModal({ mode = "create", categoryId = null, onClose, onSaved }) {
@@ -87,13 +87,13 @@ export function CategoryFormModal({ mode = "create", categoryId = null, onClose,
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[rgb(36_24_32_/_0.45)] p-4" role="presentation" onClick={() => !busy && onClose()}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-scrim p-4" role="presentation" onClick={() => !busy && onClose()}>
       {phase ? <FormSaveOverlay phase={phase} /> : null}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="form-save-card grid w-full max-w-lg gap-4 rounded-panel bg-white p-5 shadow-panel sm:p-6"
+        className="form-save-card grid w-full max-w-lg gap-4 rounded-panel bg-panel p-5 shadow-panel sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -148,7 +148,7 @@ export function CategoryFormModal({ mode = "create", categoryId = null, onClose,
                 {viewing ? "Fermer" : "Annuler"}
               </button>
               {viewing ? null : (
-                <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy}>
+                <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary" disabled={busy}>
                   <Save aria-hidden="true" size={18} />
                   {busy ? "Enregistrement…" : "Enregistrer"}
                 </button>

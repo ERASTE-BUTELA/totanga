@@ -108,7 +108,7 @@ function HomeContent({ data, onSearch }) {
 
   return (
     <div>
-      <section className="relative overflow-hidden bg-[#140e12] text-white md:h-[clamp(26rem,calc(100svh-16.5rem),34rem)]">
+      <section className="relative overflow-hidden bg-[#140e12] text-on-bar md:h-[clamp(26rem,calc(100svh-16.5rem),34rem)]">
         <img
           src="/images/hero/hero-1024.webp"
           srcSet="/images/hero/hero-640.webp 640w, /images/hero/hero-960.webp 960w, /images/hero/hero-1024.webp 1024w"
@@ -116,6 +116,7 @@ function HomeContent({ data, onSearch }) {
           alt=""
           fetchPriority="high"
           className="absolute inset-0 h-full w-full object-cover object-center"
+          data-theme-keep=""
         />
         <div className="absolute inset-0 bg-black/50 md:bg-transparent md:bg-gradient-to-r md:from-black/75 md:via-black/40 md:to-transparent" aria-hidden="true" />
         <div className="relative flex h-full flex-col justify-center px-4 py-6 sm:px-8 lg:px-14">
@@ -126,7 +127,7 @@ function HomeContent({ data, onSearch }) {
             <label htmlFor="recherche-accueil" className="sr-only">
               Rechercher un livre
             </label>
-            <div className="flex items-center rounded-full bg-white p-1.5 shadow-card md:rounded-2xl">
+            <div className="flex items-center rounded-full bg-panel p-1.5 shadow-card md:rounded-2xl">
               <Search className="ml-3 h-5 w-5 shrink-0 text-muted" aria-hidden="true" />
               <input
                 id="recherche-accueil"
@@ -135,10 +136,10 @@ function HomeContent({ data, onSearch }) {
                 placeholder="Rechercher un livre (titre, auteur, mot-clé...)"
                 className="min-w-0 flex-1 bg-transparent px-3 py-2 text-ink outline-none md:py-3"
               />
-              <button type="submit" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-violet text-white md:hidden" aria-label="Rechercher">
+              <button type="submit" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-violet text-on-primary md:hidden" aria-label="Rechercher">
                 <Search className="h-5 w-5" aria-hidden="true" />
               </button>
-              <button type="submit" className="hidden shrink-0 rounded-xl bg-violet px-5 py-3 font-semibold text-white md:inline-flex">
+              <button type="submit" className="hidden shrink-0 rounded-xl bg-violet px-5 py-3 font-semibold text-on-primary md:inline-flex">
                 Rechercher
               </button>
             </div>
@@ -152,7 +153,7 @@ function HomeContent({ data, onSearch }) {
                   <li key={category.id}>
                     <Link
                       to={`/catalogue?categorie=${encodeURIComponent(category.slug)}`}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-black/40 px-3 py-1.5 text-badge text-white"
+                      className="inline-flex items-center gap-2 rounded-full border border-on-bar/80 bg-black/40 px-3 py-1.5 text-badge text-on-bar"
                     >
                       <Icon className="h-4 w-4" aria-hidden="true" />
                       {category.name}
@@ -163,7 +164,7 @@ function HomeContent({ data, onSearch }) {
               <li>
                 <Link
                   to="/catalogue"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-black/40 px-3 py-1.5 text-badge text-white"
+                  className="inline-flex items-center gap-2 rounded-full border border-on-bar/80 bg-black/40 px-3 py-1.5 text-badge text-on-bar"
                 >
                   <LayoutGrid className="h-4 w-4" aria-hidden="true" />
                   Toutes les catégories
@@ -174,17 +175,17 @@ function HomeContent({ data, onSearch }) {
         </div>
       </section>
 
-      <nav aria-label="Accès rapides" className="bg-canvas px-4 py-4 md:border-b md:border-line md:bg-white md:px-8 md:py-0 lg:px-14">
+      <nav aria-label="Accès rapides" className="bg-canvas px-4 py-4 md:border-b md:border-line md:bg-panel md:px-8 md:py-0 lg:px-14">
         <ul className="grid grid-cols-2 gap-3 md:gap-0 lg:grid-cols-4">
           {shortcuts.map((item) => (
             <li key={item.to}>
               <Link
                 to={item.to}
-                className="flex h-full min-w-0 flex-col items-center gap-3 rounded-2xl bg-white px-3 py-5 text-center shadow-card md:flex-row md:items-center md:rounded-none md:bg-transparent md:px-2 md:text-left md:shadow-none"
+                className="flex h-full min-w-0 flex-col items-center gap-3 rounded-2xl bg-panel px-3 py-5 text-center shadow-card md:flex-row md:items-center md:rounded-none md:bg-transparent md:px-2 md:text-left md:shadow-none"
               >
                 <span
                   className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl md:bg-lavender md:text-violet ${
-                    item.gold ? "bg-gold-bright text-heading" : "bg-violet text-white"
+                    item.gold ? "bg-gold-bright text-heading" : "bg-violet text-on-primary"
                   }`}
                 >
                   <item.icon className="h-6 w-6" aria-hidden="true" />
@@ -284,7 +285,7 @@ function HomeContent({ data, onSearch }) {
                       <img src={item.image} alt="" className="aspect-[3/2] w-full rounded-lg object-cover shadow-cover lg:aspect-auto lg:min-h-0 lg:flex-1" />
                     ) : null}
                     {featured ? (
-                      <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-violet px-2.5 py-1 text-badge text-white">
+                      <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-violet px-2.5 py-1 text-badge text-on-primary">
                         <Star className="h-3.5 w-3.5" aria-hidden="true" />
                         À la une
                       </span>

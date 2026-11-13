@@ -39,7 +39,7 @@ export default function AboutPage() {
 
   return (
     <div className="bg-canvas">
-      <header className="relative overflow-hidden bg-violet text-white">
+      <header className="relative overflow-hidden bg-violet text-on-primary">
         <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-violet/85" aria-hidden="true" />
         <div className="relative px-4 py-10 sm:px-8 lg:px-14">
@@ -78,7 +78,7 @@ function AboutContent({ library, counts }) {
           </h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-2">
             {counts.map((item) => (
-              <li key={item.label} className="rounded-2xl border border-line bg-white p-5 text-center shadow-card">
+              <li key={item.label} className="rounded-2xl border border-line bg-panel p-5 text-center shadow-card">
                 <item.icon className="mx-auto h-6 w-6 text-violet" aria-hidden="true" />
                 <p className="mt-3 text-section text-violet">{numberFormat.format(item.value)}</p>
                 <p className="mt-1 text-meta text-muted">{item.label}</p>
@@ -87,7 +87,7 @@ function AboutContent({ library, counts }) {
           </ul>
         </section>
 
-        <section id="contact-bibliotheque" className="rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6" aria-labelledby="nous-trouver">
+        <section id="contact-bibliotheque" className="rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6" aria-labelledby="nous-trouver">
           <h2 id="nous-trouver" className="flex items-center gap-2 text-section text-heading">
             <MapPin className="h-6 w-6 text-violet" aria-hidden="true" />
             Nous trouver
@@ -144,15 +144,15 @@ function AboutContent({ library, counts }) {
           )}
         </section>
 
-        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-violet px-5 py-6 text-white sm:px-8">
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-violet px-5 py-6 text-on-primary sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <BookOpen className="h-8 w-8 shrink-0" aria-hidden="true" />
             <div>
               <p className="text-card">Le catalogue de la bibliothèque</p>
-              <p className="text-body text-lavender">Consultez les livres disponibles sur place.</p>
+              <p className="text-body text-on-primary/80">Consultez les livres disponibles sur place.</p>
             </div>
           </div>
-          <Link to="/catalogue" className="inline-flex min-h-11 items-center rounded-full bg-white px-4 font-semibold text-violet">
+          <Link to="/catalogue" className="inline-flex min-h-11 items-center rounded-full bg-panel px-4 font-semibold text-violet">
             Voir le catalogue
           </Link>
         </section>
@@ -160,7 +160,7 @@ function AboutContent({ library, counts }) {
 
       <div className="relative order-1 min-h-80 lg:order-2 lg:min-h-0">
         <aside
-          className="flex max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-card lg:absolute lg:inset-0 lg:max-h-none"
+          className="flex max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-card lg:absolute lg:inset-0 lg:max-h-none"
           aria-labelledby="histoire-bibliotheque"
         >
           <h2 id="histoire-bibliotheque" className="flex shrink-0 items-center gap-2 px-5 pt-5 text-section text-heading sm:px-6 sm:pt-6">
@@ -209,14 +209,14 @@ function PhotoCarousel() {
     <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <img src={PHOTOS[index]} alt="" className="h-64 w-full rounded-2xl object-cover sm:h-80" />
       <div className="mt-3 flex items-center justify-between gap-3">
-        <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-3 font-semibold text-violet" onClick={() => show(-1)} aria-label="Photo précédente">
+        <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-3 font-semibold text-violet" onClick={() => show(-1)} aria-label="Photo précédente">
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           Précédent
         </button>
         <p className="text-meta text-muted">
           {index + 1} / {PHOTOS.length}
         </p>
-        <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-3 font-semibold text-violet" onClick={() => show(1)} aria-label="Photo suivante">
+        <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-3 font-semibold text-violet" onClick={() => show(1)} aria-label="Photo suivante">
           Suivant
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </button>

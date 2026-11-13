@@ -51,7 +51,7 @@ export default function AnnouncementsPage() {
                 const BadgeIcon = badge.icon
                 return (
                   <li key={item.id}>
-                    <article className="rounded-2xl border border-line bg-white p-4 shadow-card">
+                    <article className="rounded-2xl border border-line bg-panel p-4 shadow-card">
                       <div className="flex flex-col gap-4 sm:flex-row">
                         {item.image ? (
                           <img src={item.image} alt="" className="aspect-[16/10] w-full rounded-xl object-cover sm:w-56" />
@@ -89,7 +89,7 @@ export default function AnnouncementsPage() {
             </div>
 
             <aside className="space-y-4">
-              <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="categories-annonces">
+              <section className="rounded-2xl border border-line bg-panel p-5 shadow-card" aria-labelledby="categories-annonces">
                 <h2 id="categories-annonces" className="flex items-center gap-2 text-card text-ink">
                   <Filter className="h-5 w-5 text-violet" aria-hidden="true" />
                   Catégories
@@ -140,7 +140,7 @@ function FeaturedAnnouncement({ item }) {
   const badge = announcementBadge(item)
   const BadgeIcon = badge.icon
   return (
-    <article className="rounded-2xl border border-line bg-white p-4 shadow-card sm:p-5">
+    <article className="rounded-2xl border border-line bg-panel p-4 shadow-card sm:p-5">
       <p className="text-badge font-semibold text-violet">À la une</p>
       {item.image ? <img src={item.image} alt="" className="mt-3 h-40 w-full rounded-xl object-cover sm:h-52" /> : null}
       <div className="mt-4 flex flex-wrap items-start justify-between gap-3">

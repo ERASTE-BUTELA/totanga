@@ -48,7 +48,7 @@ function BookContent({ book }) {
       <section className="max-w-3xl">
         <h1 className="text-page text-ink">Ce livre est introuvable</h1>
         <p className="mt-4 text-muted">Il n'est pas au catalogue public.</p>
-        <Link to="/catalogue" className="control mt-6 rounded-control bg-violet px-4 py-2 font-semibold text-white">
+        <Link to="/catalogue" className="control mt-6 rounded-control bg-violet px-4 py-2 font-semibold text-on-primary">
           Retour au catalogue
         </Link>
       </section>
@@ -73,11 +73,11 @@ function BookContent({ book }) {
       />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)_18rem] lg:items-start">
-        <div className="rounded-2xl bg-white p-4 shadow-card">
+        <div className="rounded-2xl bg-panel p-4 shadow-card">
           {book.cover ? (
             <img src={book.cover} alt="" className="mx-auto aspect-[3/4] w-full rounded-lg object-cover shadow-cover" />
           ) : (
-            <span className="mx-auto grid aspect-[3/4] w-full place-items-center rounded-lg bg-violet text-white">{book.title.slice(0, 1)}</span>
+            <span className="mx-auto grid aspect-[3/4] w-full place-items-center rounded-lg bg-violet text-on-primary">{book.title.slice(0, 1)}</span>
           )}
         </div>
 
@@ -120,7 +120,7 @@ function BookContent({ book }) {
           </dl>
         </div>
 
-        <aside className="h-fit rounded-2xl border border-line bg-white p-4 shadow-card">
+        <aside className="h-fit rounded-2xl border border-line bg-panel p-4 shadow-card">
           <div className={`rounded-xl px-4 py-4 ${available ? "bg-available-soft text-available" : "bg-unavailable-soft text-unavailable"}`}>
             <p className="flex items-center gap-2 text-card">
               <span className={`h-3 w-3 rounded-full ${available ? "bg-available" : "bg-unavailable"}`} aria-hidden="true" />
@@ -130,7 +130,7 @@ function BookContent({ book }) {
           <p className="mt-3 text-meta text-muted">{availableText(availableCount)}</p>
           <button
             type="button"
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-4 font-semibold text-white"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-4 font-semibold text-on-primary"
             onClick={() => setTab("exemplaires")}
           >
             <Library className="h-4 w-4" aria-hidden="true" />
@@ -203,8 +203,8 @@ function BookTabs({ book, authors, tab, setTab }) {
             aria-controls={`panneau-${id}`}
             className={
               tab === id
-                ? "inline-flex items-center gap-2 rounded-xl bg-violet px-4 font-semibold text-white"
-                : "inline-flex items-center gap-2 rounded-xl border border-line bg-white px-4 font-semibold text-ink"
+                ? "inline-flex items-center gap-2 rounded-xl bg-violet px-4 font-semibold text-on-primary"
+                : "inline-flex items-center gap-2 rounded-xl border border-line bg-panel px-4 font-semibold text-ink"
             }
             onClick={() => setTab(id)}
           >
@@ -244,7 +244,7 @@ function BookTabs({ book, authors, tab, setTab }) {
           ) : (
             <ul className="grid gap-3 md:grid-cols-2">
               {book.copies.map((copy) => (
-                <li key={copy.id} className="rounded-2xl border border-line bg-white px-4 py-3 shadow-card">
+                <li key={copy.id} className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-card">
                   <p className="text-meta text-muted">{copy.inventoryNumber ? `N. e. ${copy.inventoryNumber}` : "Numéro non précisé"}</p>
                   <p className="text-body font-semibold text-ink">{copy.callNumber || "Sans cote"}</p>
                   {copy.secondaryCallNumber ? <p className="mt-1 text-meta text-muted">Cote secondaire : {copy.secondaryCallNumber}</p> : null}

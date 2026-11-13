@@ -26,6 +26,7 @@ const EventPage = load(() => import("../pages/EventPage.jsx"))
 const AboutPage = load(() => import("../pages/AboutPage.jsx"))
 const SimplePage = load(() => import("../pages/SimplePage.jsx"))
 const NotFoundPage = load(() => import("../pages/NotFoundPage.jsx"))
+const ThemeDemoPage = import.meta.env.DEV ? load(() => import("../pages/ThemeDemoPage.jsx")) : null
 
 export const router = createBrowserRouter([
   {
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
       { path: "mentions-legales", element: <SimplePage /> },
       { path: "confidentialite", element: <SimplePage /> },
       { path: "conditions", element: <SimplePage /> },
+      ...(ThemeDemoPage ? [{ path: "dev/theme", element: <ThemeDemoPage /> }] : []),
       { path: "*", element: <NotFoundPage /> },
     ],
   },

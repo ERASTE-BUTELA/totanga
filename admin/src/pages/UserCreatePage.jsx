@@ -4,7 +4,7 @@ import { Link } from "react-router"
 import { createStaff } from "../api/staff.js"
 import { STAFF_ROLES } from "./staffRoles.js"
 
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "w-full rounded-control border border-line bg-panel px-3"
 const ROLES = STAFF_ROLES.filter((role) => role.code !== "depannage")
 
 export function UserCreatePage() {
@@ -48,7 +48,7 @@ export function UserCreatePage() {
   if (created) {
     return (
       <section className="grid gap-4">
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card" aria-live="polite">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card" aria-live="polite">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <Check aria-hidden="true" className="text-available" size={24} />
             Compte créé
@@ -72,7 +72,7 @@ export function UserCreatePage() {
               />
               <button
                 type="button"
-                className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-violet"
+                className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-violet"
                 onClick={copyPassword}
               >
                 <Copy aria-hidden="true" size={18} />
@@ -82,7 +82,7 @@ export function UserCreatePage() {
           </label>
         </article>
         <div>
-          <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+          <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary">
             <ArrowLeft aria-hidden="true" size={18} />
             Retour à la liste
           </Link>
@@ -94,7 +94,7 @@ export function UserCreatePage() {
   return (
     <form className="grid gap-4" onSubmit={save} autoComplete="off">
       {error ? <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p> : null}
-      <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+      <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
         <h2 className="flex items-center gap-2 text-section text-heading">
           <UserRound aria-hidden="true" className="text-violet" size={24} />
           Nouveau compte du personnel
@@ -128,11 +128,11 @@ export function UserCreatePage() {
         </p>
       </article>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-heading">
+        <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading">
           <ArrowLeft aria-hidden="true" size={18} />
           Retour à la liste
         </Link>
-        <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={pending}>
+        <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary" disabled={pending}>
           <Save aria-hidden="true" size={18} />
           {pending ? "Enregistrement…" : "Créer le compte"}
         </button>

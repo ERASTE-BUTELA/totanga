@@ -9,8 +9,8 @@ export function BookMark({ className = "" }) {
 }
 
 export function BrandMark({ tone = "violet", stacked = false }) {
-  const title = tone === "white" ? "text-white" : "text-violet"
-  const place = tone === "white" ? "text-white/80" : "text-muted"
+  const title = tone === "white" ? "text-on-bar" : "text-violet"
+  const place = tone === "white" ? "text-on-bar/80" : "text-muted"
   const book = tone === "white" ? "text-gold-bright" : "text-violet"
   return (
     <div className={stacked ? "flex flex-col items-center text-center" : "flex items-center gap-3"}>

@@ -25,7 +25,7 @@ function RolePanel({ rows, selected, onSelect }) {
 
   return (
     <aside className="grid content-start gap-4">
-      <article className="rounded-panel border border-line bg-white p-4 shadow-card">
+      <article className="rounded-panel border border-line bg-panel p-4 shadow-card">
         <h2 className="flex items-center gap-2 text-section text-heading">
           <Shield aria-hidden="true" className="text-violet" size={22} />
           Rôles ({STAFF_ROLES.length})
@@ -50,13 +50,13 @@ function RolePanel({ rows, selected, onSelect }) {
           })}
         </ul>
       </article>
-      <article className="rounded-panel border border-line bg-white p-4 shadow-card">
+      <article className="rounded-panel border border-line bg-panel p-4 shadow-card">
         <h2 className="text-section text-heading">Détails du rôle : {role.label}</h2>
         <div className="mt-3 flex gap-2">
-          <button type="button" className={`min-h-11 rounded-control px-3 font-semibold ${detail === "permissions" ? "bg-violet text-white" : "text-violet"}`} onClick={() => setDetail("permissions")}>
+          <button type="button" className={`min-h-11 rounded-control px-3 font-semibold ${detail === "permissions" ? "bg-violet text-on-primary" : "text-violet"}`} onClick={() => setDetail("permissions")}>
             Permissions
           </button>
-          <button type="button" className={`min-h-11 rounded-control px-3 font-semibold ${detail === "people" ? "bg-violet text-white" : "text-violet"}`} onClick={() => setDetail("people")}>
+          <button type="button" className={`min-h-11 rounded-control px-3 font-semibold ${detail === "people" ? "bg-violet text-on-primary" : "text-violet"}`} onClick={() => setDetail("people")}>
             Utilisateurs ({people.length})
           </button>
         </div>
@@ -110,11 +110,11 @@ export function UsersPage() {
   return (
     <section className="grid gap-4">
       <div className="flex flex-wrap gap-2">
-        <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+        <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary">
           <Users aria-hidden="true" size={18} />
           Utilisateurs
         </Link>
-        <Link to="/utilisateurs/roles" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-white px-4 font-semibold text-violet">
+        <Link to="/utilisateurs/roles" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-panel px-4 font-semibold text-violet">
           <Shield aria-hidden="true" size={18} />
           Rôles et permissions
         </Link>
@@ -139,7 +139,7 @@ export function UsersPage() {
               { label: "Utilisateurs (total)", value: String(rows.length), trend: "comptes du personnel", icon: Users, chip: "bg-lavender text-violet" },
               { label: "Comptes actifs", value: String(activeCount), trend: "peuvent se connecter", icon: UserRoundCheck, chip: "bg-available-soft text-available" },
               { label: "Comptes suspendus", value: String(suspended), trend: "connexion refusée", icon: UserRoundX, chip: "bg-unavailable-soft text-unavailable" },
-              { label: "Rôles", value: String(STAFF_ROLES.length), trend: "définis pour le personnel", icon: Shield, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
+              { label: "Rôles", value: String(STAFF_ROLES.length), trend: "définis pour le personnel", icon: Shield, chip: "bg-info-soft text-info" },
             ]}
             filters={[
               {
@@ -188,7 +188,7 @@ export function UsersPage() {
                 key: "status",
                 label: "Statut",
                 render: (row) => (
-                  <span className={row.active ? "rounded-full bg-available-soft px-3 py-1 font-semibold text-available" : "rounded-full bg-[#fde7c7] px-3 py-1 font-semibold text-[#9a3412]"}>
+                  <span className={row.active ? "rounded-full bg-available-soft px-3 py-1 font-semibold text-available" : "rounded-full bg-warning-soft px-3 py-1 font-semibold text-warning"}>
                     {row.active ? "Actif" : "Suspendu"}
                   </span>
                 ),
@@ -197,7 +197,7 @@ export function UsersPage() {
                 key: "actions",
                 label: "Actions",
                 render: (row) => (
-                  <Link to={`/utilisateurs/${row.id}`} aria-label="Voir" className="inline-flex h-11 w-11 items-center justify-center rounded-control text-[#1d4ed8]">
+                  <Link to={`/utilisateurs/${row.id}`} aria-label="Voir" className="inline-flex h-11 w-11 items-center justify-center rounded-control text-info">
                     <UserRound size={18} />
                   </Link>
                 ),

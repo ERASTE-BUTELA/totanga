@@ -60,10 +60,10 @@ export default function PublicationsPage() {
                       type="search"
                       defaultValue={query}
                       placeholder="Rechercher une publication…"
-                      className="w-full rounded-full border border-line bg-white pr-4 pl-10"
+                      className="w-full rounded-full border border-line bg-panel pr-4 pl-10"
                     />
                   </span>
-                  <button type="submit" className="rounded-xl bg-violet px-5 font-semibold text-white">
+                  <button type="submit" className="rounded-xl bg-violet px-5 font-semibold text-on-primary">
                     Rechercher
                   </button>
                 </form>
@@ -86,7 +86,7 @@ export default function PublicationsPage() {
             </div>
 
             <aside className="space-y-4">
-              <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="categories-publications">
+              <section className="rounded-2xl border border-line bg-panel p-5 shadow-card" aria-labelledby="categories-publications">
                 <h2 id="categories-publications" className="flex items-center gap-2 text-card text-ink">
                   <Filter className="h-5 w-5 text-violet" aria-hidden="true" />
                   Catégories
@@ -110,7 +110,7 @@ export default function PublicationsPage() {
               </section>
 
               {featured ? (
-                <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="publication-une">
+                <section className="rounded-2xl border border-line bg-panel p-5 shadow-card" aria-labelledby="publication-une">
                   <h2 id="publication-une" className="flex items-center gap-2 text-card text-heading">
                     <Star className="h-5 w-5 text-violet" aria-hidden="true" />
                     Publication à la une
@@ -130,7 +130,7 @@ export default function PublicationsPage() {
                   </p>
                   <Link
                     to={`/publications/${featured.slug}`}
-                    className="mt-4 inline-flex min-h-11 items-center gap-1 rounded-xl bg-violet px-4 font-semibold text-white"
+                    className="mt-4 inline-flex min-h-11 items-center gap-1 rounded-xl bg-violet px-4 font-semibold text-on-primary"
                   >
                     Lire l'article
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -148,11 +148,11 @@ export default function PublicationsPage() {
 function PublicationCard({ item, featured = false }) {
   const badge = publicationKind(item.kind)
   return (
-    <article className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-card ${featured ? "border-violet" : "border-line"}`}>
+    <article className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-panel shadow-card ${featured ? "border-violet" : "border-line"}`}>
       <div className="relative">
         {item.image ? <img src={item.image} alt="" className="aspect-[16/10] w-full object-cover" /> : <div className="aspect-[16/10] bg-lavender" />}
         {featured ? (
-          <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-violet px-2.5 py-1 text-badge text-white">
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-violet px-2.5 py-1 text-badge text-on-primary">
             <Star className="h-3.5 w-3.5" aria-hidden="true" />
             À la une
           </span>

@@ -26,7 +26,7 @@ export const STAFF_ROLES = [
   {
     code: "redacteur",
     label: "Rédacteur",
-    chip: "bg-[#e7eefc] text-[#1d4ed8]",
+    chip: "bg-info-soft text-info",
     permissions: [
       "Voir, ajouter, modifier et supprimer les annonces et les publications.",
       "Voir, ajouter et modifier les événements (archivage, sans suppression).",
@@ -35,7 +35,7 @@ export const STAFF_ROLES = [
   {
     code: "depannage",
     label: "Super-administrateur",
-    chip: "bg-[#fde7c7] text-[#9a3412]",
+    chip: "bg-warning-soft text-warning",
     permissions: [
       "Accès à tous les menus et à toutes les actions, sans groupe.",
       "Un livre ne se supprime pas : il s'archive.",

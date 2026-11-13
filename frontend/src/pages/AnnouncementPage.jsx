@@ -50,7 +50,7 @@ function AnnouncementContent({ item, items }) {
     return (
       <section>
         <Breadcrumb withHome items={[{ label: "Accueil", to: "/" }, { label: "Annonces", to: "/annonces" }, { label: "Introuvable" }]} />
-        <div className="mt-6 max-w-3xl rounded-2xl border border-line bg-white p-6 shadow-card">
+        <div className="mt-6 max-w-3xl rounded-2xl border border-line bg-panel p-6 shadow-card">
           <h1 className="text-page text-ink">Cette annonce est introuvable</h1>
           <Link to="/annonces" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full border border-violet px-4 font-semibold text-violet">
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -78,7 +78,7 @@ function AnnouncementContent({ item, items }) {
         ]}
       />
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <article className="rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
+        <article className="rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6">
           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-badge ${badge.className}`}>
             <BadgeIcon className="h-3.5 w-3.5" aria-hidden="true" />
             {badge.label}
@@ -114,7 +114,7 @@ function AnnouncementContent({ item, items }) {
         </article>
 
         <aside>
-          <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="autres-annonces">
+          <section className="rounded-2xl border border-line bg-panel p-5 shadow-card" aria-labelledby="autres-annonces">
             <h2 id="autres-annonces" className="flex items-center gap-2 text-card text-heading">
               <Info className="h-5 w-5 text-violet" aria-hidden="true" />
               Autres annonces
@@ -177,7 +177,7 @@ function ShareBar({ title }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <button type="button" onClick={onShare} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-white px-4 font-semibold text-ink">
+      <button type="button" onClick={onShare} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-panel px-4 font-semibold text-ink">
         <Share2 className="h-4 w-4" aria-hidden="true" />
         Partager
       </button>
@@ -189,7 +189,7 @@ function ShareBar({ title }) {
                 key={target.label}
                 href={target.href}
                 label={target.label}
-                className={`inline-flex h-11 w-11 items-center justify-center rounded-lg text-white ${target.className}`}
+                className={`inline-flex h-11 w-11 items-center justify-center rounded-lg text-on-primary ${target.className}`}
               >
                 <Icon className="h-5 w-5" />
               </ExternalLink>

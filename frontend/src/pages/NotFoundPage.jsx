@@ -12,7 +12,7 @@ export default function NotFoundPage() {
       </p>
       <Link
         to="/"
-        className="control mt-6 rounded-control bg-violet px-4 py-2 font-semibold text-white"
+        className="control mt-6 rounded-control bg-violet px-4 py-2 font-semibold text-on-primary"
       >
         Retour à l'accueil
       </Link>

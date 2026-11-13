@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Bell, CalendarDays, Check, Globe, Image, Layers, Monitor, Moon, RotateCcw, Sparkles, Sun, Type } from "lucide-react"
 import { INITIAL_PREFERENCES, PreferenceSwitch, readPreferences, resetPreferences, savePreferences } from "./accountPreferences.jsx"
 
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "w-full rounded-control border border-line bg-panel px-3"
 
 const THEMES = [
   { id: "clair", label: "Clair", icon: Sun },
@@ -48,9 +48,9 @@ export function PreferencesPage() {
 
   return (
     <form className="grid gap-4" onSubmit={save}>
-      {notice ? <p role="status" className="rounded-panel border border-line bg-white p-4 text-heading">{notice}</p> : null}
+      {notice ? <p role="status" className="rounded-panel border border-line bg-panel p-4 text-heading">{notice}</p> : null}
       <div className="grid items-start gap-4 xl:grid-cols-2">
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <Globe aria-hidden="true" className="text-violet" size={22} />
             Langue de l'interface
@@ -63,7 +63,7 @@ export function PreferencesPage() {
             </select>
           </label>
         </article>
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="text-section text-heading">Thème</h2>
           <p className="mt-1 text-muted">Le violet clair est le thème de la bibliothèque.</p>
           <div className="mt-4 grid grid-cols-3 gap-2">
@@ -75,7 +75,7 @@ export function PreferencesPage() {
                   key={theme.id}
                   type="button"
                   aria-pressed={selected}
-                  className={`grid min-h-24 place-items-center gap-1 rounded-control border font-semibold ${selected ? "border-violet bg-lavender text-violet" : "border-line bg-white text-heading"}`}
+                  className={`grid min-h-24 place-items-center gap-1 rounded-control border font-semibold ${selected ? "border-violet bg-lavender text-violet" : "border-line bg-panel text-heading"}`}
                   onClick={() => set("theme", theme.id)}
                 >
                   <Icon aria-hidden="true" size={22} />
@@ -86,7 +86,7 @@ export function PreferencesPage() {
             })}
           </div>
         </article>
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <Layers aria-hidden="true" className="text-violet" size={22} />
             Affichage
@@ -104,7 +104,7 @@ export function PreferencesPage() {
             </Row>
           </div>
         </article>
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <CalendarDays aria-hidden="true" className="text-violet" size={22} />
             Formats de date et d'heure
@@ -138,7 +138,7 @@ export function PreferencesPage() {
           </div>
         </article>
       </div>
-      <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+      <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
         <h2 className="flex items-center gap-2 text-section text-heading">
           <Bell aria-hidden="true" className="text-violet" size={22} />
           Notifications
@@ -166,11 +166,11 @@ export function PreferencesPage() {
         </div>
       </article>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-heading" onClick={reset}>
+        <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading" onClick={reset}>
           <RotateCcw aria-hidden="true" size={18} />
           Réinitialiser
         </button>
-        <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+        <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary">
           <Check aria-hidden="true" size={18} />
           Enregistrer les préférences
         </button>

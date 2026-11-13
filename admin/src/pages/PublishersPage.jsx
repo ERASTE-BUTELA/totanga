@@ -68,7 +68,7 @@ export function PublishersPage() {
           { label: "Éditeurs", value: figure(stats, "total"), trend: "dans le catalogue", icon: Building2, chip: "bg-lavender text-violet" },
           { label: "Éditeurs avec des livres", value: figure(stats, "with_books"), trend: "liés à une fiche", icon: Building2, chip: "bg-available-soft text-available" },
           { label: "Éditeurs sans livre", value: figure(stats, "without_books"), trend: "fiche seule", icon: Building2, chip: "bg-unavailable-soft text-unavailable" },
-          { label: "Livres liés", value: figure(stats, "linked"), trend: "au total", icon: BookOpen, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
+          { label: "Livres liés", value: figure(stats, "linked"), trend: "au total", icon: BookOpen, chip: "bg-info-soft text-info" },
         ]}
         oneLine
         filters={[]}

@@ -108,7 +108,7 @@ export function HomeContact() {
   return (
     <section aria-labelledby="contact-title" className="space-y-6 bg-canvas px-4 pb-10 sm:px-8 lg:px-14">
       {status === "sending" || status === "done" ? <SendOverlay phase={status === "done" ? "done" : "sending"} /> : null}
-      <div className="overflow-hidden rounded-panel border border-line bg-white p-5 shadow-panel sm:p-8">
+      <div className="overflow-hidden rounded-panel border border-line bg-panel p-5 shadow-panel sm:p-8">
         <h2 id="messages-title" className="text-section text-heading">
           Messages des lecteurs
         </h2>
@@ -124,14 +124,14 @@ export function HomeContact() {
             </article>
             {messages.length > 1 ? (
               <div className="mt-3 flex items-center justify-between gap-3">
-                <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-3 font-semibold text-violet" onClick={() => showMessage(-1)} aria-label="Message précédent">
+                <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-3 font-semibold text-violet" onClick={() => showMessage(-1)} aria-label="Message précédent">
                   <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   Précédent
                 </button>
                 <p className="text-meta text-muted">
                   {messageIndex + 1} / {messages.length}
                 </p>
-                <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-3 font-semibold text-violet" onClick={() => showMessage(1)} aria-label="Message suivant">
+                <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-3 font-semibold text-violet" onClick={() => showMessage(1)} aria-label="Message suivant">
                   Suivant
                   <ChevronRight className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -146,7 +146,7 @@ export function HomeContact() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
         <form
           onSubmit={onSubmit}
-          className="min-w-0 rounded-panel border border-line bg-white p-5 shadow-panel sm:p-8"
+          className="min-w-0 rounded-panel border border-line bg-panel p-5 shadow-panel sm:p-8"
           noValidate
         >
           <h2 id="contact-title" className="flex items-center gap-2 text-section text-heading">
@@ -181,7 +181,7 @@ export function HomeContact() {
               <span className="mb-1.5 block text-meta font-bold text-heading">
                 Sujet <span className="text-violet">*</span>
               </span>
-              <select name="subject" value={form.subject} onChange={update} required className="w-full rounded-control border border-line bg-white px-3 text-body text-heading">
+              <select name="subject" value={form.subject} onChange={update} required className="w-full rounded-control border border-line bg-panel px-3 text-body text-heading">
                 <option value="">Sélectionnez un sujet</option>
                 {SUBJECTS.map((item) => (
                   <option key={item.value} value={item.value}>
@@ -202,7 +202,7 @@ export function HomeContact() {
                 rows={4}
                 maxLength={1000}
                 placeholder="Écrivez votre message…"
-                className="min-h-28 w-full rounded-control border border-line bg-white px-3 py-2 text-body text-heading"
+                className="min-h-28 w-full rounded-control border border-line bg-panel px-3 py-2 text-body text-heading"
               />
             </label>
           </div>
@@ -212,7 +212,7 @@ export function HomeContact() {
               {notice}
             </p>
           ) : null}
-          <button type="submit" disabled={status === "sending" || status === "done"} className="mt-4 inline-flex items-center gap-2 rounded-full bg-violet px-5 text-body font-bold text-white disabled:opacity-60">
+          <button type="submit" disabled={status === "sending" || status === "done"} className="mt-4 inline-flex items-center gap-2 rounded-full bg-violet px-5 text-body font-bold text-on-primary disabled:opacity-60">
             {status === "sending" ? "Envoi…" : "Envoyer le message"}
             <Send className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -220,7 +220,7 @@ export function HomeContact() {
 
         <aside
           aria-labelledby="coordinates-title"
-          className="min-w-0 rounded-panel border border-line bg-white p-5 shadow-panel sm:p-8"
+          className="min-w-0 rounded-panel border border-line bg-panel p-5 shadow-panel sm:p-8"
         >
           <h2 id="coordinates-title" className="text-section text-heading">
             Nos coordonnées
@@ -260,7 +260,7 @@ function Field({ label, name, type = "text", className = "", ...props }) {
       <span className="mb-1.5 block text-meta font-bold text-heading">
         {label} <span className="text-violet">*</span>
       </span>
-      <input name={name} type={type} maxLength={name === "name" ? 80 : name === "whatsapp" ? 40 : 254} className="w-full rounded-control border border-line bg-white px-3 text-body text-heading" {...props} />
+      <input name={name} type={type} maxLength={name === "name" ? 80 : name === "whatsapp" ? 40 : 254} className="w-full rounded-control border border-line bg-panel px-3 text-body text-heading" {...props} />
     </label>
   )
 }

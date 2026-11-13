@@ -13,7 +13,7 @@ const CATEGORIES = [
   ["maintenance", "Maintenance et travaux"],
 ]
 const MAX_IMAGE = 5 * 1024 * 1024
-const fieldClass = "min-h-11 w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "min-h-11 w-full rounded-control border border-line bg-panel px-3"
 
 function localStamp(value) {
   const date = value ? new Date(value) : new Date()
@@ -154,7 +154,7 @@ export function AnnouncementFormPage({ mode }) {
   if (loading) return <p>Chargement…</p>
   if (missing) {
     return (
-      <section className="rounded-panel border border-line bg-white p-6 shadow-card">
+      <section className="rounded-panel border border-line bg-panel p-6 shadow-card">
         <p>Cette annonce n'existe pas.</p>
         <Link to="/annonces" className="mt-4 inline-flex min-h-11 items-center font-semibold text-violet">Retour à la liste</Link>
       </section>
@@ -175,7 +175,7 @@ export function AnnouncementFormPage({ mode }) {
         <p className="rounded-panel border border-line bg-canvas p-4">{contentNotices.archivedStays}</p>
       ) : null}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <Megaphone aria-hidden="true" className="text-violet" size={24} />
             Informations de l'annonce
@@ -207,7 +207,7 @@ export function AnnouncementFormPage({ mode }) {
           </label>
         </article>
         <div className="grid content-start gap-4">
-          <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <ImagePlus aria-hidden="true" className="text-violet" size={22} />
               Image de l'annonce
@@ -233,7 +233,7 @@ export function AnnouncementFormPage({ mode }) {
             <p className="mt-3 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo.</p>
             {imageError ? <p role="alert" className="mt-2 text-unavailable">{imageError}</p> : null}
           </article>
-          <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <Info aria-hidden="true" className="text-violet" size={22} />
               Conseils
@@ -248,24 +248,24 @@ export function AnnouncementFormPage({ mode }) {
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link to="/annonces" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-heading">
+        <Link to="/annonces" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading">
           <ArrowLeft aria-hidden="true" size={18} />
           Retour à la liste
         </Link>
         <div className="flex flex-wrap gap-2">
           {mode !== "create" ? (
-            <Link to={viewing ? `/annonces/${announcementId}/modifier` : `/annonces/${announcementId}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-[#1d4ed8]">
+            <Link to={viewing ? `/annonces/${announcementId}/modifier` : `/annonces/${announcementId}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-info">
               {viewing ? <Pencil aria-hidden="true" size={18} /> : <Eye aria-hidden="true" size={18} />}
               {viewing ? "Modifier" : "Aperçu"}
             </Link>
           ) : null}
           {viewing ? null : (
             <>
-              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-white px-4 font-semibold text-violet" disabled={busy} onClick={(event) => save(event, "draft")}>
+              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet bg-panel px-4 font-semibold text-violet" disabled={busy} onClick={(event) => save(event, "draft")}>
                 <Save aria-hidden="true" size={18} />
                 {busy ? "Enregistrement…" : "Enregistrer en brouillon"}
               </button>
-              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white" disabled={busy}>
+              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary" disabled={busy}>
                 <Check aria-hidden="true" size={18} />
                 {busy ? "Publication…" : "Publier"}
               </button>

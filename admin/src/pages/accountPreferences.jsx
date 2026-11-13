@@ -48,7 +48,7 @@ export function PreferenceSwitch({ checked, label, onChange, disabled = false })
       className={`relative h-11 w-16 shrink-0 rounded-full ${checked ? "bg-violet" : "bg-line"} disabled:opacity-60`}
       onClick={() => onChange(!checked)}
     >
-      <span className={`absolute top-1.5 h-8 w-8 rounded-full bg-white shadow-card ${checked ? "left-7" : "left-1.5"}`} />
+      <span className={`absolute top-1.5 h-8 w-8 rounded-full bg-panel shadow-card ${checked ? "left-7" : "left-1.5"}`} />
     </button>
   )
 }

@@ -27,6 +27,8 @@ import { getLibrarySettings, setMaintenanceMode } from "../api/settings.js"
 import { subscribeAlerts, setUnreadMessages } from "../lib/alertsStore.js"
 import { LOGIN_PATH, normalizeAdminPath } from "../lib/paths.js"
 import { canOpen, PAGES, visibleNav } from "../nav/entries.js"
+import { ThemeSelector } from "./ThemeSelector.jsx"
+import { useTheme } from "../lib/useTheme.js"
 import { useSession } from "../session/SessionContext.jsx"
 
 const SUBTITLES = {
@@ -154,11 +156,12 @@ function trailFor(pathname) {
 function itemClass(active) {
   return [
     "flex min-h-11 items-center gap-3 rounded-control px-3 font-semibold",
-    active ? "bg-gold-bright text-violet-dark" : "text-white/90 hover:bg-white/10",
+    active ? "bg-gold-bright text-violet-dark" : "text-on-bar/90 hover:bg-panel/10",
   ].join(" ")
 }
 
 export function AdminShell() {
+  useTheme()
   const session = useSession()
   const navigate = useNavigate()
   const location = useLocation()
@@ -275,10 +278,10 @@ export function AdminShell() {
         <img
           src={`${import.meta.env.BASE_URL}images/logo.png`}
           alt="Bibliothèque Totanga, Sœurs des pauvres de Bergame"
-          className="h-16 w-auto rounded-control bg-white px-2 py-1"
+          className="theme-logo h-16 w-auto rounded-control bg-panel px-2 py-1"
         />
       </div>
-      <header className="flex items-center justify-between gap-4 border-b border-line bg-white px-4 py-3 sm:px-6">
+      <header className="flex items-center justify-between gap-4 border-b border-line bg-panel px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <span className="h-8 w-1.5 shrink-0 rounded-full bg-gold-bright" aria-hidden="true" />
           <div className="min-w-0">
@@ -305,14 +308,14 @@ export function AdminShell() {
             className={({ isActive }) =>
               [
                 "relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-line text-violet shadow-card",
-                isActive ? "bg-lavender" : "bg-white",
+                isActive ? "bg-lavender" : "bg-panel",
                 alertsUnread > 0 ? "alerts-bell-pulse" : "",
               ].join(" ")
             }
           >
             <Bell aria-hidden="true" size={20} />
             {alertsUnread > 0 ? (
-              <span className="alerts-badge absolute -top-1 -right-1 min-w-5 rounded-full bg-unavailable px-1 text-center text-meta font-bold text-white">
+              <span className="alerts-badge absolute -top-1 -right-1 min-w-5 rounded-full bg-unavailable px-1 text-center text-meta font-bold text-on-primary">
                 {alertsUnread > 99 ? "99+" : alertsUnread}
               </span>
             ) : null}
@@ -321,13 +324,13 @@ export function AdminShell() {
           <button
             ref={buttonRef}
             type="button"
-            className="flex items-center gap-3 rounded-full border border-line bg-white px-3 text-left shadow-card"
+            className="flex items-center gap-3 rounded-full border border-line bg-panel px-3 text-left shadow-card"
             aria-expanded={open}
             aria-haspopup="menu"
             aria-controls={menuId}
             onClick={() => setOpen((current) => !current)}
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-violet text-white">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-violet text-on-primary">
               <User aria-hidden="true" size={18} />
             </span>
             <span>
@@ -339,10 +342,10 @@ export function AdminShell() {
           {open ? (
             <div
               ref={panelRef}
-              className="absolute right-0 z-30 mt-2 w-80 overflow-hidden rounded-panel border border-line bg-white shadow-panel"
+              className="absolute right-0 z-30 mt-2 w-80 overflow-hidden rounded-panel border border-line bg-panel shadow-panel"
             >
               <div className="flex items-center gap-3 border-b border-line px-4 py-4">
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-violet text-white font-bold">
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-violet text-on-primary font-bold">
                   {initials(session.account.name)}
                 </span>
                 <div className="min-w-0">
@@ -353,6 +356,10 @@ export function AdminShell() {
                   </p>
                   <p className="mt-1 truncate text-muted">{session.account.username}</p>
                 </div>
+              </div>
+              <div className="border-b border-line px-4 py-3">
+                <p className="mb-2 text-meta font-semibold text-muted">Apparence</p>
+                <ThemeSelector />
               </div>
               <div id={menuId} role="menu" className="grid p-2">
                 {ACCOUNT_LINKS.map((group, index) => (
@@ -398,7 +405,7 @@ export function AdminShell() {
                         className={`relative h-7 w-12 shrink-0 rounded-full ${maintenance ? "bg-violet" : "bg-line"}`}
                         aria-hidden="true"
                       >
-                        <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white ${maintenance ? "translate-x-5" : ""}`} />
+                        <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-panel ${maintenance ? "translate-x-5" : ""}`} />
                       </span>
                     </button>
                     {maintenanceError ? <p className="px-3 pb-2 text-unavailable" role="alert">{maintenanceError}</p> : null}
@@ -421,8 +428,8 @@ export function AdminShell() {
           </div>
         </div>
       </header>
-      <aside className="sidebar flex flex-col bg-violet-dark text-white lg:min-h-0 lg:overflow-y-auto">
-        <p className="px-5 pt-4 font-semibold tracking-wide text-white/70">Espace d'administration</p>
+      <aside className="sidebar flex flex-col bg-violet-dark text-on-bar lg:min-h-0 lg:overflow-y-auto">
+        <p className="px-5 pt-4 font-semibold tracking-wide text-on-bar/70">Espace d'administration</p>
         <nav aria-label="Administration" className="grid flex-1 content-start gap-1 px-3 py-3">
           {nav.map((entry) => {
             if (entry.children) {
@@ -449,7 +456,7 @@ export function AdminShell() {
                             to={child.to}
                             className={({ isActive }) => `relative ${itemClass(isActive)}`}
                           >
-                            <span aria-hidden="true" className="absolute top-1/2 -left-3 h-px w-3 bg-white/40" />
+                            <span aria-hidden="true" className="absolute top-1/2 -left-3 h-px w-3 bg-panel/40" />
                             <ChildIcon aria-hidden="true" size={18} />
                             {child.label}
                           </NavLink>
@@ -474,7 +481,7 @@ export function AdminShell() {
             )
           })}
         </nav>
-        <svg viewBox="0 0 76 48" aria-hidden="true" className="m-4 h-12 w-20 text-white/20">
+        <svg viewBox="0 0 76 48" aria-hidden="true" className="m-4 h-12 w-20 text-on-bar/20">
           <path fill="currentColor" d="M38 12c-8.5-4.2-18.2-5.2-30-2.2v26c11.2-2.6 21-1.4 30 3.2V12z" />
           <path fill="currentColor" d="M38 12c8.5-4.2 18.2-5.2 30-2.2v26c-11.2-2.6-21-1.4-30 3.2V12z" />
         </svg>

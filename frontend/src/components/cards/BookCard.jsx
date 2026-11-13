@@ -6,7 +6,7 @@ import { BookStatus } from "./BookStatus.jsx"
 function Cover({ book, className }) {
   if (!book.cover) {
     const mark = book.title.replace(/['’]/g, "").split(/\s+/).slice(0, 2).map((word) => word[0] || "").join("").toUpperCase()
-    return <span className={`${className} grid place-items-center bg-violet font-semibold text-white`}>{mark || "LT"}</span>
+    return <span className={`${className} grid place-items-center bg-violet font-semibold text-on-primary`}>{mark || "LT"}</span>
   }
   return <img src={book.cover} alt="" className={className} />
 }
@@ -15,7 +15,7 @@ export function BookCard({ book, compact = false, plain = false, catalog = false
   const authors = authorNames(book.authors)
   if (dense) {
     return (
-      <article className="flex h-full flex-col rounded-xl border border-line bg-white p-1.5 shadow-card sm:p-2">
+      <article className="flex h-full flex-col rounded-xl border border-line bg-panel p-1.5 shadow-card sm:p-2">
         <Link to={`/catalogue/${book.slug}`} className="flex h-full flex-col rounded-control">
           <Cover book={book} className="aspect-[3/4] w-full rounded-md object-cover" />
           <h3 className="mt-1.5 line-clamp-2 text-badge font-semibold leading-snug text-heading sm:text-meta">{book.title}</h3>
@@ -29,7 +29,7 @@ export function BookCard({ book, compact = false, plain = false, catalog = false
   }
   if (catalog) {
     return (
-      <article className="h-full rounded-2xl border border-line bg-white p-3 shadow-card">
+      <article className="h-full rounded-2xl border border-line bg-panel p-3 shadow-card">
         <Link to={`/catalogue/${book.slug}`} className="flex h-full gap-3 rounded-control">
           <Cover book={book} className="h-32 w-20 shrink-0 rounded-lg object-cover shadow-cover" />
           <span className="flex min-w-0 flex-1 flex-col">
@@ -68,7 +68,7 @@ export function BookCard({ book, compact = false, plain = false, catalog = false
     )
   }
   return (
-    <article className="flex h-full flex-col rounded-card border border-line bg-white p-3 shadow-card">
+    <article className="flex h-full flex-col rounded-card border border-line bg-panel p-3 shadow-card">
       <Link to={`/catalogue/${book.slug}`} className="flex h-full flex-col rounded-control">
         <Cover book={book} className="aspect-[3/4] w-full rounded-control bg-lavender object-cover" />
         <h3 className="mt-3 text-card text-ink">{book.title}</h3>

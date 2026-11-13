@@ -74,7 +74,7 @@ export function RichTextEditor({ value, onChange, disabled, label = "Contenu de 
         <div className="flex flex-wrap items-center gap-1 border-b border-line bg-canvas px-2 py-1">
           <select
             aria-label="Style de paragraphe"
-            className="h-11 rounded-control border border-line bg-white px-2"
+            className="h-11 rounded-control border border-line bg-panel px-2"
             defaultValue="Paragraphe"
             onChange={(event) => command("formatBlock", event.target.value === "Citation" ? "blockquote" : "p")}
           >

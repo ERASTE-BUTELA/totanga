@@ -3,7 +3,7 @@ import { BadgeCheck, CalendarDays, Clock, KeyRound, Lock, ShieldCheck, UserRound
 import { Link } from "react-router"
 import { useSession } from "../session/SessionContext.jsx"
 
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "w-full rounded-control border border-line bg-panel px-3"
 
 function initials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean)
@@ -52,10 +52,10 @@ export function ProfilePage() {
 
   return (
     <form className="grid gap-4" onSubmit={save}>
-      {notice ? <p role="status" className="rounded-panel border border-line bg-white p-4 text-heading">{notice}</p> : null}
+      {notice ? <p role="status" className="rounded-panel border border-line bg-panel p-4 text-heading">{notice}</p> : null}
       <div className="grid items-start gap-4 xl:grid-cols-[18rem_minmax(0,1fr)]">
-        <article className="rounded-panel border border-line bg-white p-5 text-center shadow-card">
-          <span className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-violet text-page text-white">
+        <article className="rounded-panel border border-line bg-panel p-5 text-center shadow-card">
+          <span className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-violet text-page text-on-primary">
             {initials(account.name)}
           </span>
           <h2 className="mt-4 text-section text-heading">{account.name}</h2>
@@ -85,7 +85,7 @@ export function ProfilePage() {
           </dl>
         </article>
         <div className="grid gap-4">
-          <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <UserRound aria-hidden="true" className="text-violet" size={22} />
               Informations personnelles
@@ -106,7 +106,7 @@ export function ProfilePage() {
               </label>
             </div>
           </article>
-          <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <ShieldCheck aria-hidden="true" className="text-violet" size={22} />
               Sécurité et accès
@@ -143,11 +143,11 @@ export function ProfilePage() {
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-3">
-        <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-heading" onClick={reset}>
+        <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading" onClick={reset}>
           <X aria-hidden="true" size={18} />
           Annuler
         </button>
-        <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+        <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary">
           Enregistrer les modifications
         </button>
       </div>

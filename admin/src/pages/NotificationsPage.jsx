@@ -7,7 +7,7 @@ import { useSession } from "../session/SessionContext.jsx"
 import { PreferenceSwitch, readPreferences, savePreferences } from "./accountPreferences.jsx"
 import { VisitorMessagesPanel } from "./MessagesPage.jsx"
 
-const fieldClass = "w-full rounded-control border border-line bg-white px-3"
+const fieldClass = "w-full rounded-control border border-line bg-panel px-3"
 
 const ITEMS = []
 
@@ -54,7 +54,7 @@ export function NotificationsPage() {
         ) : null}
       </div>
       {section === "messages" ? (
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <Inbox aria-hidden="true" className="text-violet" size={22} />
             Messages des visiteurs
@@ -78,13 +78,13 @@ function SectionTab({ icon: Icon, label, count = 0, selected, onClick }) {
       type="button"
       aria-pressed={selected}
       aria-label={unread > 0 ? `${label}, ${unread} non lu${unread > 1 ? "s" : ""}` : label}
-      className={`relative inline-flex min-h-11 items-center gap-2 rounded-control px-4 font-semibold ${selected ? "bg-violet text-white" : "bg-lavender text-violet"}`}
+      className={`relative inline-flex min-h-11 items-center gap-2 rounded-control px-4 font-semibold ${selected ? "bg-violet text-on-primary" : "bg-lavender text-violet"}`}
       onClick={onClick}
     >
       <Icon aria-hidden="true" size={18} />
       {label}
       {unread > 0 ? (
-        <span className="alerts-badge absolute -top-2 -right-2 min-w-5 rounded-full bg-unavailable px-1 text-center text-meta font-bold text-white">
+        <span className="alerts-badge absolute -top-2 -right-2 min-w-5 rounded-full bg-unavailable px-1 text-center text-meta font-bold text-on-primary">
           {unread > 99 ? "99+" : unread}
         </span>
       ) : null}
@@ -138,7 +138,7 @@ function NotificationsPanel() {
 
   return (
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-      <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+      <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <Bell aria-hidden="true" className="text-violet" size={22} />
@@ -163,7 +163,7 @@ function NotificationsPanel() {
                 key={tab.id}
                 type="button"
                 aria-pressed={selected}
-                className={`inline-flex min-h-11 items-center gap-2 rounded-control px-4 font-semibold ${selected ? "bg-violet text-white" : "bg-lavender text-violet"}`}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-control px-4 font-semibold ${selected ? "bg-violet text-on-primary" : "bg-lavender text-violet"}`}
                 onClick={() => setFilter(tab.id)}
               >
                 <Icon aria-hidden="true" size={18} />
@@ -203,13 +203,13 @@ function NotificationsPanel() {
               <li key={item.id}>
                 <button
                   type="button"
-                  className={`w-full rounded-control border px-4 py-3 text-left ${item.read ? "border-line bg-white" : "border-violet/40 bg-lavender/40"}`}
+                  className={`w-full rounded-control border px-4 py-3 text-left ${item.read ? "border-line bg-panel" : "border-violet/40 bg-lavender/40"}`}
                   onClick={() => openItem(item.id)}
                 >
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-heading">{item.title}</span>
                     {!item.read ? (
-                      <span className="rounded-full bg-violet px-2 py-0.5 text-meta font-semibold text-white">Non lu</span>
+                      <span className="rounded-full bg-violet px-2 py-0.5 text-meta font-semibold text-on-primary">Non lu</span>
                     ) : null}
                   </span>
                   <span className="mt-1 block text-muted">{item.text}</span>
@@ -221,7 +221,7 @@ function NotificationsPanel() {
         <p className="mt-4 text-muted">{items.length === 0 ? "0 notification" : `${visible.length} affichée${visible.length > 1 ? "s" : ""}`}</p>
       </article>
       <div className="grid gap-4">
-        <article className="rounded-panel border border-line bg-white p-5 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <Bell aria-hidden="true" className="text-violet" size={22} />
             Préférences de notifications
@@ -245,7 +245,7 @@ function NotificationsPanel() {
         </article>
         <article className="grid grid-cols-3 gap-2">
           <Summary value={items.length} label="Total" className="bg-lavender text-violet" />
-          <Summary value={unread} label="Non lues" className="bg-[#fde7c7] text-gold" />
+          <Summary value={unread} label="Non lues" className="bg-warning-soft text-gold" />
           <Summary value={system} label="Système" className="bg-available-soft text-available" />
         </article>
       </div>

@@ -64,7 +64,7 @@ export function AuthorsPage() {
           { label: "Auteurs", value: figure(stats, "total"), trend: "dans le catalogue", icon: Users, chip: "bg-lavender text-violet" },
           { label: "Auteurs avec des livres", value: figure(stats, "with_books"), trend: "liés à une fiche", icon: UserRound, chip: "bg-available-soft text-available" },
           { label: "Auteurs sans livre", value: figure(stats, "without_books"), trend: "fiche seule", icon: UserRound, chip: "bg-unavailable-soft text-unavailable" },
-          { label: "Livres liés", value: figure(stats, "linked"), trend: "au total", icon: BookOpen, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
+          { label: "Livres liés", value: figure(stats, "linked"), trend: "au total", icon: BookOpen, chip: "bg-info-soft text-info" },
         ]}
         oneLine
         filters={[]}
