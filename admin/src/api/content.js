@@ -21,7 +21,7 @@ async function finish(response) {
   if (!response) return { ok: false, error: "Le serveur n'a pas répondu. Réessayez." }
   if (response.status === 204) return { ok: true, data: null }
   if (response.status === 413) {
-    return { ok: false, error: "Le fichier est trop volumineux (2 Mo maximum pour une image)." }
+    return { ok: false, error: "Le fichier est trop volumineux (5 Mo maximum pour une image)." }
   }
   if (response.status === 403) {
     return { ok: false, error: "Session expirée ou accès refusé. Reconnectez-vous." }
@@ -63,6 +63,10 @@ export function setAnnouncementState(id, state) {
     method: "PATCH",
     body: JSON.stringify({ state }),
   }).then(finish)
+}
+
+export function deleteAnnouncement(id) {
+  return request(`/api/gestion/annonces/${id}/`, { method: "DELETE" }).then(finish)
 }
 
 export function listEvents() {
@@ -118,4 +122,28 @@ export function markAllMessagesRead() {
     method: "PATCH",
     body: JSON.stringify({ mark_all: true }),
   }).then(finish)
+}
+
+export function listPublications() {
+  return listAll("/api/gestion/publications/")
+}
+
+export function getPublication(id) {
+  return request(`/api/gestion/publications/${id}/`).then(finish)
+}
+
+export function savePublication(id, body) {
+  const path = id ? `/api/gestion/publications/${id}/` : "/api/gestion/publications/"
+  return request(path, { method: id ? "PATCH" : "POST", body }).then(finish)
+}
+
+export function setPublicationFields(id, fields) {
+  return request(`/api/gestion/publications/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(fields),
+  }).then(finish)
+}
+
+export function deletePublication(id) {
+  return request(`/api/gestion/publications/${id}/`, { method: "DELETE" }).then(finish)
 }

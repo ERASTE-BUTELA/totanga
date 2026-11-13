@@ -1,19 +1,20 @@
-import { useId, useState } from "react"
+import { useEffect, useId, useState } from "react"
 import { ArrowLeft, BookOpen, Check, Eye, FileText, ImagePlus, Info, Pencil, Pin, Save, Star, Trash2 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
+import { getPublication, savePublication } from "../api/content.js"
 import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
 import { busyPhase, saveAndGo } from "../lib/saveAndGo.js"
 import { RichTextEditor } from "./RichTextEditor.jsx"
-import { readPublication, savePublication } from "./contentStore.js"
 import { richTextIsEmpty, sanitizeRichText } from "./richText.js"
 
 const CATEGORIES = ["Culture", "Actualité", "Conseils", "Événement", "Technologie"]
 const DEFAULT_AUTHOR = "Équipe Totanga"
-const MAX_IMAGE = 2 * 1024 * 1024
+const MAX_IMAGE = 5 * 1024 * 1024
 const MAX_EXCERPT = 250
 const fieldClass = "w-full rounded-control border border-line bg-white px-3"
 
 const EMPTY = {
+  id: null,
   title: "",
   category: "Culture",
   author: DEFAULT_AUTHOR,
@@ -34,46 +35,79 @@ function Switch({ checked, label, disabled, onClick }) {
   )
 }
 
+function fromApi(item) {
+  return {
+    id: item.id,
+    title: item.title || "",
+    category: item.category || "Culture",
+    author: item.author || DEFAULT_AUTHOR,
+    status: item.status || "Brouillon",
+    featured: Boolean(item.featured),
+    pinned: Boolean(item.pinned),
+    publishedAt: item.publishedAt || "",
+    content: item.content || "",
+    excerpt: item.excerpt || "",
+    image: item.image || "",
+  }
+}
+
 export function PublicationFormPage({ mode }) {
   const { publicationId } = useParams()
   const navigate = useNavigate()
   const imageInput = useId()
-  const existing = mode === "create" ? null : readPublication(publicationId)
   const viewing = mode === "view"
-  const [form, setForm] = useState(existing || EMPTY)
+  const [form, setForm] = useState(EMPTY)
+  const [ready, setReady] = useState(mode === "create")
+  const [missing, setMissing] = useState(false)
   const [preview, setPreview] = useState("")
+  const [file, setFile] = useState(null)
+  const [removeImage, setRemoveImage] = useState(false)
   const [imageError, setImageError] = useState("")
   const [phase, setPhase] = useState(null)
   const busy = busyPhase(phase)
   const [problems, setProblems] = useState([])
+
+  useEffect(() => {
+    if (mode === "create") return undefined
+    let gone = false
+    getPublication(publicationId).then((result) => {
+      if (gone) return
+      if (!result.ok || !result.data) {
+        setMissing(true)
+        setReady(true)
+        return
+      }
+      setForm(fromApi(result.data))
+      setReady(true)
+    })
+    return () => {
+      gone = true
+    }
+  }, [mode, publicationId])
 
   function set(key, value) {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
   function onImage(event) {
-    const file = event.target.files?.[0]
+    const next = event.target.files?.[0]
     event.target.value = ""
-    if (!file) return
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    if (!next) return
+    if (!["image/jpeg", "image/png", "image/webp"].includes(next.type)) {
       setImageError("Seuls les fichiers JPG, PNG ou WebP sont acceptés.")
       return
     }
-    if (file.size > MAX_IMAGE) {
-      setImageError("L'image ne doit pas dépasser 2 Mo.")
+    if (next.size > MAX_IMAGE) {
+      setImageError("L'image ne doit pas dépasser 5 Mo.")
       return
     }
     setImageError("")
-    const reader = new FileReader()
-    reader.onload = () => {
-      setPreview((current) => {
-        if (current.startsWith("blob:")) URL.revokeObjectURL(current)
-        return ""
-      })
-      set("image", typeof reader.result === "string" ? reader.result : "")
-    }
-    reader.onerror = () => setImageError("L'image n'a pas pu être lue.")
-    reader.readAsDataURL(file)
+    setFile(next)
+    setRemoveImage(false)
+    setPreview((current) => {
+      if (current.startsWith("blob:")) URL.revokeObjectURL(current)
+      return URL.createObjectURL(next)
+    })
   }
 
   async function save(event, status) {
@@ -89,16 +123,24 @@ export function PublicationFormPage({ mode }) {
     setProblems(next)
     if (next.length > 0) return
     setPhase("saving")
-    savePublication({
-      ...form,
-      id: existing?.id,
-      order: existing?.order ?? 0,
-      status,
-      title: form.title.trim(),
-      author: form.author.trim() || DEFAULT_AUTHOR,
-      excerpt: form.excerpt.trim(),
-      content,
-    })
+    const body = new FormData()
+    body.set("title", form.title.trim())
+    body.set("category", form.category)
+    body.set("author", form.author.trim() || DEFAULT_AUTHOR)
+    body.set("excerpt", form.excerpt.trim())
+    body.set("content", content)
+    body.set("published_at", new Date(form.publishedAt).toISOString())
+    body.set("state", status === "Brouillon" ? "draft" : "published")
+    body.set("featured", form.featured ? "true" : "false")
+    body.set("pinned", form.pinned ? "true" : "false")
+    if (file) body.set("image", file)
+    if (removeImage) body.set("remove_image", "true")
+    const result = await savePublication(mode === "create" ? null : publicationId, body)
+    if (!result.ok) {
+      setPhase(null)
+      setProblems([result.error])
+      return
+    }
     await saveAndGo({
       setPhase,
       navigate,
@@ -107,7 +149,8 @@ export function PublicationFormPage({ mode }) {
     })
   }
 
-  if (!existing && mode !== "create") {
+  if (!ready) return <p>Chargement…</p>
+  if (missing) {
     return (
       <section className="rounded-panel border border-line bg-white p-6 shadow-card">
         <p>Cette publication n'existe pas.</p>
@@ -115,6 +158,8 @@ export function PublicationFormPage({ mode }) {
       </section>
     )
   }
+
+  const shown = preview || (!removeImage && form.image)
 
   return (
     <form className="grid gap-4 pb-28" onSubmit={(event) => (viewing ? event.preventDefault() : save(event, "Publié"))}>
@@ -176,8 +221,8 @@ export function PublicationFormPage({ mode }) {
               <ImagePlus aria-hidden="true" className="text-violet" size={22} />
               Image de la publication
             </h2>
-            {preview || form.image ? (
-              <img src={preview || form.image} alt="" className="mt-4 h-40 w-full rounded-md object-cover" />
+            {shown ? (
+              <img src={shown} alt="" className="mt-4 h-40 w-full rounded-md object-cover" />
             ) : (
               <div className="mt-4 flex h-40 items-center justify-center rounded-md bg-canvas text-muted">Aucune image</div>
             )}
@@ -188,13 +233,22 @@ export function PublicationFormPage({ mode }) {
                   <ImagePlus aria-hidden="true" size={18} />
                   Changer l'image
                 </label>
-                <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable" onClick={() => { setPreview(""); set("image", "") }}>
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable"
+                  onClick={() => {
+                    setPreview("")
+                    setFile(null)
+                    setRemoveImage(true)
+                    set("image", "")
+                  }}
+                >
                   <Trash2 aria-hidden="true" size={18} />
                   Supprimer
                 </button>
               </div>
             )}
-            <p className="mt-3 text-muted">Formats : JPG, PNG, WebP. Taille max. : 2 Mo. Dimension recommandée : 1200 × 630 px.</p>
+            <p className="mt-3 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo. Dimension recommandée : 1200 × 630 px.</p>
             {imageError ? <p role="alert" className="mt-2 text-unavailable">{imageError}</p> : null}
           </article>
           <article className="rounded-panel border border-line bg-white p-5 shadow-card">
@@ -230,6 +284,7 @@ export function PublicationFormPage({ mode }) {
               <li>Rédigez un résumé concis et pertinent.</li>
               <li>Utilisez une image de bonne qualité et libre de droits.</li>
               <li>Structurez votre contenu (paragraphes, listes, citations).</li>
+              <li>La suppression depuis la liste efface définitivement la publication.</li>
             </ul>
           </article>
         </div>
@@ -240,14 +295,14 @@ export function PublicationFormPage({ mode }) {
           Retour à la liste
         </Link>
         <div className="flex flex-wrap gap-2">
-          {existing ? (
-            <Link to={`/publications/${existing.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-[#1d4ed8]">
+          {form.id ? (
+            <Link to={`/publications/${form.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-white px-4 font-semibold text-[#1d4ed8]">
               <Eye aria-hidden="true" size={18} />
               Aperçu
             </Link>
           ) : null}
           {viewing ? (
-            <Link to={`/publications/${existing.id}/modifier`} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
+            <Link to={`/publications/${form.id}/modifier`} className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-white">
               <Pencil aria-hidden="true" size={18} />
               Modifier
             </Link>

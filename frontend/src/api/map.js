@@ -80,11 +80,14 @@ export function mapPublication(raw) {
     id: raw.id,
     title: text(raw.title),
     slug: text(raw.slug),
-    summary: text(raw.summary),
-    body: text(raw.body),
-    publishedOn: raw.published_on || null,
+    summary: text(raw.summary || raw.excerpt),
+    body: text(raw.body || raw.content),
+    publishedOn: raw.published_on || raw.published_at || null,
     image: text(raw.image),
-    kind: text(raw.kind),
+    kind: text(raw.kind || raw.category),
+    featured: Boolean(raw.featured),
+    pinned: Boolean(raw.pinned),
+    author: text(raw.author),
   }
 }
 

@@ -159,6 +159,8 @@ def _book_list_payload(book):
         "authors": ", ".join(names),
         "category": _category_label(book.category),
         "category_id": book.category_id,
+        "publisher": book.publisher.name if book.publisher_id else "",
+        "publisher_id": book.publisher_id,
         "isbn": book.isbn or "",
         "year": "" if book.publication_year is None else str(book.publication_year),
         "language": book.language,
@@ -515,10 +517,17 @@ class PublisherListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        # Lecture pour la liste admin, ou pour le sélecteur du formulaire livre.
         denied = _needs(request, "catalog.view_publisher")
-        if denied:
+        if denied and not request.user.has_perm("catalog.view_book") and not request.user.has_perm("catalog.add_book"):
             return denied
         publishers = _named_rows(request, Publisher.objects.all(), "notes")
+        autocomplete = str(request.GET.get("autocomplete", "")).lower() in {"1", "true"}
+        if autocomplete:
+            total = publishers.count()
+            start, end, number, pages = _bounds(request, total)
+            page = list(publishers.values("id", "name")[start:end])
+            return Response({"count": total, "page": number, "pages": pages, "results": page})
         if not _wants_page(request):
             counted = publishers.annotate(book_count=Count("books", distinct=True))
             return Response([_publisher_payload(item, brief=True) for item in counted])

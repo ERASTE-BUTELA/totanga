@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { AlertTriangle, CheckCircle2, FileText, Megaphone, Star } from "lucide-react"
-import { listAnnouncements, setAnnouncementState } from "../api/content.js"
+import { deleteAnnouncement, listAnnouncements } from "../api/content.js"
 import { RowActions } from "../components/RowActions.jsx"
 import { useListNotice } from "../lib/useListNotice.js"
 import { CatalogListPage } from "./CatalogListPage.jsx"
@@ -51,17 +51,15 @@ export function AnnouncementsPage() {
     })
   }, [])
 
-  async function onArchive(row) {
-    const archive = row.status !== "Archivé"
-    const question = archive ? contentNotices.confirmArchiveNotice : contentNotices.confirmRestoreNotice
-    if (!window.confirm(question)) return
-    const result = await setAnnouncementState(row.id, archive ? "archived" : "published")
+  async function onRemove(row) {
+    if (!window.confirm(contentNotices.confirmDeleteNotice)) return
+    const result = await deleteAnnouncement(row.id)
     if (!result.ok) {
       setError(result.error)
       return
     }
-    setNotice(archive ? contentNotices.noticeArchived : contentNotices.noticeRestored)
-    setRows((current) => current.map((item) => (item.id === row.id ? result.data : item)))
+    setNotice(contentNotices.noticeDeleted)
+    setRows((current) => current.filter((item) => item.id !== row.id))
   }
 
   if (error && !rows) return <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p>
@@ -143,8 +141,8 @@ export function AnnouncementsPage() {
               <RowActions
                 viewTo={`/annonces/${row.id}`}
                 editTo={`/annonces/${row.id}/modifier`}
-                removeLabel={row.status === "Archivé" ? "Remettre en ligne" : "Archiver"}
-                onRemove={() => onArchive(row)}
+                removeLabel="Supprimer"
+                onRemove={() => onRemove(row)}
               />
             ),
           },

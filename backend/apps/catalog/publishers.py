@@ -1,6 +1,6 @@
-"""Éditeurs : création idempotente depuis le répertoire ou un nom libre."""
+"""Éditeurs : création depuis le répertoire, puis rattachement aux livres."""
 
-from apps.catalog.models import Publisher, RegisterRow
+from apps.catalog.models import Book, Publisher, RegisterRow
 from apps.catalog.repertoire import read_repertoire, repertoire_path, tidy
 
 
@@ -41,8 +41,45 @@ def collect_publisher_names(path=None):
     return names
 
 
+def _book_locked(book):
+    return book.imported_at is not None and book.updated_at is not None and book.updated_at > book.imported_at
+
+
+def link_books_from_register():
+    """Pose sur chaque livre l'éditeur de sa ligne de registre (colonne Editeur).
+
+    Ne touche pas aux fiches modifiées à la main après l'import.
+    """
+
+    cache = {}
+    linked = 0
+    seen_books = set()
+    rows = (
+        RegisterRow.objects.exclude(publisher="")
+        .exclude(copy_id=None)
+        .select_related("copy", "copy__book", "copy__book__publisher")
+        .iterator(chunk_size=500)
+    )
+    for row in rows:
+        book = row.copy.book if row.copy_id else None
+        if book is None or book.pk in seen_books:
+            continue
+        seen_books.add(book.pk)
+        if _book_locked(book):
+            continue
+        publisher = get_or_create_publisher(row.publisher, cache)
+        if publisher is None:
+            continue
+        if book.publisher_id == publisher.pk:
+            continue
+        book.publisher = publisher
+        book.save(update_fields=["publisher"])
+        linked += 1
+    return linked
+
+
 def sync_publishers(path=None):
-    """Crée les éditeurs manquants. Ne touche pas aux fiches déjà présentes."""
+    """Crée les éditeurs manquants puis rattache les livres au registre."""
 
     cache = {}
     created = 0
@@ -51,4 +88,9 @@ def sync_publishers(path=None):
         get_or_create_publisher(name, cache)
         if not before:
             created += 1
-    return {"total": Publisher.objects.count(), "created": created}
+    linked = link_books_from_register()
+    return {
+        "total": Publisher.objects.count(),
+        "created": created,
+        "linked": linked,
+    }

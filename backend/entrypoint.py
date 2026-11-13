@@ -36,6 +36,10 @@ def main():
     call_command("migrate", interactive=False)
     call_command("sync_roles")
     call_command("create_admin")
+    # 1) Remplir la table Éditeur depuis le répertoire (colonne Editeur).
+    # 2) Importer les livres / exemplaires en les rattachant.
+    # 3) Rattacher à nouveau les livres encore sans éditeur (bases déjà peuplées).
+    call_command("sync_publishers")
     call_command("import_repertoire", si_vide=True)
     call_command("sync_publishers")
     if not settings.DEBUG:

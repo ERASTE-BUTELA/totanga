@@ -231,3 +231,20 @@ class AnnouncementDetailView(APIView):
                 return _fail(error)
         record_staff_action(actor=request.user, action="annonce_modification", target_type="announcements.Announcement", target_id=item.pk)
         return Response(_payload(item))
+
+    def delete(self, request, pk):
+        denied = _needs(request, "announcements.delete_announcement")
+        if denied:
+            return denied
+        item = Announcement.objects.filter(pk=pk).first()
+        if item is None:
+            return _fail("Cette annonce n'existe pas.", 404)
+        item_id = item.pk
+        item.delete()
+        record_staff_action(
+            actor=request.user,
+            action="annonce_suppression",
+            target_type="announcements.Announcement",
+            target_id=item_id,
+        )
+        return Response(status=204)

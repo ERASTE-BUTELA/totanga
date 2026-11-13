@@ -52,9 +52,9 @@ class CatalogImageValidatorTests(SimpleTestCase):
         with self.assertRaises(ValidationError):
             validate_catalog_image(upload)
 
-    def test_rejects_a_file_over_two_megabytes(self):
-        upload = SimpleUploadedFile("couverture.jpg", b"x" * (2 * 1024 * 1024 + 1))
-        with self.assertRaisesMessage(ValidationError, "2 Mo"):
+    def test_rejects_a_file_over_five_megabytes(self):
+        upload = SimpleUploadedFile("couverture.jpg", b"x" * (5 * 1024 * 1024 + 1))
+        with self.assertRaisesMessage(ValidationError, "5 Mo"):
             validate_catalog_image(upload)
 
 
@@ -316,6 +316,9 @@ class StaffCatalogApiTests(TestCase):
         self.assertEqual(publishers.status_code, 200)
         self.assertEqual(publishers.json()["results"][0]["name"], "Presence Africaine")
         self.assertIsInstance(self.client.get("/api/gestion/catalogue/editeurs/").json(), list)
+        auto = self.client.get("/api/gestion/catalogue/editeurs/?autocomplete=1&page=1&page_size=5&q=Presence")
+        self.assertEqual(auto.status_code, 200)
+        self.assertEqual(auto.json()["results"][0], {"id": publishers.json()["results"][0]["id"], "name": "Presence Africaine"})
 
     def test_book_form_uses_publisher_autocomplete_choice(self):
         self.login(self.librarian)
@@ -355,8 +358,37 @@ class StaffCatalogApiTests(TestCase):
         first = sync_publishers(absent)
         second = sync_publishers(absent)
         self.assertEqual(first["created"], 1)
+        self.assertEqual(first["linked"], 0)
         self.assertEqual(second["created"], 0)
+        self.assertEqual(second["linked"], 0)
         self.assertEqual(Publisher.objects.filter(name__iexact="Maison Totanga").count(), 1)
+
+    def test_sync_publishers_links_book_from_register_editeur(self):
+        book = Book.objects.create(
+            title="Sans editeur",
+            category=self.category,
+            state=BookState.PUBLISHED,
+        )
+        book.authors.add(self.author)
+        copy = Copy.objects.create(
+            book=book,
+            call_number="100 A",
+            inventory_number="LINK-1",
+            status=CopyStatus.AVAILABLE,
+        )
+        RegisterRow.objects.create(
+            source_line=9101,
+            publisher="Editions Totanga",
+            title=book.title,
+            inventory_number=copy.inventory_number,
+            copy=copy,
+            status="importée",
+        )
+        Book.objects.filter(pk=book.pk).update(imported_at=book.updated_at)
+        result = sync_publishers(Path("/tmp/totanga-absent-repertoire.csv"))
+        book.refresh_from_db()
+        self.assertGreaterEqual(result["linked"], 1)
+        self.assertEqual(book.publisher.name, "Editions Totanga")
 
     def test_saved_book_keeps_the_lengths_and_copy_fields_of_the_database(self):
         self.login(self.librarian)

@@ -8,7 +8,9 @@ import { QueryState } from "../components/ui/QueryState.jsx"
 import { fixtures } from "../data/fixtures.js"
 import { PublicationsHero } from "../features/publications/PublicationsHero.jsx"
 import { publicationKind } from "../features/publications/presentation.js"
-import { formatDate, textBlocks } from "../lib/format.js"
+import { SafeHtml } from "../components/ui/SafeHtml.jsx"
+import { formatDate } from "../lib/format.js"
+import { richTextIsEmpty } from "../lib/richText.js"
 import { useAsync } from "../lib/useAsync.js"
 import { usePageTitle } from "../lib/usePageTitle.js"
 
@@ -97,11 +99,11 @@ function PublicationContent({ item, items }) {
             ) : null}
           </ul>
           {item.image ? <img src={item.image} alt="" className="mt-5 h-56 w-full rounded-xl object-cover sm:h-72" /> : null}
-          {textBlocks(item.body || item.summary).map((paragraph) => (
-            <p key={paragraph} className="mt-4 text-article text-ink">
-              {paragraph}
-            </p>
-          ))}
+          {richTextIsEmpty(item.body) ? (
+            item.summary ? <p className="mt-4 text-article text-ink">{item.summary}</p> : null
+          ) : (
+            <SafeHtml html={item.body} className="rich-text mt-4 space-y-4 text-article text-ink" />
+          )}
         </article>
 
         <aside className="space-y-4">

@@ -60,124 +60,123 @@ export default function AboutPage() {
 
 function AboutContent({ library, counts }) {
   const place = [library.address, library.city].filter(Boolean).join(", ")
+  const mapSrc = mapsEmbedSrc({
+    mapsUrl: library.mapsUrl,
+    latitude: library.latitude,
+    longitude: library.longitude,
+    query: library.mapsUrl || place,
+  })
 
   return (
-    <>
-      <section className="mt-6 grid items-start gap-6 lg:grid-cols-2" aria-labelledby="notre-bibliotheque">
+    <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-stretch">
+      <div className="order-2 flex min-w-0 flex-col gap-8 lg:order-1">
         <PhotoCarousel />
-        <div>
-          <h2 id="notre-bibliotheque" className="flex items-center gap-2 text-section text-heading">
-            <span className="h-6 w-1 rounded-full bg-violet" aria-hidden="true" />
-            Notre bibliothèque
+
+        <section aria-labelledby="chiffres">
+          <h2 id="chiffres" className="text-section text-heading">
+            La bibliothèque en chiffres
           </h2>
-          {richTextIsEmpty(library.about) ? (
-            <p className="mt-4 text-article text-muted">La présentation de la bibliothèque sera publiée prochainement.</p>
+          <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+            {counts.map((item) => (
+              <li key={item.label} className="rounded-2xl border border-line bg-white p-5 text-center shadow-card">
+                <item.icon className="mx-auto h-6 w-6 text-violet" aria-hidden="true" />
+                <p className="mt-3 text-section text-violet">{numberFormat.format(item.value)}</p>
+                <p className="mt-1 text-meta text-muted">{item.label}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section id="contact-bibliotheque" className="rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6" aria-labelledby="nous-trouver">
+          <h2 id="nous-trouver" className="flex items-center gap-2 text-section text-heading">
+            <MapPin className="h-6 w-6 text-violet" aria-hidden="true" />
+            Nous trouver
+          </h2>
+          {library.notice ? <p className="mt-3 text-meta font-semibold text-violet">{library.notice}</p> : null}
+          <ul className="mt-4 space-y-3">
+            {place ? (
+              <li className="flex items-start gap-3 text-body text-heading">
+                <MapPin className="mt-1 h-4 w-4 shrink-0 text-violet" aria-hidden="true" />
+                <span>{place}</span>
+              </li>
+            ) : null}
+            {library.phone ? (
+              <li>
+                <ContactLink href={phoneHref(library.phone)} icon={Phone}>
+                  {library.phone}
+                </ContactLink>
+              </li>
+            ) : null}
+            {library.email ? (
+              <li>
+                <ContactLink href={mailHref(library.email)} icon={Mail}>
+                  {library.email}
+                </ContactLink>
+              </li>
+            ) : null}
+          </ul>
+          <h3 id="horaires-bibliotheque" className="mt-6 text-card text-heading">
+            Horaires d'ouverture
+          </h3>
+          {library.hoursSummary ? <p className="mt-2 text-body text-ink">{library.hoursSummary}</p> : null}
+          <ul className="mt-3 space-y-2">
+            {library.hours.map((slot) => (
+              <li key={slot.label} className="flex justify-between gap-4 border-b border-line py-2 text-body last:border-b-0">
+                <span className="font-semibold text-heading">{slot.label}</span>
+                <span className="text-muted">{slot.closed ? "Fermé" : `${slot.opens} – ${slot.closes}`}</span>
+              </li>
+            ))}
+          </ul>
+          {mapSrc ? (
+            <iframe
+              title="Localisation de la Bibliothèque Totanga"
+              src={mapSrc}
+              className="mt-6 h-64 w-full rounded-2xl border border-line bg-lavender sm:h-72"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
           ) : (
-            <SafeHtml html={library.about} className="rich-text mt-4 space-y-4 text-article text-ink" />
+            <p className="mt-6 flex min-h-48 flex-col items-center justify-center gap-2 rounded-2xl bg-lavender text-violet">
+              <MapPin className="h-8 w-8" aria-hidden="true" />
+              <span className="text-meta font-semibold">{library.city || "Kinshasa"}</span>
+            </p>
           )}
-        </div>
-      </section>
+        </section>
 
-      <section className="mt-8" aria-labelledby="chiffres">
-        <h2 id="chiffres" className="text-section text-heading">
-          La bibliothèque en chiffres
-        </h2>
-        <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {counts.map((item) => (
-            <li key={item.label} className="rounded-2xl border border-line bg-white p-5 text-center shadow-card">
-              <item.icon className="mx-auto h-6 w-6 text-violet" aria-hidden="true" />
-              <p className="mt-3 text-section text-violet">{numberFormat.format(item.value)}</p>
-              <p className="mt-1 text-meta text-muted">{item.label}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section id="contact-bibliotheque" className="mt-8 rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6" aria-labelledby="nous-trouver">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
-          <div>
-            <h2 id="nous-trouver" className="flex items-center gap-2 text-section text-heading">
-              <MapPin className="h-6 w-6 text-violet" aria-hidden="true" />
-              Nous trouver
-            </h2>
-            {library.notice ? <p className="mt-3 text-meta font-semibold text-violet">{library.notice}</p> : null}
-            <ul className="mt-4 space-y-3">
-              {place ? (
-                <li className="flex items-start gap-3 text-body text-heading">
-                  <MapPin className="mt-1 h-4 w-4 shrink-0 text-violet" aria-hidden="true" />
-                  <span>{place}</span>
-                </li>
-              ) : null}
-              {library.phone ? (
-                <li>
-                  <ContactLink href={phoneHref(library.phone)} icon={Phone}>
-                    {library.phone}
-                  </ContactLink>
-                </li>
-              ) : null}
-              {library.email ? (
-                <li>
-                  <ContactLink href={mailHref(library.email)} icon={Mail}>
-                    {library.email}
-                  </ContactLink>
-                </li>
-              ) : null}
-            </ul>
-            <h3 id="horaires-bibliotheque" className="mt-6 text-card text-heading">
-              Horaires d'ouverture
-            </h3>
-            {library.hoursSummary ? <p className="mt-2 text-body text-ink">{library.hoursSummary}</p> : null}
-            <ul className="mt-3 space-y-2">
-              {library.hours.map((slot) => (
-                <li key={slot.label} className="flex justify-between gap-4 border-b border-line py-2 text-body last:border-b-0">
-                  <span className="font-semibold text-heading">{slot.label}</span>
-                  <span className="text-muted">{slot.closed ? "Fermé" : `${slot.opens} – ${slot.closes}`}</span>
-                </li>
-              ))}
-            </ul>
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-violet px-5 py-6 text-white sm:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <BookOpen className="h-8 w-8 shrink-0" aria-hidden="true" />
+            <div>
+              <p className="text-card">Le catalogue de la bibliothèque</p>
+              <p className="text-body text-lavender">Consultez les livres disponibles sur place.</p>
+            </div>
           </div>
-          {(() => {
-            const src = mapsEmbedSrc({
-              mapsUrl: library.mapsUrl,
-              latitude: library.latitude,
-              longitude: library.longitude,
-              query: library.mapsUrl || place,
-            })
-            if (!src) {
-              return (
-                <p className="flex min-h-72 flex-col items-center justify-center gap-2 rounded-2xl bg-lavender text-violet">
-                  <MapPin className="h-8 w-8" aria-hidden="true" />
-                  <span className="text-meta font-semibold">{library.city || "Kinshasa"}</span>
-                </p>
-              )
-            }
-            return (
-              <iframe
-                title="Localisation de la Bibliothèque Totanga"
-                src={src}
-                className="h-80 w-full rounded-2xl border border-line bg-lavender sm:h-96"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                allowFullScreen
-              />
-            )
-          })()}
-        </div>
-      </section>
+          <Link to="/catalogue" className="inline-flex min-h-11 items-center rounded-full bg-white px-4 font-semibold text-violet">
+            Voir le catalogue
+          </Link>
+        </section>
+      </div>
 
-      <section className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-violet px-5 py-6 text-white sm:px-8">
-        <div className="flex min-w-0 items-center gap-3">
-          <BookOpen className="h-8 w-8 shrink-0" aria-hidden="true" />
-          <div>
-            <p className="text-card">Le catalogue de la bibliothèque</p>
-            <p className="text-body text-lavender">Consultez les livres disponibles sur place.</p>
+      <div className="relative order-1 min-h-80 lg:order-2 lg:min-h-0">
+        <aside
+          className="flex max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-card lg:absolute lg:inset-0 lg:max-h-none"
+          aria-labelledby="histoire-bibliotheque"
+        >
+          <h2 id="histoire-bibliotheque" className="flex shrink-0 items-center gap-2 px-5 pt-5 text-section text-heading sm:px-6 sm:pt-6">
+            <span className="h-6 w-1 rounded-full bg-violet" aria-hidden="true" />
+            Histoire de la bibliothèque
+          </h2>
+          <div className="scrollbar-hidden mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 sm:px-6 sm:pb-6">
+            {richTextIsEmpty(library.about) ? (
+              <p className="text-article text-muted">L'histoire de la bibliothèque sera publiée prochainement.</p>
+            ) : (
+              <SafeHtml html={library.about} className="rich-text space-y-4 text-article text-ink" />
+            )}
           </div>
-        </div>
-        <Link to="/catalogue" className="inline-flex min-h-11 items-center rounded-full bg-white px-4 font-semibold text-violet">
-          Voir le catalogue
-        </Link>
-      </section>
-    </>
+        </aside>
+      </div>
+    </div>
   )
 }
 

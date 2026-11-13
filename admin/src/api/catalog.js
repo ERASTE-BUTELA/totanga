@@ -21,7 +21,7 @@ async function finish(response) {
   if (!response) return { ok: false, error: "Le catalogue n'a pas pu être chargé. Réessayez." }
   if (response.status === 204) return { ok: true, data: null }
   if (response.status === 413) {
-    return { ok: false, error: "Le fichier est trop volumineux (2 Mo maximum pour une image)." }
+    return { ok: false, error: "Le fichier est trop volumineux (5 Mo maximum pour une image)." }
   }
   if (response.status === 403) {
     return { ok: false, error: "Session expirée ou accès refusé. Reconnectez-vous." }
@@ -60,7 +60,15 @@ export function deleteAuthor(id) {
 }
 
 export function listPublishers(params) {
-  const suffix = params ? pageQuery({ page: params.page || 1, page_size: params.pageSize || 10, q: params.q, tri: params.sort }) : ""
+  const suffix = params
+    ? pageQuery({
+        page: params.page || 1,
+        page_size: params.pageSize || 10,
+        q: params.q,
+        tri: params.sort,
+        autocomplete: params.autocomplete ? "1" : undefined,
+      })
+    : ""
   return request(`/api/gestion/catalogue/editeurs/${suffix}`).then(finish)
 }
 

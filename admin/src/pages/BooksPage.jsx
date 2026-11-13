@@ -73,13 +73,13 @@ export function BooksPage() {
         noun="livres"
         addLabel="Ajouter un livre"
         addTo="/catalogue/livres/nouveau"
-        placeholder="Rechercher un livre (titre, auteur, ISBN…)"
+        placeholder="Rechercher un livre (titre, auteur, éditeur, ISBN…)"
         rows={rows}
         loading={!data && !error}
         onPageRequest={onPageRequest}
         totalCount={data?.count || 0}
         pageCount={data?.pages || 1}
-        searchOf={(row) => row.title}
+        searchOf={(row) => `${row.title} ${row.authors || ""} ${row.publisher || ""} ${row.isbn || ""}`}
         sortOf={(row) => row.title}
         stats={[
           { label: "Livres", value: figure(stats, "books"), trend: "dans le catalogue", icon: BookOpen, chip: "bg-lavender text-violet" },
@@ -137,6 +137,7 @@ export function BooksPage() {
             label: "Catégorie",
             render: (row) => <span className="rounded-full bg-lavender px-3 py-1 font-semibold text-violet">{row.category}</span>,
           },
+          { key: "publisher", label: "Éditeur", render: (row) => row.publisher || "—" },
           { key: "isbn", label: "ISBN", render: (row) => row.isbn || "—" },
           { key: "year", label: "Année", render: (row) => row.year },
           {

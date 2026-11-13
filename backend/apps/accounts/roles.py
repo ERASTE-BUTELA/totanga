@@ -37,15 +37,19 @@ LIBRARIAN_PERMISSIONS = (
     ("catalog", "delete_copy"),
 )
 
-# Le rédacteur prépare les annonces et les événements. Il ne les supprime pas :
-# il les archive. Les publications viendront avec leur tranche.
+# Le rédacteur gère les annonces, les événements et les publications.
 EDITOR_PERMISSIONS = (
     ("announcements", "view_announcement"),
     ("announcements", "add_announcement"),
     ("announcements", "change_announcement"),
+    ("announcements", "delete_announcement"),
     ("events", "view_event"),
     ("events", "add_event"),
     ("events", "change_event"),
+    ("posts", "view_publication"),
+    ("posts", "add_publication"),
+    ("posts", "change_publication"),
+    ("posts", "delete_publication"),
 )
 
 ADMIN_PERMISSIONS = (

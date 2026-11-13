@@ -62,7 +62,7 @@ function serverRoles() {
     {
       code: "redacteur",
       label: "Rédacteur",
-      description: "Annonces et événements. Les publications viendront ensuite.",
+      description: "Annonces, publications et événements.",
       icon: "pen",
       grants: withGrants({
         dashboard: ["view"],

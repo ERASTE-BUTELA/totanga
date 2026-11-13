@@ -106,7 +106,7 @@ class Author(models.Model):
         upload_to=author_photo_path,
         blank=True,
         validators=[validate_catalog_image],
-        help_text="JPG, PNG ou WebP, 2 Mo maximum.",
+        help_text="JPG, PNG ou WebP, 5 Mo maximum.",
     )
 
     class Meta:

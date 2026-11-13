@@ -17,7 +17,7 @@ const TABS = [
   { id: "backup", label: "Sauvegarde", icon: Database },
 ]
 
-const MAX_IMAGE = 2 * 1024 * 1024
+const MAX_IMAGE = 5 * 1024 * 1024
 const fieldClass = "w-full rounded-control border border-line bg-white px-3 disabled:cursor-default disabled:bg-canvas disabled:text-heading"
 const DEFAULT_LOGO = "/images/logo.png"
 
@@ -67,7 +67,7 @@ function readImage(file, setError, setPreview, setFile) {
     return
   }
   if (file.size > MAX_IMAGE) {
-    setError("L'image ne doit pas dépasser 2 Mo.")
+    setError("L'image ne doit pas dépasser 5 Mo.")
     return
   }
   setError("")
@@ -424,7 +424,7 @@ export function SettingsPage() {
                   </button>
                 </div>
               ) : null}
-              {editing ? <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 2 Mo.</p> : null}
+              {editing ? <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo.</p> : null}
               {logoError ? <p role="alert" className="mt-2 text-unavailable">{logoError}</p> : null}
             </div>
             <div className="mt-4">

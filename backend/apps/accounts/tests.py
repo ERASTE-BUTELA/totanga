@@ -125,14 +125,16 @@ class RolePermissionTests(TestCase):
         self.assertFalse(editor.has_perm("catalog.view_book"))
         self.assertFalse(editor.has_perm("accounts.view_user"))
         self.assertTrue(editor.has_perm("announcements.add_announcement"))
+        self.assertTrue(editor.has_perm("announcements.delete_announcement"))
         self.assertTrue(editor.has_perm("events.change_event"))
-        self.assertFalse(editor.has_perm("announcements.delete_announcement"))
+        self.assertTrue(editor.has_perm("posts.view_publication"))
+        self.assertTrue(editor.has_perm("posts.delete_publication"))
         self.assertFalse(librarian.has_perm("announcements.view_announcement"))
         self.assertTrue(admin.has_perm("events.add_event"))
         self.assertTrue(admin.has_perm("library_info.view_library"))
         self.assertTrue(admin.has_perm("library_info.change_library"))
         self.assertFalse(librarian.has_perm("library_info.change_library"))
-        self.assertEqual(editor.groups.get().permissions.count(), 6)
+        self.assertEqual(editor.groups.get().permissions.count(), 11)
 
 
 class StaffSessionApiTests(TestCase):
@@ -462,7 +464,6 @@ class PublicSurfaceTests(TestCase):
         for path in (
             "/api/livres/",
             "/api/books/",
-            "/api/publications/",
         ):
             self.assertEqual(client.get(path).status_code, 404)
         catalog = client.get("/api/catalogue/livres/")
@@ -470,11 +471,13 @@ class PublicSurfaceTests(TestCase):
         self.assertNotIn("email", catalog.content.decode())
         notices = client.get("/api/annonces/")
         events = client.get("/api/evenements/")
+        publications = client.get("/api/publications/")
         self.assertEqual(notices.status_code, 200)
         self.assertEqual(events.status_code, 200)
+        self.assertEqual(publications.status_code, 200)
         self.assertNotIn("email", notices.content.decode())
         self.assertNotIn("email", events.content.decode())
-        self.assertEqual(client.get("/api/publications/").status_code, 404)
+        self.assertNotIn("email", publications.content.decode())
         self.assertEqual(client.get("/api/gestion/utilisateurs/").status_code, 401)
         self.assertEqual(client.get("/api/gestion/compte/").status_code, 401)
 

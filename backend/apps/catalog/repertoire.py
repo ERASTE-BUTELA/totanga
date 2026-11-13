@@ -12,6 +12,8 @@ HEADERS = [header for header, _field in REGISTER_FIELDS]
 
 
 def repertoire_path():
+    """Chemin du CSV d'import (miroir de REPERTOIRE.xls, colonne Editeur incluse)."""
+
     configured = os.environ.get("REPERTOIRE_CSV", "").strip()
     if configured:
         return Path(configured)

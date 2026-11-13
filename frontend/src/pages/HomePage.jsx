@@ -66,7 +66,8 @@ function homeAnnouncements(items) {
 }
 
 function featuredPublication(items) {
-  return byDateDesc(items)[0] || null
+  const sorted = byDateDesc(items)
+  return sorted.find((item) => item.featured) || sorted[0] || null
 }
 
 export default function HomePage() {

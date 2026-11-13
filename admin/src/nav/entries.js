@@ -5,7 +5,7 @@ export const PAGES = [
   { id: "publishers", label: "Éditeurs", to: "/catalogue/editeurs", permission: "catalog.view_publisher", group: "Catalogue" },
   { id: "categories", label: "Catégories", to: "/catalogue/categories", permission: "catalog.view_category", group: "Catalogue" },
   { id: "announcements", label: "Annonces", to: "/annonces", permission: "announcements.view_announcement" },
-  { id: "publications", label: "Publications", to: "/publications", permission: "posts.view_post" },
+  { id: "publications", label: "Publications", to: "/publications", permission: "posts.view_publication" },
   { id: "events", label: "Événements", to: "/evenements", permission: "events.view_event" },
   { id: "users", label: "Utilisateurs et rôles", to: "/utilisateurs", permission: "accounts.view_user" },
   { id: "journal", label: "Journal", to: "/journal", permission: "accounts.view_staffaction" },

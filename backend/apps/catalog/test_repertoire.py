@@ -8,7 +8,7 @@ from django.test import TestCase, tag
 
 from apps.accounts.models import User
 from apps.accounts.roles import ROLE_LIBRARIAN, sync_roles
-from apps.catalog.models import Book, Copy, RegisterRow
+from apps.catalog.models import Book, Copy, Publisher, RegisterRow
 from apps.catalog.repertoire import HEADERS, call_number, plan, publication_year, read_repertoire, repertoire_path, summary_text
 
 
@@ -136,6 +136,9 @@ class RepertoireImportTests(TestCase):
         self.assertEqual(book.category.name, "Sociologie")
         self.assertEqual(book.category.parent.name, "Sciences")
         self.assertEqual(book.authors.count(), 1)
+        self.assertIsNotNone(book.publisher_id)
+        self.assertEqual(book.publisher.name, "Maison")
+        self.assertEqual(Publisher.objects.filter(name__iexact="Maison").count(), 1)
         numbers = set(Copy.objects.values_list("call_number", flat=True))
         self.assertIn("302.1 DEF", numbers)
         self.assertIn("345.05 ABC", numbers)

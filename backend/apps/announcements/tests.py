@@ -97,8 +97,9 @@ class AnnouncementApiTests(TestCase):
             f"/api/gestion/annonces/{item_id}/",
             HTTP_X_CSRFTOKEN=self.token(),
         )
-        self.assertEqual(removed.status_code, 405)
-        self.assertTrue(Announcement.objects.filter(pk=item_id).exists())
+        self.assertEqual(removed.status_code, 204)
+        self.assertFalse(Announcement.objects.filter(pk=item_id).exists())
+        self.assertTrue(StaffAction.objects.filter(action="annonce_suppression", target_id=str(item_id)).exists())
 
     def test_archived_and_future_notices_stay_off_the_public_api(self):
         future = timezone.now() + timedelta(days=3)

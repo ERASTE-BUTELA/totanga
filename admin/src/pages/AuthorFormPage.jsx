@@ -5,7 +5,7 @@ import { getAuthor, saveAuthor } from "../api/catalog.js"
 import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
 import { busyPhase, saveAndGo } from "../lib/saveAndGo.js"
 
-const MAX_IMAGE = 2 * 1024 * 1024
+const MAX_IMAGE = 5 * 1024 * 1024
 const fieldClass = "w-full rounded-control border border-line bg-white px-3"
 
 export function AuthorFormPage({ mode = "create" }) {
@@ -56,7 +56,7 @@ export function AuthorFormPage({ mode = "create" }) {
       return
     }
     if (file.size > MAX_IMAGE) {
-      setPhotoError("L'image ne doit pas dépasser 2 Mo.")
+      setPhotoError("L'image ne doit pas dépasser 5 Mo.")
       return
     }
     setPhotoError("")
@@ -136,7 +136,7 @@ export function AuthorFormPage({ mode = "create" }) {
               <label htmlFor={photoInput} className="mt-4 inline-flex min-h-11 cursor-pointer items-center rounded-control border border-line px-3 font-semibold text-violet">
                 Choisir une photo
               </label>
-              <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 2 Mo.</p>
+              <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo.</p>
             </>
           )}
           {photoError ? <p role="alert" className="mt-2 text-unavailable">{photoError}</p> : null}

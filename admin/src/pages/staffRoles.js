@@ -8,7 +8,8 @@ export const STAFF_ROLES = [
       "Voir, ajouter et modifier les comptes du personnel.",
       "Lire les messages des visiteurs.",
       "Consulter le journal des actions.",
-      "Voir, ajouter et modifier les annonces et les événements.",
+      "Voir, ajouter, modifier et supprimer les annonces et les publications.",
+      "Voir, ajouter et modifier les événements (archivage, sans suppression).",
     ],
   },
   {
@@ -26,8 +27,8 @@ export const STAFF_ROLES = [
     label: "Rédacteur",
     chip: "bg-[#e7eefc] text-[#1d4ed8]",
     permissions: [
-      "Voir, ajouter et modifier les annonces et les événements.",
-      "Les publications seront ajoutées plus tard.",
+      "Voir, ajouter, modifier et supprimer les annonces et les publications.",
+      "Voir, ajouter et modifier les événements (archivage, sans suppression).",
     ],
   },
   {

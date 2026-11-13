@@ -36,7 +36,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 - **API publique.** Lecture seule, sauf une exception : un visiteur peut envoyer un message à la bibliothèque. Il ne peut ni le modifier ni le supprimer. L'adresse électronique ou le numéro WhatsApp est conservé pour le personnel et n'est jamais renvoyé ni affiché au public. L'administration reste réservée au personnel connecté.
 - **Abus.** Limiter le nombre de requêtes, en particulier sur la connexion. L'adresse de l'administration n'est pas `/admin/`.
 - **Mots de passe.** Validateurs Django actifs (longueur, complexité, mots de passe courants).
-- **Fichiers.** Type et taille contrôlés. Les images du catalogue : JPG, PNG ou WebP, 2 Mo maximum. Aucun envoi de livre (PDF ou autre).
+- **Fichiers.** Type et taille contrôlés. Les images du catalogue : JPG, PNG ou WebP, 5 Mo maximum. Aucun envoi de livre (PDF ou autre).
 - **Contenu riche.** Si un champ accepte du HTML, il est nettoyé côté serveur avant enregistrement.
 - **Base.** Pas de SQL écrit à la main : l'ORM Django construit les requêtes. L'utilisateur PostgreSQL de l'application n'est pas super-utilisateur.
 - **Journaux.** Pas de mot de passe, de clé secrète, d'adresse électronique, d'adresse IP ni de corps de message. Le journal du personnel note qui a fait quoi, sur quel objet, et quand. Des sauvegardes régulières de la base sont prévues et restaurées à l'essai.
@@ -70,10 +70,10 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Type de contenu forcé (`nosniff`) en production | Appliqué |
 | Politique de référent `same-origin` | Appliqué |
 | Mots de passe contrôlés par les validateurs Django | Appliqué |
-| Images limitées au JPG, PNG, WebP et à 2 Mo, redimensionnées et sans données d'appareil photo | Appliqué |
+| Images limitées au JPG, PNG, WebP et à 5 Mo, redimensionnées et sans données d'appareil photo | Appliqué |
 | API publique de consultation des livres | Appliqué |
 | API publique des annonces et des événements | Appliqué |
-| API publique des publications | À faire |
+| API publique des publications | Appliqué |
 | Limitation du nombre de lectures du catalogue | Appliqué |
 | Limitation du nombre de lectures des annonces et des événements (`content_read`, 120 par minute, adresse de connexion) | Appliqué |
 | Limitation générale du nombre de requêtes, au-delà du catalogue, des annonces, des événements, de la connexion et des messages | À faire |
@@ -83,7 +83,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Compte administrateur du quotidien dans le groupe, sans privilège technique de super-utilisateur | Appliqué |
 | Super-administrateur technique, sans groupe : tous les menus et toutes les actions, journal compris | Appliqué |
 | Dernier administrateur impossible à désactiver, à retirer du groupe ou à supprimer | Appliqué |
-| Annonce et événement : pas de suppression, archivage seulement. Le brouillon et l'archivé restent hors de l'API publique | Appliqué |
+| Annonce et publication : suppression définitive autorisée pour le personnel habilité ; archivage toujours possible. Événement : pas de suppression, archivage seulement. Le brouillon et l'archivé restent hors de l'API publique | Appliqué |
 | Prix d'acquisition et registre d'import absents de l'API publique | Appliqué |
 | Session du personnel : 30 minutes d'inactivité, 10 heures au maximum, cookie de session illisible par un script | Appliqué |
 | Limitation des tentatives de connexion : 5 échecs, puis 15 minutes, même réponse si le compte n'existe pas | Appliqué |
@@ -113,6 +113,6 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Pas de HTML brut, pas de secret et pas de ressource externe dans le frontend (hors iframe Maps Embed pour la localisation) | Appliqué |
 | Build de production sans source maps ni `console` | Appliqué |
 | Versions du frontend verrouillées (`package-lock.json`) | Appliqué |
-| Nettoyage d'un contenu HTML riche | Partiel. Le champ « À propos » des paramètres généraux est nettoyé côté serveur (même famille de balises que l'éditeur). Les publications riches restent à brancher. |
+| Nettoyage d'un contenu HTML riche | Appliqué. « À propos » (paramètres) et contenu des publications sont nettoyés côté serveur (même famille de balises que l'éditeur). Affichage public via SafeHtml. |
 
-Le formulaire de publication accepte un texte mis en forme. Le navigateur ne garde que quelques balises (paragraphe, gras, italique, souligné, listes, citation, lien http ou https, tableau simple). Le nettoyage côté serveur est en place pour la fiche bibliothèque ; il reste à l'appliquer aux publications.
+Le formulaire de publication accepte un texte mis en forme. Le navigateur ne garde que quelques balises (paragraphe, gras, italique, souligné, listes, citation, lien http ou https, tableau simple). Le nettoyage côté serveur s'applique à la fiche bibliothèque et aux publications.

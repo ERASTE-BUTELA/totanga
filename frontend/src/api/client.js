@@ -13,7 +13,6 @@ import {
  * Le catalogue, les annonces et les événements lisent l'API.
  * Les exemples fictifs ne servent que si VITE_USE_FIXTURES=true,
  * et jamais dans une construction de production.
- * Les publications restent des exemples tant que leur API n'est pas branchée.
  */
 function catalogUsesFixtures() {
   if (import.meta.env.PROD) return false
@@ -163,12 +162,18 @@ export async function getAnnouncementBySlug(slug) {
 }
 
 export async function getPublications() {
-  return fixtures.publications.map(mapPublication)
+  if (catalogUsesFixtures()) return fixtures.publications.map(mapPublication)
+  const rows = await listPages("/api/publications/")
+  return rows.map(mapPublication)
 }
 
 export async function getPublicationBySlug(slug) {
-  const item = fixtures.publications.map(mapPublication).find((entry) => entry.slug === slug)
-  return item ?? null
+  if (catalogUsesFixtures()) {
+    const item = fixtures.publications.map(mapPublication).find((entry) => entry.slug === slug)
+    return item ?? null
+  }
+  const payload = await catalogRequest(`/api/publications/${encodeURIComponent(slug)}/`, { allowMissing: true })
+  return payload ? mapPublication(payload) : null
 }
 
 export async function getEvents() {

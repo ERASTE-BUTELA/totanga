@@ -12,7 +12,7 @@ const CATEGORIES = [
   ["horaires", "Horaires et services"],
   ["maintenance", "Maintenance et travaux"],
 ]
-const MAX_IMAGE = 2 * 1024 * 1024
+const MAX_IMAGE = 5 * 1024 * 1024
 const fieldClass = "min-h-11 w-full rounded-control border border-line bg-white px-3"
 
 function localStamp(value) {
@@ -91,7 +91,7 @@ export function AnnouncementFormPage({ mode }) {
       return
     }
     if (next.size > MAX_IMAGE) {
-      setImageError("L'image ne doit pas dépasser 2 Mo.")
+      setImageError("L'image ne doit pas dépasser 5 Mo.")
       return
     }
     setImageError("")
@@ -230,7 +230,7 @@ export function AnnouncementFormPage({ mode }) {
                 </button>
               </div>
             )}
-            <p className="mt-3 text-muted">Formats : JPG, PNG, WebP. Taille max. : 2 Mo.</p>
+            <p className="mt-3 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo.</p>
             {imageError ? <p role="alert" className="mt-2 text-unavailable">{imageError}</p> : null}
           </article>
           <article className="rounded-panel border border-line bg-white p-5 shadow-card">
@@ -242,7 +242,7 @@ export function AnnouncementFormPage({ mode }) {
               <li>Choisissez un titre clair et concis.</li>
               <li>Cochez Important seulement si l'annonce doit passer devant les autres.</li>
               <li>La fin d'affichage est facultative.</li>
-              <li>Une annonce ne se supprime pas : elle s'archive.</li>
+              <li>La suppression depuis la liste efface définitivement l'annonce.</li>
             </ul>
           </article>
         </div>

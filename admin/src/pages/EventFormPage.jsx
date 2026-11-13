@@ -14,7 +14,7 @@ const TYPES = [
   ["exposition", "Exposition"],
   ["lecture", "Lecture"],
 ]
-const MAX_IMAGE = 2 * 1024 * 1024
+const MAX_IMAGE = 5 * 1024 * 1024
 const fieldClass = "min-h-11 w-full rounded-control border border-line bg-white px-3"
 
 function localStamp(value) {
@@ -113,7 +113,7 @@ export function EventFormPage({ mode }) {
       return
     }
     if (next.size > MAX_IMAGE) {
-      setImageError("L'image ne doit pas dépasser 2 Mo.")
+      setImageError("L'image ne doit pas dépasser 5 Mo.")
       return
     }
     setImageError("")
@@ -282,7 +282,7 @@ export function EventFormPage({ mode }) {
               </button>
             </div>
           )}
-          <p className="mt-3 text-muted">Formats : JPG, PNG, WebP. 2 Mo maximum.</p>
+          <p className="mt-3 text-muted">Formats : JPG, PNG, WebP. 5 Mo maximum.</p>
           {imageError ? (
             <p role="alert" className="mt-2 text-unavailable">
               {imageError}

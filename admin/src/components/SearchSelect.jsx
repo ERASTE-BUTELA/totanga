@@ -36,17 +36,23 @@ export function SearchSelect({
     let gone = false
     setLoading(true)
     const timer = setTimeout(() => {
-      search(query.trim()).then((result) => {
-        if (gone) return
-        setLoading(false)
-        if (!result.ok) {
+      Promise.resolve(search(query.trim()))
+        .then((result) => {
+          if (gone) return
+          setLoading(false)
+          if (!result || !result.ok) {
+            setHits([])
+            return
+          }
+          const rows = result.data?.results || result.data || []
+          const list = Array.isArray(rows) ? rows : []
+          setHits(list.filter((item) => item && item.id != null && !chosen.has(item.id)))
+        })
+        .catch(() => {
+          if (gone) return
+          setLoading(false)
           setHits([])
-          return
-        }
-        const rows = result.data?.results || result.data || []
-        const list = Array.isArray(rows) ? rows : []
-        setHits(list.filter((item) => !chosen.has(item.id)))
-      })
+        })
     }, query.trim() ? 200 : 0)
     return () => {
       gone = true

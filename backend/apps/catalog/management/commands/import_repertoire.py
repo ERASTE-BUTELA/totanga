@@ -237,8 +237,7 @@ def _fill_book(book, cells, categories, publishers):
     if book.publication_year is None:
         year, _invalid = publication_year(cells["Date publ."])
         book.publication_year = year
-    if book.publisher_id is None:
-        book.publisher = get_or_create_publisher(cells["Editeur"], publishers)
+    book.publisher = get_or_create_publisher(cells["Editeur"], publishers)
     book.save()
 
 

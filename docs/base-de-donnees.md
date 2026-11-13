@@ -116,7 +116,7 @@ Déjà en place. La photo deviendra un lien vers Image, dans une étape à part,
 | --- | --- | --- | --- |
 | nom | texte, 300 | oui | non traduit |
 | biographie | texte long | non | français ; l'italien est dans Auteur IT |
-| photo | fichier, puis lien vers Image | non | JPG, PNG ou WebP, 2 Mo |
+| photo | fichier, puis lien vers Image | non | JPG, PNG ou WebP, 5 Mo |
 
 Lien : un auteur peut signer plusieurs livres, un livre peut avoir plusieurs auteurs. La table de liaison existe déjà.
 
@@ -167,9 +167,9 @@ Adaptation proposée : remplacer les deux cases par un seul état. Le nombre de 
 | catégorie | lien | oui | |
 | année de publication | nombre entier | oui | entre 1000 et 2100, dans la base |
 | résumé | texte long | oui | français |
-| couverture | fichier, puis lien vers Image | oui aujourd'hui | JPG, PNG ou WebP, 2 Mo |
+| couverture | fichier, puis lien vers Image | oui aujourd'hui | JPG, PNG ou WebP, 5 Mo |
 | langue de l'ouvrage | texte, 8 | oui | `fr`, `en`, `ln`, `kg`, `lua`, `sw` — ce n'est pas la langue du site |
-| éditeur | texte, 200 | non | |
+| éditeur | lien vers Éditeur | non | rempli depuis la colonne « Editeur » du répertoire à l'import |
 | ISBN | texte, 20 | non | unique seulement s'il est renseigné ; vide devient « rien » plutôt que deux chaînes vides |
 | nombre de pages | nombre entier | non | de 1 à 20 000 |
 | état | texte | oui | `brouillon`, `publie`, `archive` |
@@ -250,7 +250,7 @@ Nouvelle table. Les fichiers déjà posés sur l'auteur et le livre restent en p
 | Champ | Type | Obligatoire | Contraintes |
 | --- | --- | --- | --- |
 | fichier | chemin | oui | JPG, PNG ou WebP ; pas de SVG (un SVG peut contenir un script) |
-| taille | nombre entier | oui | 2 Mo maximum, contrôlé aussi par la base |
+| taille | nombre entier | oui | 5 Mo maximum, contrôlé aussi par la base |
 | envoyé par | lien vers Compte | non | si le compte disparaît, l'image reste |
 | envoyé le | instant | oui | |
 | largeur, hauteur | nombres | non | informatifs |
@@ -285,7 +285,7 @@ Rôle : un article de la bibliothèque (recommandation, conseil, vie de la bibli
 | Champ | Type | Obligatoire | Contraintes |
 | --- | --- | --- | --- |
 | adresse | texte, 255 | oui | unique, depuis le titre français |
-| catégorie | texte | oui | `recommandation`, `analyse`, `conseil`, `vie`, `culture`, `ressources` |
+| catégorie | texte | oui | `Culture`, `Actualité`, `Conseils`, `Événement`, `Technologie` |
 | signature | texte, 120 | oui | texte libre, valeur de départ « Équipe Totanga » ; ce n'est pas le compte qui a cliqué |
 | à la une | oui / non | oui | une seule publication peut être vraie en même temps |
 | image | lien vers Image | non | |
@@ -294,9 +294,9 @@ Rôle : un article de la bibliothèque (recommandation, conseil, vie de la bibli
 | résumé | texte, 250 | oui | français, 250 caractères |
 | contenu | texte long | oui | voir le choix de format plus bas |
 
-Italien dans Publication IT : titre, résumé, contenu. La signature et la catégorie ne sont pas traduites dans la base. Les libellés de catégorie (Recommandation, Raccomandazione, etc.) vivent dans l'interface, parce que la liste est fermée.
+Italien dans Publication IT : titre, résumé, contenu. La signature et la catégorie ne sont pas traduites dans la base. Les libellés de catégorie vivent dans l'interface, parce que la liste est fermée.
 
-Le compte qui crée ou modifie la publication n'est pas affiché. Il est noté dans le journal, sans le texte de l'article.
+Le compte qui crée ou modifie la publication n'est pas affiché. Il est noté dans le journal, sans le texte de l'article. La suppression depuis l'administration efface définitivement la fiche (comme pour les annonces).
 
 ### Événement
 
@@ -498,7 +498,7 @@ Recommandation : l'option 3. Pas de paquet. Le titre d'un livre et le nom d'une 
 
 Options : texte long, document JSON, ou HTML dès maintenant.
 
-Recommandation : un texte long. Il peut recevoir plus tard du texte structuré, du Markdown ou un HTML déjà nettoyé. Le choix du format et le nettoyage serveur restent pour la tranche Publications. Le champ ne bloque aucune de ces voies. Tant que le nettoyage n'existe pas, l'API publique ne doit pas injecter ce champ comme du HTML.
+Le contenu est un HTML déjà nettoyé côté serveur (même famille de balises que l'éditeur). Le site public l'affiche via SafeHtml.
 
 ### Une seule publication à la une
 

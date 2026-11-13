@@ -16,7 +16,7 @@ function searchCategories(query) {
 }
 
 function searchPublishers(query) {
-  return listPublishers({ q: query, page: 1, pageSize: 20 })
+  return listPublishers({ q: query, page: 1, pageSize: 50, autocomplete: true })
 }
 
 const LANGUAGES = [
@@ -30,7 +30,7 @@ const LANGUAGES = [
   ["other", "Autre"],
 ]
 const COPY_STATUSES = ["Disponible", "Emprunté", "Réservé", "En réparation", "Perdu"]
-const MAX_IMAGE = 2 * 1024 * 1024
+const MAX_IMAGE = 5 * 1024 * 1024
 
 const STATUS_CLASS = {
   Disponible: "bg-available-soft text-available",
@@ -187,7 +187,7 @@ function BookForm({ initial, creating, viewing }) {
       return
     }
     if (file.size > MAX_IMAGE) {
-      setCoverError("L'image ne doit pas dépasser 2 Mo.")
+      setCoverError("L'image ne doit pas dépasser 5 Mo.")
       return
     }
     setCoverError("")
@@ -319,7 +319,7 @@ function BookForm({ initial, creating, viewing }) {
               clearable={false}
             />
           </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <SearchSelect
               label="Catégorie"
               value={category}
@@ -331,20 +331,23 @@ function BookForm({ initial, creating, viewing }) {
               disabled={viewing}
               clearable={!viewing}
             />
-            <label className="grid gap-1">
-              <span className="font-semibold text-heading">Année de publication (facultatif)</span>
-              <input className={fieldClass} inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} maxLength={4} disabled={viewing} />
-            </label>
             <SearchSelect
               label="Éditeur (facultatif)"
               value={publisher}
               onChange={setPublisher}
               search={searchPublishers}
               labelOf={(item) => item.name}
-              placeholder="Choisir un éditeur"
+              placeholder="Rechercher un éditeur du répertoire…"
+              emptyLabel="Aucun éditeur trouvé. Tapez un nom (ex. Harmattan)."
               disabled={viewing}
               clearable={!viewing}
             />
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <label className="grid gap-1">
+              <span className="font-semibold text-heading">Année de publication (facultatif)</span>
+              <input className={fieldClass} inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} maxLength={4} disabled={viewing} />
+            </label>
             <label className="grid gap-1">
               <span className="font-semibold text-heading">ISBN (facultatif)</span>
               <input className={fieldClass} value={isbn} onChange={(event) => setIsbn(event.target.value)} maxLength={24} disabled={viewing} />
@@ -394,7 +397,7 @@ function BookForm({ initial, creating, viewing }) {
                 </label>
               )}
               <p className="mt-2 text-muted">Formats : JPG, PNG, WebP</p>
-              <p className="text-muted">Taille max. : 2 Mo</p>
+              <p className="text-muted">Taille max. : 5 Mo</p>
               {coverError ? <p role="alert" className="mt-2 text-unavailable">{coverError}</p> : null}
             </div>
           </div>

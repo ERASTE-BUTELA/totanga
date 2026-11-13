@@ -9,7 +9,7 @@ from PIL import Image, UnidentifiedImageError
 
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
-MAX_IMAGE_BYTES = 2 * 1024 * 1024
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 
 def validate_catalog_image(uploaded):
@@ -19,7 +19,7 @@ def validate_catalog_image(uploaded):
 
     size = getattr(uploaded, "size", None)
     if size is not None and size > MAX_IMAGE_BYTES:
-        raise ValidationError("L'image ne doit pas dépasser 2 Mo.")
+        raise ValidationError("L'image ne doit pas dépasser 5 Mo.")
 
     if hasattr(uploaded, "seek"):
         uploaded.seek(0)
@@ -70,5 +70,5 @@ def prepare_catalog_image(uploaded):
         prepared.save(buffer, **save_kwargs)
     payload = buffer.getvalue()
     if len(payload) > MAX_IMAGE_BYTES:
-        raise ValidationError("L'image ne doit pas dépasser 2 Mo.")
+        raise ValidationError("L'image ne doit pas dépasser 5 Mo.")
     return ContentFile(payload), len(payload), extension
