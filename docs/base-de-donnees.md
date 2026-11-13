@@ -422,7 +422,7 @@ Mesure anonyme du site public, lue depuis le menu **Statistiques** (permission `
 
 Événement détaillé (`analytics_trafficevent`) : jour, empreinte quotidienne (SHA-256, jamais l'IP), chemin, type de page, livre/catégorie éventuels, terme de recherche nettoyé, appareil, origine, instant. Purge après 90 jours.
 
-Compteurs agrégés conservés : trafic journalier, pages, livres, catégories, recherches, appareils, origines.
+Compteurs agrégés conservés (`analytics_dailytraffic`) : visiteurs, visites (séjours de 30 minutes), pages vues ; plus pages, livres, catégories, recherches, appareils, origines.
 
 Aucune adresse IP, aucun cookie de suivi, aucun compte lecteur.
 

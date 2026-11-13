@@ -3,7 +3,9 @@ import {
   BookOpen,
   CalendarRange,
   Eye,
+  FileText,
   Globe2,
+  Info,
   MonitorSmartphone,
   Search,
   Share2,
@@ -12,6 +14,18 @@ import {
 import { getSiteStatistics } from "../api/content.js"
 
 const numberFormat = new Intl.NumberFormat("fr-FR")
+
+const METRICS = [
+  { id: "visitors", label: "Visiteurs", color: "#4e154f" },
+  { id: "visits", label: "Visites", color: "#2563eb" },
+  { id: "page_views", label: "Pages vues", color: "#9a3412" },
+]
+
+const DEFAULT_DEFINITIONS = {
+  visitors: "Empreinte quotidienne distincte, comptée une fois par jour.",
+  visits: "Séjour continu ; une nouvelle visite après 30 minutes sans activité, ou le lendemain.",
+  page_views: "Chaque page ouverte (changements de page inclus), hors rechargements instantanés et robots.",
+}
 
 function formatCount(value) {
   return numberFormat.format(Number(value) || 0)
@@ -30,6 +44,18 @@ function shiftDays(base, days) {
   return next
 }
 
+function Tip({ text }) {
+  return (
+    <span className="group relative inline-flex">
+      <Info aria-hidden="true" size={14} className="text-muted" />
+      <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden w-56 -translate-x-1/2 rounded-control border border-line bg-white p-2 text-left text-meta text-muted shadow-card group-hover:block group-focus-within:block">
+        {text}
+      </span>
+      <span className="sr-only">{text}</span>
+    </span>
+  )
+}
+
 function RankList({ empty, rows }) {
   if (!rows.length) return <p className="mt-4 text-muted">{empty}</p>
   return (
@@ -46,22 +72,20 @@ function RankList({ empty, rows }) {
   )
 }
 
-function TrafficChart({ series }) {
+function TrafficChart({ series, metric }) {
   const width = 640
   const height = 220
   const pad = 24
-  const max = Math.max(1, ...series.map((row) => Math.max(row.visits, row.unique_visitors)))
+  const selected = METRICS.find((item) => item.id === metric) || METRICS[0]
+  const max = Math.max(1, ...series.map((row) => Number(row[selected.id]) || 0))
   const step = series.length > 1 ? (width - pad * 2) / (series.length - 1) : 0
-
-  function points(key) {
-    return series
-      .map((row, index) => {
-        const x = pad + index * step
-        const y = height - pad - ((row[key] || 0) / max) * (height - pad * 2)
-        return `${x},${y}`
-      })
-      .join(" ")
-  }
+  const points = series
+    .map((row, index) => {
+      const x = pad + index * step
+      const y = height - pad - ((Number(row[selected.id]) || 0) / max) * (height - pad * 2)
+      return `${x},${y}`
+    })
+    .join(" ")
 
   if (!series.length) {
     return <p className="mt-4 text-muted">Aucune donnée sur cette période.</p>
@@ -69,23 +93,14 @@ function TrafficChart({ series }) {
 
   return (
     <div className="mt-4 overflow-x-auto">
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full min-w-[28rem]" role="img" aria-label="Graphique des visites">
-        <polyline fill="none" stroke="#4e154f" strokeWidth="3" points={points("visits")} />
-        <polyline fill="none" stroke="#2563eb" strokeWidth="3" strokeDasharray="6 4" points={points("unique_visitors")} />
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full min-w-[28rem]" role="img" aria-label={`Graphique des ${selected.label.toLowerCase()}`}>
+        <polyline fill="none" stroke={selected.color} strokeWidth="3" points={points} />
         {series.map((row, index) => {
           const x = pad + index * step
-          return (
-            <g key={row.day}>
-              <circle cx={x} cy={height - pad - ((row.visits || 0) / max) * (height - pad * 2)} r="3.5" fill="#4e154f" />
-              <circle cx={x} cy={height - pad - ((row.unique_visitors || 0) / max) * (height - pad * 2)} r="3.5" fill="#2563eb" />
-            </g>
-          )
+          const y = height - pad - ((Number(row[selected.id]) || 0) / max) * (height - pad * 2)
+          return <circle key={row.day} cx={x} cy={y} r="3.5" fill={selected.color} />
         })}
       </svg>
-      <div className="mt-2 flex flex-wrap gap-4 text-meta text-muted">
-        <span className="inline-flex items-center gap-2"><span className="h-2 w-6 rounded-full bg-violet" /> Visites</span>
-        <span className="inline-flex items-center gap-2"><span className="h-2 w-6 rounded-full bg-[#2563eb]" /> Visiteurs uniques</span>
-      </div>
     </div>
   )
 }
@@ -117,6 +132,7 @@ export function StatsPanel() {
   const today = useMemo(() => new Date(), [])
   const [from, setFrom] = useState(() => isoDay(shiftDays(today, -29)))
   const [to, setTo] = useState(() => isoDay(today))
+  const [metric, setMetric] = useState("visits")
   const [data, setData] = useState(null)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
@@ -141,17 +157,21 @@ export function StatsPanel() {
     }
   }, [from, to])
 
+  const definitions = data?.definitions || DEFAULT_DEFINITIONS
+  const period = data?.totals?.period || {}
+
   const figures = useMemo(() => {
     const totals = data?.totals || {}
+    const todayTotals = totals.today || {}
     return [
-      { label: "Visites aujourd'hui", value: formatCount(totals.today?.visits), icon: Eye, chip: "bg-lavender text-violet" },
-      { label: "Visiteurs aujourd'hui", value: formatCount(totals.today?.unique_visitors), icon: Users, chip: "bg-available-soft text-available" },
-      { label: "Visites (7 jours)", value: formatCount(totals.week?.visits), icon: CalendarRange, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
-      { label: "Visiteurs (7 jours)", value: formatCount(totals.week?.unique_visitors), icon: Users, chip: "bg-[#e7eefc] text-[#1d4ed8]" },
-      { label: "Visites (30 jours)", value: formatCount(totals.month?.visits), icon: CalendarRange, chip: "bg-[#fde7c7] text-[#9a3412]" },
-      { label: "Visiteurs (30 jours)", value: formatCount(totals.month?.unique_visitors), icon: Users, chip: "bg-[#fde7c7] text-[#9a3412]" },
+      { label: "Visiteurs aujourd'hui", value: formatCount(todayTotals.visitors), icon: Users, chip: "bg-available-soft text-available", tip: definitions.visitors },
+      { label: "Visites aujourd'hui", value: formatCount(todayTotals.visits), icon: Eye, chip: "bg-lavender text-violet", tip: definitions.visits },
+      { label: "Pages vues aujourd'hui", value: formatCount(todayTotals.page_views), icon: FileText, chip: "bg-[#e7eefc] text-[#1d4ed8]", tip: definitions.page_views },
+      { label: "Pages / visite (aujourd'hui)", value: formatCount(todayTotals.pages_per_visit), icon: CalendarRange, chip: "bg-[#fde7c7] text-[#9a3412]", tip: "Moyenne des pages vues par visite aujourd'hui." },
+      { label: "Visiteurs (7 jours)", value: formatCount(totals.week?.visitors), icon: Users, chip: "bg-available-soft text-available", tip: definitions.visitors },
+      { label: "Visites (7 jours)", value: formatCount(totals.week?.visits), icon: Eye, chip: "bg-lavender text-violet", tip: definitions.visits },
     ]
-  }, [data])
+  }, [data, definitions])
 
   function preset(days) {
     setFrom(isoDay(shiftDays(today, -(days - 1))))
@@ -183,13 +203,16 @@ export function StatsPanel() {
       {error ? <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p> : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        {(loading ? Array.from({ length: 6 }, (_, index) => ({ label: "…", value: "…", icon: Eye, chip: "bg-lavender text-violet", key: index })) : figures).map((figure) => {
+        {(loading ? Array.from({ length: 6 }, (_, index) => ({ label: "…", value: "…", icon: Eye, chip: "bg-lavender text-violet", tip: "", key: index })) : figures).map((figure) => {
           const Icon = figure.icon
           return (
             <article key={figure.label + (figure.key ?? "")} className="rounded-panel border border-line bg-white p-4 shadow-card">
-              <span className={`inline-flex h-11 w-11 items-center justify-center rounded-control ${figure.chip}`}>
-                <Icon aria-hidden="true" size={22} />
-              </span>
+              <div className="flex items-start justify-between gap-2">
+                <span className={`inline-flex h-11 w-11 items-center justify-center rounded-control ${figure.chip}`}>
+                  <Icon aria-hidden="true" size={22} />
+                </span>
+                {figure.tip ? <Tip text={figure.tip} /> : null}
+              </div>
               <p className="mt-3 text-section text-heading">{figure.value}</p>
               <p className="text-muted">{figure.label}</p>
             </article>
@@ -198,12 +221,31 @@ export function StatsPanel() {
       </div>
 
       <article className="rounded-panel border border-line bg-white p-5 shadow-card">
-        <h2 className="text-section text-heading">Visites et visiteurs uniques</h2>
-        <p className="mt-1 text-muted">
-          Période du {data?.from || from} au {data?.to || to}
-          {data?.totals ? ` · ${formatCount(data.totals.period_visits)} visites · ${formatCount(data.totals.period_unique_visitors)} visiteurs` : ""}
-        </p>
-        {loading ? <p className="mt-4 text-muted">Chargement…</p> : <TrafficChart series={Array.isArray(data?.series) ? data.series : []} />}
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-section text-heading">Évolution</h2>
+            <p className="mt-1 text-muted">
+              Période du {data?.from || from} au {data?.to || to}
+              {period.visitors != null
+                ? ` · ${formatCount(period.visitors)} visiteurs · ${formatCount(period.visits)} visites · ${formatCount(period.page_views)} pages vues · ${formatCount(period.pages_per_visit)} pages/visite`
+                : ""}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {METRICS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={metric === item.id}
+                className={`min-h-11 rounded-control px-4 font-semibold ${metric === item.id ? "bg-violet text-white" : "border border-line bg-white text-heading"}`}
+                onClick={() => setMetric(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {loading ? <p className="mt-4 text-muted">Chargement…</p> : <TrafficChart series={Array.isArray(data?.series) ? data.series : []} metric={metric} />}
       </article>
 
       <div className="grid gap-4 xl:grid-cols-2">

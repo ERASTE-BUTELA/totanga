@@ -25,6 +25,7 @@ from .models import (
 from .paths import normalize_public_path, page_kind, page_label
 from .robots import is_known_robot
 from .searches import normalize_search_term
+from .sessions import is_new_visit
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ def record_public_hit(
     category_name="",
     search="",
 ):
-    """Enregistre une visite anonyme. Ne lève jamais d'exception vers l'appelant."""
+    """Enregistre une page vue anonyme. Ne lève jamais d'exception vers l'appelant."""
 
     try:
         _record(
@@ -108,6 +109,20 @@ def _record(request, *, path, referrer, book_id, book_title, category_id, catego
     if recent:
         return
 
+    previous = (
+        TrafficEvent.objects.filter(visitor_hash=visitor_hash)
+        .order_by("-created_at")
+        .only("created_at", "day")
+        .first()
+    )
+    first_today = previous is None or previous.day != day
+    new_visit = is_new_visit(
+        previous_at=previous.created_at if previous else None,
+        now=now,
+        previous_day=previous.day if previous else None,
+        day=day,
+    )
+
     device = classify_device(user_agent)
     origin = classify_origin(referrer or request.META.get("HTTP_REFERER", ""), site_hosts=_site_hosts())
     term = normalize_search_term(search)
@@ -125,8 +140,6 @@ def _record(request, *, path, referrer, book_id, book_title, category_id, catego
     title = str(book_title or "")[:255]
     cat_name = str(category_name or "")[:120]
 
-    first_today = not TrafficEvent.objects.filter(day=day, visitor_hash=visitor_hash).exists()
-
     with transaction.atomic():
         TrafficEvent.objects.create(
             day=day,
@@ -141,10 +154,14 @@ def _record(request, *, path, referrer, book_id, book_title, category_id, catego
             device=device,
             origin=origin,
         )
-        traffic, _ = DailyTraffic.objects.get_or_create(day=day, defaults={"visits": 0, "unique_visitors": 0})
+        traffic, _ = DailyTraffic.objects.get_or_create(
+            day=day,
+            defaults={"visitors": 0, "visits": 0, "page_views": 0},
+        )
         DailyTraffic.objects.filter(pk=traffic.pk).update(
-            visits=F("visits") + 1,
-            unique_visitors=F("unique_visitors") + (1 if first_today else 0),
+            page_views=F("page_views") + 1,
+            visitors=F("visitors") + (1 if first_today else 0),
+            visits=F("visits") + (1 if new_visit else 0),
         )
         _bump(DailyPageStat, day=day, path=clean_path, defaults={"label": label})
         _bump(DailyDeviceStat, day=day, device=device, defaults={})

@@ -45,8 +45,9 @@ class TrafficEvent(models.Model):
 
 class DailyTraffic(models.Model):
     day = models.DateField("jour", unique=True)
+    visitors = models.PositiveIntegerField("visiteurs", default=0)
     visits = models.PositiveIntegerField("visites", default=0)
-    unique_visitors = models.PositiveIntegerField("visiteurs uniques", default=0)
+    page_views = models.PositiveIntegerField("pages vues", default=0)
 
     class Meta:
         verbose_name = "trafic journalier"

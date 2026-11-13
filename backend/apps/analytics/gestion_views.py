@@ -43,6 +43,21 @@ def _parse_bounds(request):
     return start, end
 
 
+def _pages_per_visit(page_views, visits):
+    if not visits:
+        return 0
+    return round(page_views / visits, 1)
+
+
+def _bundle(visitors, visits, page_views):
+    return {
+        "visitors": visitors,
+        "visits": visits,
+        "page_views": page_views,
+        "pages_per_visit": _pages_per_visit(page_views, visits),
+    }
+
+
 def _top(queryset, *, key, label_key, limit=8):
     rows = (
         queryset.values(key, label_key)
@@ -50,6 +65,28 @@ def _top(queryset, *, key, label_key, limit=8):
         .order_by("-hits")[:limit]
     )
     return [{"id": row[key], "label": row[label_key], "hits": row["hits"]} for row in rows]
+
+
+def _window_totals(from_day, to_day):
+    qs = DailyTraffic.objects.filter(day__gte=from_day, day__lte=to_day)
+    totals = qs.aggregate(
+        visitors=Sum("visitors"),
+        visits=Sum("visits"),
+        page_views=Sum("page_views"),
+    )
+    visitors = int(totals["visitors"] or 0)
+    visits = int(totals["visits"] or 0)
+    page_views = int(totals["page_views"] or 0)
+    # Sur la fenêtre, préférer les empreintes encore présentes pour les visiteurs.
+    live_visitors = (
+        TrafficEvent.objects.filter(day__gte=from_day, day__lte=to_day)
+        .values("visitor_hash")
+        .distinct()
+        .count()
+    )
+    if live_visitors:
+        visitors = live_visitors
+    return _bundle(visitors, visits, page_views)
 
 
 class SiteStatisticsView(APIView):
@@ -65,25 +102,17 @@ class SiteStatisticsView(APIView):
         week_start = today - timedelta(days=6)
         month_start = today - timedelta(days=29)
 
-        period = DailyTraffic.objects.filter(day__gte=start, day__lte=end)
+        period_rows = DailyTraffic.objects.filter(day__gte=start, day__lte=end).order_by("day")
         series = [
-            {"day": row.day.isoformat(), "visits": row.visits, "unique_visitors": row.unique_visitors}
-            for row in period.order_by("day")
+            {
+                "day": row.day.isoformat(),
+                "visitors": row.visitors,
+                "visits": row.visits,
+                "page_views": row.page_views,
+            }
+            for row in period_rows
         ]
-
-        def window(from_day):
-            qs = DailyTraffic.objects.filter(day__gte=from_day, day__lte=today)
-            visits = int(qs.aggregate(total=Sum("visits"))["total"] or 0)
-            # Uniques sur la fenêtre : empreintes encore présentes, sinon cumul journalier.
-            uniques = (
-                TrafficEvent.objects.filter(day__gte=from_day, day__lte=today)
-                .values("visitor_hash")
-                .distinct()
-                .count()
-            )
-            if uniques == 0 and visits:
-                uniques = int(qs.aggregate(total=Sum("unique_visitors"))["total"] or 0)
-            return {"visits": visits, "unique_visitors": uniques}
+        period = _window_totals(start, end)
 
         pages = (
             DailyPageStat.objects.filter(day__gte=start, day__lte=end)
@@ -114,23 +143,21 @@ class SiteStatisticsView(APIView):
             {
                 "from": start.isoformat(),
                 "to": end.isoformat(),
+                "definitions": {
+                    "visitors": "Empreinte quotidienne distincte, comptée une fois par jour.",
+                    "visits": "Séjour continu ; une nouvelle visite après 30 minutes sans activité, ou le lendemain.",
+                    "page_views": "Chaque page ouverte (changements de page inclus), hors rechargements instantanés et robots.",
+                },
                 "geo_available": False,
                 "geo_note": (
                     "Pays et ville non disponibles : aucune base géographique locale "
                     "et aucun service externe n'est autorisé."
                 ),
                 "totals": {
-                    "period_visits": int(period.aggregate(total=Sum("visits"))["total"] or 0),
-                    "period_unique_visitors": (
-                        TrafficEvent.objects.filter(day__gte=start, day__lte=end)
-                        .values("visitor_hash")
-                        .distinct()
-                        .count()
-                        or int(period.aggregate(total=Sum("unique_visitors"))["total"] or 0)
-                    ),
-                    "today": window(today),
-                    "week": window(week_start),
-                    "month": window(month_start),
+                    "period": period,
+                    "today": _window_totals(today, today),
+                    "week": _window_totals(week_start, today),
+                    "month": _window_totals(month_start, today),
                 },
                 "series": series,
                 "top_pages": [{"path": row["path"], "label": row["label"], "hits": row["hits"]} for row in pages],
