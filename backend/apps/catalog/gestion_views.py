@@ -379,6 +379,8 @@ def _apply_book(book, data, cover, *, creating, user=None):
         if error:
             return error
         book.cover_image = stored
+    elif str(data.get("remove_cover", "")).lower() in {"true", "1", "on"}:
+        book.cover_image = None
     if not book.slug:
         book.slug = unique_slug(Book, book.title, max_length=255, instance=book)
     try:

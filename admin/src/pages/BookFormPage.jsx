@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useId, useRef, useState } from "react"
-import { Archive, ArrowLeft, BookOpen, Check, Eye, Layers, Pencil, Plus, Save } from "lucide-react"
+import { Archive, ArrowLeft, BookOpen, Check, Eye, Layers, Pencil, Plus, Save, Trash2 } from "lucide-react"
 import { Link, useLocation, useNavigate, useParams } from "react-router"
 import { archiveBook, getBook, listAuthors, listCategories, listPublishers, saveBook } from "../api/catalog.js"
 import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
@@ -160,10 +160,12 @@ function BookForm({ initial, creating, viewing }) {
   const publish = useRef(true)
   const [coverUrl, setCoverUrl] = useState("")
   const [coverFile, setCoverFile] = useState(null)
+  const [removeCover, setRemoveCover] = useState(false)
   const [coverError, setCoverError] = useState("")
   const [problems, setProblems] = useState([])
   const [phase, setPhase] = useState(null)
   const busy = busyPhase(phase)
+  const shownCover = coverUrl || (!removeCover && initial.cover) || ""
 
   useEffect(() => () => {
     if (coverUrl) URL.revokeObjectURL(coverUrl)
@@ -191,10 +193,21 @@ function BookForm({ initial, creating, viewing }) {
       return
     }
     setCoverError("")
+    setRemoveCover(false)
     setCoverFile(file)
     setCoverUrl((current) => {
       if (current) URL.revokeObjectURL(current)
       return URL.createObjectURL(file)
+    })
+  }
+
+  function clearCover() {
+    setCoverError("")
+    setCoverFile(null)
+    setRemoveCover(true)
+    setCoverUrl((current) => {
+      if (current) URL.revokeObjectURL(current)
+      return ""
     })
   }
 
@@ -270,6 +283,7 @@ function BookForm({ initial, creating, viewing }) {
       status: copy.status,
     }))))
     if (coverFile) body.set("cover", coverFile)
+    if (removeCover && !coverFile) body.set("remove_cover", "true")
     const result = await saveBook(initial.id, body)
     if (!result.ok) {
       setPhase(null)
@@ -384,17 +398,29 @@ function BookForm({ initial, creating, viewing }) {
         <article className="rounded-panel border border-line bg-white p-5 shadow-card">
           <h2 className="text-section text-heading">Couverture (facultatif)</h2>
           <div className="mt-4 flex items-start gap-4">
-            {coverUrl || initial.cover ? (
-              <img src={coverUrl || initial.cover} alt="" className="h-44 w-32 rounded-md object-cover" />
+            {shownCover ? (
+              <img src={shownCover} alt="" className="h-44 w-32 rounded-md object-cover" />
             ) : (
               <span className="grid h-44 w-32 place-items-center rounded-md bg-violet px-2 text-center font-semibold text-white">{mark(title)}</span>
             )}
             <div>
               <input id={coverInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={onCover} />
               {viewing ? null : (
-                <label htmlFor={coverInput} className="inline-flex min-h-11 cursor-pointer items-center rounded-control border border-line px-3 font-semibold text-violet">
-                  Changer la couverture
-                </label>
+                <div className="flex flex-wrap gap-2">
+                  <label htmlFor={coverInput} className="inline-flex min-h-11 cursor-pointer items-center rounded-control border border-line px-3 font-semibold text-violet">
+                    {shownCover ? "Changer la couverture" : "Ajouter une couverture"}
+                  </label>
+                  {shownCover ? (
+                    <button
+                      type="button"
+                      className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable"
+                      onClick={clearCover}
+                    >
+                      <Trash2 aria-hidden="true" size={18} />
+                      Enlever la couverture
+                    </button>
+                  ) : null}
+                </div>
               )}
               <p className="mt-2 text-muted">Formats : JPG, PNG, WebP</p>
               <p className="text-muted">Taille max. : 5 Mo</p>

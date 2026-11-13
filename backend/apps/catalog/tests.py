@@ -246,6 +246,49 @@ class StaffCatalogApiTests(TestCase):
         self.assertEqual(removed.status_code, 405)
         self.assertTrue(Book.objects.filter(pk=book_id).exists())
 
+    def test_librarian_can_remove_book_cover(self):
+        self.login(self.librarian)
+        created = self.client.post(
+            "/api/gestion/catalogue/livres/",
+            {
+                "title": "Sans couverture bientôt",
+                "summary": "Un roman.",
+                "category_id": self.category.pk,
+                "author_ids": f"[{self.author.pk}]",
+                "year": "2001",
+                "language": "fr",
+                "state": "published",
+                "keywords": "[]",
+                "copies": "[]",
+                "cover": image_upload("couverture.jpg", "JPEG"),
+            },
+            format="multipart",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        self.assertTrue(created.json()["cover"])
+        book_id = created.json()["id"]
+        cleared = self.client.patch(
+            f"/api/gestion/catalogue/livres/{book_id}/",
+            {
+                "title": "Sans couverture bientôt",
+                "summary": "Un roman.",
+                "category_id": self.category.pk,
+                "author_ids": f"[{self.author.pk}]",
+                "year": "2001",
+                "language": "fr",
+                "state": "published",
+                "keywords": "[]",
+                "copies": "[]",
+                "remove_cover": "true",
+            },
+            format="multipart",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(cleared.status_code, 200, cleared.content)
+        self.assertEqual(cleared.json()["cover"], "")
+        self.assertIsNone(Book.objects.get(pk=book_id).cover_image_id)
+
     def test_category_used_by_a_book_is_kept(self):
         self.login(self.librarian)
         book = Book.objects.create(
