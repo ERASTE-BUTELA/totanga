@@ -25,12 +25,17 @@ export function BookCard({ book, compact = false, plain = false, catalog = false
   const authors = authorNames(book.authors)
   if (dense) {
     return (
-      <article className="flex h-full flex-col rounded-xl border border-line bg-panel p-1.5 shadow-card sm:p-2">
-        <Link to={`/catalogue/${book.slug}`} className="flex h-full flex-col rounded-control">
-          <Cover book={book} priority={priority} sizes="(max-width: 1024px) 30vw, 12vw" className="aspect-[3/4] w-full rounded-md object-cover" />
-          <h3 className="mt-1.5 line-clamp-2 text-badge font-semibold leading-snug text-heading sm:text-meta">{book.title}</h3>
+      <article className="flex h-full flex-col rounded-xl border border-line bg-panel p-2 shadow-card sm:p-2.5">
+        <Link to={`/catalogue/${book.slug}`} className="flex h-full min-w-0 flex-col rounded-control">
+          <Cover
+            book={book}
+            priority={priority}
+            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 22vw, 12vw"
+            className="h-28 w-full rounded-md object-cover sm:h-32 md:h-36 lg:h-40"
+          />
+          <h3 className="cover-title mt-2 text-badge font-semibold leading-snug text-heading sm:text-meta">{book.title}</h3>
           <p className="mt-0.5 line-clamp-1 text-badge text-muted">{authors || "Auteur non indiqué"}</p>
-          <span className="mt-1">
+          <span className="mt-auto pt-2">
             <BookStatus book={book} />
           </span>
         </Link>
@@ -65,15 +70,15 @@ export function BookCard({ book, compact = false, plain = false, catalog = false
   }
   if (plain) {
     return (
-      <article className="flex h-full flex-col">
-        <Link to={`/catalogue/${book.slug}`} className="flex h-full flex-col">
+      <article className="flex h-full min-w-0 flex-col">
+        <Link to={`/catalogue/${book.slug}`} className="flex h-full min-w-0 flex-col">
           <Cover
             book={book}
             priority={priority}
-            sizes="(max-width: 1024px) 30vw, 12vw"
-            className="h-36 w-full rounded-lg object-cover shadow-cover sm:h-44 lg:h-48"
+            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, 12vw"
+            className="h-32 w-full rounded-lg object-cover shadow-cover sm:h-40 lg:h-44"
           />
-          <h3 className="cover-title mt-2 line-clamp-2 text-cover text-heading">{book.title}</h3>
+          <h3 className="cover-title mt-2 text-cover text-heading">{book.title}</h3>
           <p className="mt-0.5 line-clamp-1 min-h-[1.5em] text-meta text-muted">{authors || "\u00a0"}</p>
           <div className="mt-auto pt-2">
             <BookStatus book={book} prominent />

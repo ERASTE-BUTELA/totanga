@@ -118,7 +118,6 @@ export function BooksPage() {
           },
         ]}
         columns={[
-          { key: "n", label: "#", render: (_row, index) => index + 1 },
           {
             key: "cover",
             label: "Couverture",
@@ -131,20 +130,23 @@ export function BooksPage() {
             label: "Titre",
             render: (row) => <span className="font-semibold text-heading">{row.title}</span>,
           },
-          { key: "authors", label: "Auteurs", render: (row) => row.authors },
+          { key: "authors", label: "Auteurs", render: (row) => row.authors || "—" },
           {
             key: "category",
             label: "Catégorie",
-            render: (row) => <span className="rounded-full bg-lavender px-3 py-1 font-semibold text-violet">{row.category}</span>,
+            render: (row) =>
+              row.category ? (
+                <span className="rounded-full bg-lavender px-3 py-1 font-semibold text-violet">{row.category}</span>
+              ) : (
+                "—"
+              ),
           },
           { key: "publisher", label: "Éditeur", render: (row) => row.publisher || "—" },
-          { key: "isbn", label: "ISBN", render: (row) => row.isbn || "—" },
-          { key: "year", label: "Année", render: (row) => row.year },
           {
             key: "copies",
-            label: "Exemplaires (Disp. / Indisp.)",
+            label: "Exemplaires",
             render: (row) => (
-              <span className="font-semibold">
+              <span className="font-semibold" title="Disponibles / Indisponibles">
                 <span className="text-available">{row.available}</span>
                 <span className="text-muted"> / </span>
                 <span className="text-unavailable">{row.unavailable}</span>

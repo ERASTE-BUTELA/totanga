@@ -175,8 +175,8 @@ export function HomeContact() {
         <SendOverlay phase={avisStatus === "done" ? "done" : "sending"} />
       ) : null}
 
-      <div className="overflow-hidden rounded-panel border border-line bg-panel p-5 shadow-panel sm:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="overflow-hidden rounded-panel border border-line bg-panel p-4 shadow-panel sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
             <span className="mt-1 h-10 w-1.5 shrink-0 rounded-full bg-gold-bright" aria-hidden="true" />
             <div className="min-w-0">
@@ -191,7 +191,7 @@ export function HomeContact() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              className="inline-flex min-h-10 items-center gap-2 rounded-full bg-violet px-4 text-meta font-semibold text-on-primary"
+              className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full bg-gold-bright px-4 text-meta font-semibold text-heading sm:flex-none"
               onClick={() => {
                 setAvisNotice("")
                 setAvisOpen(true)
@@ -248,19 +248,23 @@ export function HomeContact() {
               >
                 ”
               </span>
-              <div className="relative flex items-stretch gap-4 sm:gap-5">
-                <div className="flex shrink-0 items-start border-r border-line pr-4 sm:pr-5">
-                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-panel text-violet shadow-card sm:h-14 sm:w-14">
-                    <UserRound className="h-6 w-6" aria-hidden="true" />
+              <div className="relative flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-5">
+                <div className="flex shrink-0 items-center gap-3 border-b border-line pb-3 sm:items-start sm:border-r sm:border-b-0 sm:pr-5 sm:pb-0">
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-panel text-violet shadow-card sm:h-14 sm:w-14">
+                    <UserRound className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
                   </span>
-                </div>
-                <div className="min-w-0 flex-1 pr-6 sm:pr-10">
-                  <p className="inline-flex items-center gap-1.5 rounded-full bg-panel px-3 py-1 text-badge font-semibold text-violet shadow-card">
+                  <p className="inline-flex items-center gap-1.5 rounded-full bg-panel px-3 py-1 text-badge font-semibold text-violet shadow-card sm:hidden">
                     <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
                     {current.subject || "Avis sur la bibliothèque"}
                   </p>
-                  <p className="mt-3 text-article text-heading">{current.body}</p>
-                  <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted">
+                </div>
+                <div className="min-w-0 flex-1 sm:pr-10">
+                  <p className="hidden items-center gap-1.5 rounded-full bg-panel px-3 py-1 text-badge font-semibold text-violet shadow-card sm:inline-flex">
+                    <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                    {current.subject || "Avis sur la bibliothèque"}
+                  </p>
+                  <p className="mt-0 text-article text-heading sm:mt-3">{current.body}</p>
+                  <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted sm:mt-4">
                     <span className="inline-flex items-center gap-1.5">
                       <UserRound className="h-3.5 w-3.5 text-violet" aria-hidden="true" />
                       {current.name}
@@ -390,7 +394,7 @@ export function HomeContact() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
         <form
           onSubmit={onSubmit}
-          className="min-w-0 rounded-panel border border-line bg-panel p-5 shadow-panel sm:p-8"
+          className="min-w-0 rounded-panel border border-line bg-panel p-4 shadow-panel sm:p-8"
           noValidate
         >
           <h2 id="contact-title" className="flex items-center gap-2 text-section text-heading">
@@ -467,7 +471,7 @@ export function HomeContact() {
 
         <aside
           aria-labelledby="coordinates-title"
-          className="min-w-0 rounded-panel border border-line bg-panel p-5 shadow-panel sm:p-8"
+          className="min-w-0 rounded-panel border border-line bg-panel p-4 shadow-panel sm:p-8"
         >
           <h2 id="coordinates-title" className="text-section text-heading">
             Nos coordonnées

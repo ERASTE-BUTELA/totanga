@@ -32,13 +32,13 @@ export default function EventPage() {
 
   return (
     <div className="bg-canvas">
-      <header className="relative overflow-hidden bg-violet text-on-primary">
-        <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-violet/85" aria-hidden="true" />
+      <header className="page-hero relative overflow-hidden bg-brand text-on-brand">
+        <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" data-theme-keep="" />
+        <div className="absolute inset-0 bg-brand/85" aria-hidden="true" />
         <div className="relative px-4 py-10 sm:px-8 lg:px-14">
           <p className="text-page">Événements</p>
           <p className="mt-3 max-w-3xl text-lead">Conférences, ateliers, rencontres littéraires et autres activités de la bibliothèque.</p>
-          <span className="mt-4 block h-1 w-16 rounded-full bg-gold-bright" aria-hidden="true" />
+          <span className="mt-4 block h-1 w-16 rounded-full bg-brand-accent" aria-hidden="true" />
         </div>
       </header>
       <div className="px-4 py-6 sm:px-8 lg:px-14">

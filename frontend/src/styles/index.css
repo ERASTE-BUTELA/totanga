@@ -78,7 +78,7 @@
   --text-badge: 0.8125rem;
   --text-badge--line-height: 1.4;
   --text-badge--font-weight: 600;
-  --text-panel: 1.5625rem;
+  --text-panel: clamp(1.25rem, 1.18rem + 0.3vw, 1.5625rem);
   --text-panel--line-height: 1.25;
   --text-panel--font-weight: 800;
   --text-cover: 1.0625rem;
@@ -86,6 +86,11 @@
   --text-cover--font-weight: 700;
   --color-violet: #4e154f;
   --color-violet-dark: #3a103c;
+  /* Marque fixe : bandeaux / héros, inchangée en mode sombre. */
+  --color-brand: #4e154f;
+  --color-brand-deep: #3a103c;
+  --color-on-brand: #f7f2f8;
+  --color-brand-accent: #e4ae24;
   --color-gold: #7c5e10;
   --color-gold-bright: #e4ae24;
   --color-lavender: #f4f0fa;
@@ -157,6 +162,13 @@ html[data-color-scheme="dark"] img:not([data-theme-keep]):not(.theme-logo) {
 html[data-color-scheme="dark"] img.theme-logo {
   opacity: 1;
   filter: brightness(0) invert(1);
+}
+
+/* Héros publics : image et violet de marque inchangés en sombre. */
+html[data-color-scheme="dark"] .page-hero img,
+.page-hero img {
+  opacity: 1;
+  filter: none;
 }
 
 /* Démo thème : colonnes isolées (dev). */
@@ -363,6 +375,15 @@ html[data-color-scheme="dark"] img.theme-logo {
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+  }
+
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
 
   @keyframes send-spin {

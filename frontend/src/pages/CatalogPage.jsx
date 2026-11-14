@@ -18,20 +18,16 @@ function pageNumber(value) {
   return page
 }
 
-function buildParams({ q, dispo, anneeMin, anneeMax, tri, categorie }) {
+function buildParams({ q, categorie }) {
   const params = new URLSearchParams()
   const query = String(q || "").trim()
   if (query) params.set("q", query)
-  if (dispo) params.set("dispo", dispo)
-  if (anneeMin) params.set("anneeMin", anneeMin)
-  if (anneeMax) params.set("anneeMax", anneeMax)
-  if (tri) params.set("tri", tri)
   if (categorie) params.set("categorie", categorie)
   return params
 }
 
 function sameFilters(a, b) {
-  for (const key of ["q", "dispo", "anneeMin", "anneeMax", "tri", "categorie"]) {
+  for (const key of ["q", "categorie"]) {
     if ((a.get(key) || "") !== (b.get(key) || "")) return false
   }
   return true
@@ -42,36 +38,23 @@ export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [state, setState] = useState({ status: "loading", data: null, error: "" })
   const [q, setQ] = useState(() => searchParams.get("q") || "")
-  const [dispo, setDispo] = useState(() => searchParams.get("dispo") || "")
-  const [anneeMin, setAnneeMin] = useState(() => searchParams.get("anneeMin") || "")
-  const [anneeMax, setAnneeMax] = useState(() => searchParams.get("anneeMax") || "")
-  const [tri, setTri] = useState(() => searchParams.get("tri") || "")
+  const [categorie, setCategorie] = useState(() => searchParams.get("categorie") || "")
 
   useEffect(() => {
     setQ(searchParams.get("q") || "")
-    setDispo(searchParams.get("dispo") || "")
-    setAnneeMin(searchParams.get("anneeMin") || "")
-    setAnneeMax(searchParams.get("anneeMax") || "")
-    setTri(searchParams.get("tri") || "")
+    setCategorie(searchParams.get("categorie") || "")
   }, [searchParams])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setSearchParams((current) => {
-        const next = buildParams({
-          q,
-          dispo,
-          anneeMin: anneeMin.trim(),
-          anneeMax: anneeMax.trim(),
-          tri,
-          categorie: current.get("categorie") || "",
-        })
+        const next = buildParams({ q, categorie })
         if (sameFilters(current, next)) return current
         return next
       }, { replace: true })
     }, 220)
     return () => window.clearTimeout(timer)
-  }, [q, dispo, anneeMin, anneeMax, tri, setSearchParams])
+  }, [q, categorie, setSearchParams])
 
   useEffect(() => {
     let active = true
@@ -89,115 +72,96 @@ export default function CatalogPage() {
   }, [searchParams])
 
   const books = state.data?.books || []
+  const categories = state.data?.categories || []
   const pageCount = state.data?.pages || 1
   const page = Math.min(pageNumber(searchParams.get("page")), pageCount)
   const visible = books
 
   function goToPage(next) {
-    const params = new URLSearchParams(searchParams)
-    if (next <= 1) params.delete("page")
-    else params.set("page", String(next))
+    const params = buildParams({ q, categorie })
+    if (next > 1) params.set("page", String(next))
     setSearchParams(params)
   }
 
   function reset() {
     setQ("")
-    setDispo("")
-    setAnneeMin("")
-    setAnneeMax("")
-    setTri("")
+    setCategorie("")
     setSearchParams(new URLSearchParams())
   }
 
   return (
     <div className="bg-canvas">
-      <header className="relative overflow-hidden bg-violet text-on-primary">
-        <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-violet/85" aria-hidden="true" />
-        <div className="relative px-4 py-10 sm:px-8 lg:px-14">
+      <header className="page-hero relative overflow-hidden bg-brand text-on-brand">
+        <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" data-theme-keep="" />
+        <div className="absolute inset-0 bg-brand/85" aria-hidden="true" />
+        <div className="relative px-4 py-8 sm:px-8 sm:py-10 lg:px-14">
           <h1 className="text-page">Catalogue des livres</h1>
           <p className="mt-3 max-w-3xl text-lead">Explorez le répertoire complet des ouvrages de la Bibliothèque Totanga.</p>
-          <span className="mt-4 block h-1 w-16 rounded-full bg-gold-bright" aria-hidden="true" />
+          <span className="mt-4 block h-1 w-16 rounded-full bg-brand-accent" aria-hidden="true" />
         </div>
       </header>
 
-      <div className="px-4 py-6 sm:px-8 lg:px-14">
+      <div className="px-4 py-5 sm:px-8 sm:py-6 lg:px-14">
         <Breadcrumb withHome items={[{ label: "Accueil", to: "/" }, { label: "Catalogue" }]} />
         <QueryState status={state.data ? "ready" : state.status} error={state.error}>
           {state.data ? (
-            <div className="mt-6">
-              <div className="flex min-w-0 flex-nowrap items-center gap-2" role="search">
+            <div className="mt-5 sm:mt-6">
+              <div className="grid gap-3" role="search">
                 <label htmlFor="recherche-catalogue" className="sr-only">
                   Rechercher un livre
                 </label>
-                <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" aria-hidden="true" />
+                <div className="relative min-w-0">
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted sm:left-4" aria-hidden="true" />
                   <input
                     id="recherche-catalogue"
                     type="search"
                     value={q}
                     onChange={(event) => setQ(event.target.value)}
-                    placeholder="Rechercher un livre (titre, auteur, mot-clé...)"
-                    className="w-full rounded-full border border-line bg-panel py-3 pl-12 pr-4"
+                    placeholder="Rechercher un livre…"
+                    className="w-full rounded-full border border-line bg-panel py-3 pl-11 pr-4 text-body text-ink sm:pl-12"
                     autoComplete="off"
                   />
                 </div>
-                <select
-                  aria-label="Disponibilité"
-                  value={dispo}
-                  onChange={(event) => setDispo(event.target.value)}
-                  className="w-32 shrink-0 rounded-xl border border-line bg-panel px-2 text-body text-ink"
-                >
-                  <option value="">Disponibilité</option>
-                  <option value="disponible">Disponible</option>
-                  <option value="indisponible">Indisponible</option>
-                </select>
-                <input
-                  aria-label="Année de début"
-                  inputMode="numeric"
-                  value={anneeMin}
-                  onChange={(event) => setAnneeMin(event.target.value)}
-                  placeholder="De"
-                  className="w-16 shrink-0 rounded-xl border border-line bg-panel px-2 text-body text-ink"
-                />
-                <input
-                  aria-label="Année de fin"
-                  inputMode="numeric"
-                  value={anneeMax}
-                  onChange={(event) => setAnneeMax(event.target.value)}
-                  placeholder="À"
-                  className="w-16 shrink-0 rounded-xl border border-line bg-panel px-2 text-body text-ink"
-                />
-                <select
-                  aria-label="Trier par"
-                  value={tri}
-                  onChange={(event) => setTri(event.target.value)}
-                  className="w-32 shrink-0 rounded-xl border border-line bg-panel px-2 text-body text-ink"
-                >
-                  <option value="">Pertinence</option>
-                  <option value="titre">Titre</option>
-                  <option value="annee">Année</option>
-                </select>
-                <button
-                  type="button"
-                  aria-label="Réinitialiser"
-                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-line bg-panel px-3 text-ink"
-                  onClick={reset}
-                >
-                  <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                </button>
+                <div className="flex min-w-0 items-center gap-2">
+                  <label htmlFor="filtre-categorie" className="hidden shrink-0 text-meta font-semibold text-ink sm:inline">
+                    Catégorie
+                  </label>
+                  <select
+                    id="filtre-categorie"
+                    aria-label="Catégorie"
+                    value={categorie}
+                    onChange={(event) => setCategorie(event.target.value)}
+                    className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-panel px-3 text-body text-ink"
+                  >
+                    <option value="">Toutes les catégories</option>
+                    {categories.map((item) => (
+                      <option key={item.id || item.slug} value={item.slug}>
+                        {item.name}
+                        {item.count != null ? ` (${item.count})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    aria-label="Réinitialiser la recherche"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-panel text-ink"
+                    onClick={reset}
+                  >
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
 
-              <p className="mt-5 text-body font-semibold text-ink" aria-live="polite">
+              <p className="mt-4 text-meta font-semibold text-ink sm:mt-5 sm:text-body" aria-live="polite">
                 {state.status === "loading" ? "Recherche…" : countLabel(state.data.count)}
               </p>
 
               {visible.length === 0 ? (
                 <p className="mt-6 text-muted">Aucun livre ne correspond à cette recherche.</p>
               ) : (
-                <ul className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
+                <ul className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 sm:mt-5 sm:grid-cols-3 sm:gap-x-4 sm:gap-y-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                   {visible.map((book) => (
-                    <li key={book.id}>
+                    <li key={book.id} className="min-w-0">
                       <BookCard book={book} dense />
                     </li>
                   ))}

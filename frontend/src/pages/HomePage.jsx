@@ -100,33 +100,33 @@ export default function HomePage() {
   return (
     <>
       <div>
-        <section className="relative overflow-hidden bg-[#140e12] text-on-bar md:h-[clamp(26rem,calc(100svh-16.5rem),34rem)]">
-          <img
-            src="/images/hero/hero-1024.webp"
-            srcSet="/images/hero/hero-640.webp 640w, /images/hero/hero-960.webp 960w, /images/hero/hero-1024.webp 1024w"
-            sizes="100vw"
-            alt=""
-            fetchPriority="high"
-            className="absolute inset-0 h-full w-full object-cover object-center"
-            data-theme-keep=""
-          />
+      <section className="page-hero relative overflow-hidden bg-[#140e12] text-on-bar md:h-[clamp(26rem,calc(100svh-16.5rem),34rem)]">
+        <img
+          src="/images/hero/hero-1024.webp"
+          srcSet="/images/hero/hero-640.webp 640w, /images/hero/hero-960.webp 960w, /images/hero/hero-1024.webp 1024w"
+          sizes="100vw"
+          alt=""
+          fetchPriority="high"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          data-theme-keep=""
+        />
           <div className="absolute inset-0 bg-black/50 md:bg-transparent md:bg-gradient-to-r md:from-black/75 md:via-black/40 md:to-transparent" aria-hidden="true" />
-          <div className="relative flex h-full flex-col justify-center px-4 py-6 sm:px-8 lg:px-14">
+          <div className="relative flex h-full flex-col justify-center px-4 py-8 sm:px-8 sm:py-10 lg:px-14">
             <h1 className="max-w-4xl text-display">Bibliothèque Totanga</h1>
             <p className="mt-3 max-w-3xl text-lead md:mt-4">Un espace de savoir, de culture et de découverte à Kinshasa.</p>
-            <span className="mt-4 hidden h-1 w-16 rounded-full bg-gold-bright md:block" aria-hidden="true" />
+            <span className="mt-4 hidden h-1 w-16 rounded-full bg-brand-accent md:block" aria-hidden="true" />
             <form onSubmit={onSearch} className="mt-5 w-full max-w-4xl md:mt-6" role="search">
               <label htmlFor="recherche-accueil" className="sr-only">
                 Rechercher un livre
               </label>
-              <div className="flex items-center rounded-full bg-panel p-1.5 shadow-card md:rounded-2xl">
-                <Search className="ml-3 h-5 w-5 shrink-0 text-muted" aria-hidden="true" />
+              <div className="flex w-full items-center rounded-full bg-panel p-1.5 shadow-card md:rounded-2xl">
+                <Search className="ml-3 hidden h-5 w-5 shrink-0 text-muted sm:block" aria-hidden="true" />
                 <input
                   id="recherche-accueil"
                   name="q"
                   type="search"
-                  placeholder="Rechercher un livre (titre, auteur, mot-clé...)"
-                  className="min-w-0 flex-1 bg-transparent px-3 py-2 text-ink outline-none md:py-3"
+                  placeholder="Rechercher un livre…"
+                  className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-ink outline-none sm:py-3"
                 />
                 <button type="submit" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-violet text-on-primary md:hidden" aria-label="Rechercher">
                   <Search className="h-5 w-5" aria-hidden="true" />
@@ -170,20 +170,20 @@ export default function HomePage() {
         <nav aria-label="Accès rapides" className="bg-canvas px-4 py-4 md:border-b md:border-line md:bg-panel md:px-8 md:py-0 lg:px-14">
           <ul className="grid grid-cols-2 gap-3 md:gap-0 lg:grid-cols-4">
             {shortcuts.map((item) => (
-              <li key={item.to}>
+              <li key={item.to} className="min-w-0">
                 <Link
                   to={item.to}
-                  className="flex h-full min-w-0 flex-col items-center gap-3 rounded-2xl bg-panel px-3 py-5 text-center shadow-card md:flex-row md:items-center md:rounded-none md:bg-transparent md:px-2 md:text-left md:shadow-none"
+                  className="flex h-full min-w-0 flex-col items-center gap-2.5 rounded-2xl bg-panel px-2.5 py-4 text-center shadow-card md:flex-row md:items-center md:gap-3 md:rounded-none md:bg-transparent md:px-2 md:py-5 md:text-left md:shadow-none"
                 >
                   <span
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl md:bg-lavender md:text-violet ${
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl md:h-12 md:w-12 md:bg-lavender md:text-violet ${
                       item.gold ? "bg-gold-bright text-heading" : "bg-violet text-on-primary"
                     }`}
                   >
-                    <item.icon className="h-6 w-6" aria-hidden="true" />
+                    <item.icon className="h-5 w-5 md:h-6 md:w-6" aria-hidden="true" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-card text-ink md:hidden">{item.short}</span>
+                    <span className="block text-meta font-bold text-ink md:hidden">{item.short}</span>
                     <span className="hidden text-card text-ink md:block">{item.title}</span>
                     <span className="mt-1 hidden text-meta text-muted md:block">{item.text}</span>
                   </span>
@@ -193,7 +193,7 @@ export default function HomePage() {
           </ul>
         </nav>
 
-        <div className="grid grid-cols-1 gap-8 bg-canvas px-4 py-8 sm:px-8 lg:grid-cols-3 lg:px-14">
+        <div className="grid grid-cols-1 gap-5 bg-canvas px-4 py-6 sm:gap-8 sm:px-8 sm:py-8 lg:grid-cols-3 lg:px-14">
           <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-8">
             <Panel labelledBy="livres-catalogue" className="order-1 lg:order-none">
               <PanelHeading id="livres-catalogue" title="Livres du catalogue" to="/catalogue" linkLabel="Voir tout" icon={BookOpen} />
@@ -204,9 +204,9 @@ export default function HomePage() {
               ) : books.length === 0 ? (
                 <p className="text-muted">Aucun livre n'est publié pour le moment.</p>
               ) : (
-                <ul className="grid grid-cols-3 gap-2.5 sm:gap-3 lg:grid-cols-4">
+                <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-6 lg:grid-cols-4 lg:gap-6">
                   {books.slice(0, 8).map((book, index) => (
-                    <li key={book.id}>
+                    <li key={book.id} className="min-w-0">
                       <BookCard book={book} plain priority={index < 4} />
                     </li>
                   ))}
@@ -320,12 +320,12 @@ export default function HomePage() {
 
 function PanelHeading({ id, title, to, linkLabel, icon: Icon }) {
   return (
-    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <div className="mb-4 flex items-center justify-between gap-2 sm:mb-5 sm:gap-3">
       <h2 id={id} className="flex min-w-0 items-center gap-2 text-panel text-heading">
-        <Icon className="h-6 w-6 shrink-0 text-gold-bright" aria-hidden="true" />
-        {title}
+        <Icon className="h-5 w-5 shrink-0 text-gold-bright sm:h-6 sm:w-6" aria-hidden="true" />
+        <span className="truncate">{title}</span>
       </h2>
-      <Link to={to} className="ml-auto inline-flex items-center gap-1 text-body font-bold text-violet">
+      <Link to={to} className="inline-flex shrink-0 items-center gap-0.5 text-meta font-bold text-violet sm:text-body">
         {linkLabel}
         <ChevronRight className="h-4 w-4" aria-hidden="true" />
       </Link>

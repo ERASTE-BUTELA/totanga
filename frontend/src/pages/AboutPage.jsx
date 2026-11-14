@@ -39,13 +39,13 @@ export default function AboutPage() {
 
   return (
     <div className="bg-canvas">
-      <header className="relative overflow-hidden bg-violet text-on-primary">
-        <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-violet/85" aria-hidden="true" />
+      <header className="page-hero relative overflow-hidden bg-brand text-on-brand">
+        <img src="/images/visuels/lecture.webp" alt="" className="absolute inset-0 h-full w-full object-cover" data-theme-keep="" />
+        <div className="absolute inset-0 bg-brand/85" aria-hidden="true" />
         <div className="relative px-4 py-10 sm:px-8 lg:px-14">
           <h1 className="text-page">À propos de la Bibliothèque Totanga</h1>
           <p className="mt-3 max-w-3xl text-lead">Un centre de savoir, de culture et d'échanges au service de la communauté.</p>
-          <span className="mt-4 block h-1 w-16 rounded-full bg-gold-bright" aria-hidden="true" />
+          <span className="mt-4 block h-1 w-16 rounded-full bg-brand-accent" aria-hidden="true" />
         </div>
       </header>
       <div className="px-4 py-6 sm:px-8 lg:px-14">
@@ -144,12 +144,12 @@ function AboutContent({ library, counts }) {
           )}
         </section>
 
-        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-violet px-5 py-6 text-on-primary sm:px-8">
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand px-5 py-6 text-on-brand sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <BookOpen className="h-8 w-8 shrink-0" aria-hidden="true" />
             <div>
               <p className="text-card">Le catalogue de la bibliothèque</p>
-              <p className="text-body text-on-primary/80">Consultez les livres disponibles sur place.</p>
+              <p className="text-body text-on-brand/80">Consultez les livres disponibles sur place.</p>
             </div>
           </div>
           <Link to="/catalogue" className="inline-flex min-h-11 items-center rounded-full bg-panel px-4 font-semibold text-violet">

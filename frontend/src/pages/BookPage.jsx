@@ -72,24 +72,34 @@ function BookContent({ book }) {
         ]}
       />
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)_18rem] lg:items-start">
-        <div className="rounded-2xl bg-panel p-4 shadow-card">
-          {book.cover ? (
-            <img src={book.cover} alt="" className="mx-auto aspect-[3/4] w-full rounded-lg object-cover shadow-cover" />
-          ) : (
-            <span className="mx-auto grid aspect-[3/4] w-full place-items-center rounded-lg bg-violet text-on-primary">{book.title.slice(0, 1)}</span>
-          )}
+      <div className="mt-6 grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)_18rem] lg:items-start lg:gap-6">
+        <div className="flex gap-4 sm:mx-auto sm:w-full sm:max-w-[15rem] sm:flex-col lg:mx-0 lg:max-w-none">
+          <div className="w-[7.5rem] shrink-0 rounded-2xl bg-panel p-2 shadow-card sm:w-full sm:p-4">
+            {book.cover ? (
+              <img src={book.cover} alt="" className="aspect-[3/4] w-full rounded-lg object-cover shadow-cover" />
+            ) : (
+              <span className="grid aspect-[3/4] w-full place-items-center rounded-lg bg-violet text-on-primary">{book.title.slice(0, 1)}</span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1 sm:hidden">
+            <h1 className="text-section text-heading">{book.title}</h1>
+            {authors ? <p className="mt-2 text-meta text-muted">{authors}</p> : null}
+            <p className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-badge font-semibold ${available ? "bg-available-soft text-available" : "bg-unavailable-soft text-unavailable"}`}>
+              <span className={`h-2 w-2 rounded-full ${available ? "bg-available" : "bg-unavailable"}`} aria-hidden="true" />
+              {available ? "Disponible" : "Indisponible"}
+            </p>
+          </div>
         </div>
 
         <div className="min-w-0">
-          <h1 className="text-page text-heading">{book.title}</h1>
+          <h1 className="hidden text-page text-heading sm:block">{book.title}</h1>
           {authors ? (
-            <p className="mt-3 inline-flex items-center gap-2 text-body text-muted">
+            <p className="mt-3 hidden items-center gap-2 text-body text-muted sm:inline-flex">
               <User className="h-4 w-4 shrink-0 text-violet" aria-hidden="true" />
               {authors}
             </p>
           ) : null}
-          <dl className="mt-6 space-y-3">
+          <dl className="mt-2 space-y-3 sm:mt-6">
             <Fact icon={Bookmark} label="Catégorie">
               {book.category?.name ? (
                 <Link
@@ -121,13 +131,13 @@ function BookContent({ book }) {
         </div>
 
         <aside className="h-fit rounded-2xl border border-line bg-panel p-4 shadow-card">
-          <div className={`rounded-xl px-4 py-4 ${available ? "bg-available-soft text-available" : "bg-unavailable-soft text-unavailable"}`}>
+          <div className={`hidden rounded-xl px-4 py-4 sm:block ${available ? "bg-available-soft text-available" : "bg-unavailable-soft text-unavailable"}`}>
             <p className="flex items-center gap-2 text-card">
               <span className={`h-3 w-3 rounded-full ${available ? "bg-available" : "bg-unavailable"}`} aria-hidden="true" />
               {available ? "Disponible" : "Indisponible"}
             </p>
           </div>
-          <p className="mt-3 text-meta text-muted">{availableText(availableCount)}</p>
+          <p className="text-meta text-muted sm:mt-3">{availableText(availableCount)}</p>
           <button
             type="button"
             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-4 font-semibold text-on-primary"
@@ -173,12 +183,12 @@ function BookContent({ book }) {
 
 function Fact({ icon: Icon, label, children }) {
   return (
-    <div className="grid grid-cols-[minmax(0,14rem)_minmax(0,1fr)] items-center gap-3 text-body">
+    <div className="grid grid-cols-1 gap-1 text-body sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] sm:items-center sm:gap-3">
       <dt className="inline-flex items-center gap-2 text-muted">
         <Icon className="h-4 w-4 shrink-0 text-violet" aria-hidden="true" />
         {label}
       </dt>
-      <dd className="font-semibold text-ink">{children}</dd>
+      <dd className="min-w-0 break-words font-semibold text-ink">{children}</dd>
     </div>
   )
 }

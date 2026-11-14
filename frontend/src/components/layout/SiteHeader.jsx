@@ -12,7 +12,13 @@ const LINKS = [
   { to: "/a-propos", label: "À propos", icon: Info },
 ]
 
-function linkClass(isActive) {
+function linkClass(isActive, open) {
+  if (open) {
+    const base = "pointer-events-auto inline-flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-3 text-center text-menu font-semibold"
+    return isActive
+      ? `${base} border-violet bg-lavender text-violet`
+      : `${base} border-line bg-panel text-ink hover:border-violet hover:text-violet`
+  }
   const base = "pointer-events-auto inline-flex items-center gap-2 border-b-2 px-2 py-2 text-center text-menu"
   return isActive
     ? `${base} border-violet text-violet`
@@ -31,37 +37,46 @@ export function SiteHeader() {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [open])
 
+  useEffect(() => {
+    function onResize() {
+      if (window.matchMedia("(min-width: 1280px)").matches) setOpen(false)
+    }
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
+
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-panel">
       <a href="#contenu" className="skip-link">
         Aller au contenu
       </a>
-      <div className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 sm:px-8 lg:px-14">
-        <NavLink to="/" end className="col-start-1 shrink-0 rounded-control" onClick={() => setOpen(false)}>
-          <img src="/images/logo.png" alt="Bibliothèque Totanga, Sœurs des pauvres de Bergame" className="theme-logo h-12 w-auto" />
+      <div className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-4 py-2.5 sm:gap-4 sm:px-8 sm:py-3 lg:px-14">
+        <NavLink to="/" end className="col-start-1 min-w-0 shrink-0 rounded-control" onClick={() => setOpen(false)}>
+          <img
+            src="/images/logo.png"
+            alt="Bibliothèque Totanga, Sœurs des pauvres de Bergame"
+            className="theme-logo h-10 w-auto max-w-[11rem] sm:h-12 sm:max-w-none"
+          />
         </NavLink>
+
         <nav
           id="navigation-principale"
           aria-label="Navigation principale"
-          className={
-            open
-              ? "absolute left-0 right-0 top-full z-40 flex flex-col gap-1 border-b border-line bg-panel px-4 py-3 xl:static xl:z-auto xl:col-start-2 xl:flex xl:flex-row xl:flex-wrap xl:items-center xl:justify-center xl:border-0 xl:bg-transparent xl:p-0"
-              : "col-start-2 hidden min-w-0 flex-wrap items-center justify-center xl:flex"
-          }
+          className="col-start-2 hidden min-w-0 flex-wrap items-center justify-center xl:flex"
         >
           {LINKS.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               end={link.end}
-              className={({ isActive }) => linkClass(isActive)}
-              onClick={() => setOpen(false)}
+              className={({ isActive }) => linkClass(isActive, false)}
             >
-              <link.icon className="h-5 w-5" aria-hidden="true" />
+              <link.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
               {link.label}
             </NavLink>
           ))}
         </nav>
+
         <div className="col-start-3 flex items-center gap-2">
           <ThemeSelector compact />
           <NavLink
@@ -74,9 +89,9 @@ export function SiteHeader() {
           </NavLink>
           <button
             type="button"
-            className="control rounded-xl border border-line text-ink xl:hidden"
+            className={`control rounded-xl border xl:hidden ${open ? "border-violet bg-lavender text-violet" : "border-line bg-panel text-ink"}`}
             aria-expanded={open}
-            aria-controls="navigation-principale"
+            aria-controls="menu-mobile"
             aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
             onClick={() => setOpen((value) => !value)}
           >
@@ -84,6 +99,37 @@ export function SiteHeader() {
           </button>
         </div>
       </div>
+
+      {open ? (
+        <div className="absolute left-0 right-0 top-full z-40 xl:hidden" id="menu-mobile">
+          <nav
+            aria-label="Navigation mobile"
+            className="border-b-2 border-line bg-panel-soft px-4 py-4 shadow-[0_16px_36px_rgb(28_16_48/0.2)] sm:px-8 lg:px-14"
+          >
+            <ul className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-center">
+              {LINKS.map((link) => (
+                <li key={link.to} className="min-w-0 sm:w-auto">
+                  <NavLink
+                    to={link.to}
+                    end={link.end}
+                    className={({ isActive }) => linkClass(isActive, true)}
+                    onClick={() => setOpen(false)}
+                  >
+                    <link.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                    <span className="truncate">{link.label}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <button
+            type="button"
+            className="h-[100dvh] w-full bg-scrim"
+            aria-label="Fermer le menu"
+            onClick={() => setOpen(false)}
+          />
+        </div>
+      ) : null}
     </header>
   )
 }
