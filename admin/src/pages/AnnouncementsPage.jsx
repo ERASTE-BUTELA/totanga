@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { AlertTriangle, CheckCircle2, FileText, Megaphone, Star } from "lucide-react"
 import { deleteAnnouncement, listAnnouncements } from "../api/content.js"
+import { ConfirmModal } from "../components/ConfirmModal.jsx"
 import { RowActions } from "../components/RowActions.jsx"
 import { useListNotice } from "../lib/useListNotice.js"
 import { CatalogListPage } from "./CatalogListPage.jsx"
@@ -43,6 +44,8 @@ export function AnnouncementsPage() {
   const [rows, setRows] = useState(null)
   const [error, setError] = useState("")
   const [notice, setNotice] = useListNotice()
+  const [pending, setPending] = useState(null)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     listAnnouncements().then((result) => {
@@ -51,15 +54,19 @@ export function AnnouncementsPage() {
     })
   }, [])
 
-  async function onRemove(row) {
-    if (!window.confirm(contentNotices.confirmDeleteNotice)) return
-    const result = await deleteAnnouncement(row.id)
+  async function confirmRemove() {
+    if (!pending || busy) return
+    setBusy(true)
+    const result = await deleteAnnouncement(pending.id)
+    setBusy(false)
     if (!result.ok) {
       setError(result.error)
+      setPending(null)
       return
     }
     setNotice(contentNotices.noticeDeleted)
-    setRows((current) => current.filter((item) => item.id !== row.id))
+    setRows((current) => current.filter((item) => item.id !== pending.id))
+    setPending(null)
   }
 
   if (error && !rows) return <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p>
@@ -142,12 +149,21 @@ export function AnnouncementsPage() {
                 viewTo={`/annonces/${row.id}`}
                 editTo={`/annonces/${row.id}/modifier`}
                 removeLabel="Supprimer"
-                onRemove={() => onRemove(row)}
+                onRemove={() => setPending(row)}
               />
             ),
           },
         ]}
       />
+      {pending ? (
+        <ConfirmModal
+          title="Confirmer la suppression"
+          message={contentNotices.confirmDeleteNotice}
+          busy={busy}
+          onClose={() => !busy && setPending(null)}
+          onConfirm={confirmRemove}
+        />
+      ) : null}
     </section>
   )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { CheckCircle2, FileText, Star, StarOff } from "lucide-react"
 import { deletePublication, listPublications, setPublicationFields } from "../api/content.js"
+import { ConfirmModal } from "../components/ConfirmModal.jsx"
 import { RowActions } from "../components/RowActions.jsx"
 import { useListNotice } from "../lib/useListNotice.js"
 import { CatalogListPage } from "./CatalogListPage.jsx"
@@ -33,6 +34,8 @@ export function PublicationsPage() {
   const [rows, setRows] = useState(null)
   const [error, setError] = useState("")
   const [notice, setNotice] = useListNotice()
+  const [pending, setPending] = useState(null)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     listPublications().then((result) => {
@@ -50,15 +53,19 @@ export function PublicationsPage() {
     setRows((current) => current.map((item) => (item.id === row.id ? result.data : item)))
   }
 
-  async function onRemove(row) {
-    if (!window.confirm(contentNotices.confirmDeletePublication)) return
-    const result = await deletePublication(row.id)
+  async function confirmRemove() {
+    if (!pending || busy) return
+    setBusy(true)
+    const result = await deletePublication(pending.id)
+    setBusy(false)
     if (!result.ok) {
       setError(result.error)
+      setPending(null)
       return
     }
     setNotice(contentNotices.publicationDeleted)
-    setRows((current) => current.filter((item) => item.id !== row.id))
+    setRows((current) => current.filter((item) => item.id !== pending.id))
+    setPending(null)
   }
 
   if (error && !rows) return <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p>
@@ -156,12 +163,21 @@ export function PublicationsPage() {
                 viewTo={`/publications/${row.id}`}
                 editTo={`/publications/${row.id}/modifier`}
                 removeLabel="Supprimer"
-                onRemove={() => onRemove(row)}
+                onRemove={() => setPending(row)}
               />
             ),
           },
         ]}
       />
+      {pending ? (
+        <ConfirmModal
+          title="Confirmer la suppression"
+          message={contentNotices.confirmDeletePublication}
+          busy={busy}
+          onClose={() => !busy && setPending(null)}
+          onConfirm={confirmRemove}
+        />
+      ) : null}
     </>
   )
 }

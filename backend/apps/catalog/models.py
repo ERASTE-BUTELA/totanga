@@ -366,6 +366,11 @@ class Copy(models.Model):
         blank=True,
     )
     fonds = models.CharField("fonds", max_length=32, blank=True)
+    code1 = models.CharField("code1", max_length=40, blank=True)
+    code2 = models.CharField("code2", max_length=40, blank=True)
+    code3 = models.CharField("code3", max_length=40, blank=True)
+    code4 = models.CharField("code4", max_length=40, blank=True)
+    dewey = models.CharField("Dewey", max_length=40, blank=True)
     secondary_call_number = models.CharField("cote secondaire", max_length=40, blank=True)
     acquisition_price = models.DecimalField(
         "prix d'acquisition",

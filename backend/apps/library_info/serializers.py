@@ -35,6 +35,7 @@ def library_payload(library, *, staff=False):
         "logo": _media(library.logo.file) if library.logo_id else "",
         # Le favicon du site suit toujours le logo.
         "favicon": _media(library.logo.file) if library.logo_id else "",
+        "hero_image": _media(library.hero_image.file) if library.hero_image_id else "",
         "language": library.language,
         "theme": library.theme,
         "dark_mode": library.dark_mode,

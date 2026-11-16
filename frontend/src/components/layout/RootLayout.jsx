@@ -83,7 +83,7 @@ export function RootLayout() {
         tabIndex={-1}
         className={wide ? "w-full flex-1" : "mx-auto w-full max-w-6xl flex-1 px-4 py-8"}
       >
-        <Outlet />
+        <Outlet context={{ library }} />
       </main>
       <SiteFooter library={library} error={error} />
     </div>

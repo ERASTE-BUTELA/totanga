@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { CalendarDays, CheckCircle2, Clock, FileText } from "lucide-react"
 import { listEvents, setEventState } from "../api/content.js"
+import { ConfirmModal } from "../components/ConfirmModal.jsx"
 import { RowActions } from "../components/RowActions.jsx"
 import { useListNotice } from "../lib/useListNotice.js"
 import { CatalogListPage } from "./CatalogListPage.jsx"
@@ -39,6 +40,8 @@ export function EventsPage() {
   const [rows, setRows] = useState(null)
   const [error, setError] = useState("")
   const [notice, setNotice] = useListNotice()
+  const [pending, setPending] = useState(null)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     listEvents().then((result) => {
@@ -47,17 +50,20 @@ export function EventsPage() {
     })
   }, [])
 
-  async function onArchive(row) {
-    const archive = row.status !== "Archivé"
-    const question = archive ? contentNotices.confirmArchiveEvent : contentNotices.confirmRestoreEvent
-    if (!window.confirm(question)) return
-    const result = await setEventState(row.id, archive ? "archived" : "published")
+  async function confirmArchive() {
+    if (!pending || busy) return
+    const archive = pending.status !== "Archivé"
+    setBusy(true)
+    const result = await setEventState(pending.id, archive ? "archived" : "published")
+    setBusy(false)
     if (!result.ok) {
       setError(result.error)
+      setPending(null)
       return
     }
     setNotice(archive ? contentNotices.eventArchived : contentNotices.eventRestored)
-    setRows((current) => current.map((item) => (item.id === row.id ? result.data : item)))
+    setRows((current) => current.map((item) => (item.id === pending.id ? result.data : item)))
+    setPending(null)
   }
 
   if (error && !rows) return <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p>
@@ -128,12 +134,22 @@ export function EventsPage() {
                 viewTo={`/evenements/${row.id}`}
                 editTo={`/evenements/${row.id}/modifier`}
                 removeLabel={row.status === "Archivé" ? "Remettre en ligne" : "Archiver"}
-                onRemove={() => onArchive(row)}
+                onRemove={() => setPending(row)}
               />
             ),
           },
         ]}
       />
+      {pending ? (
+        <ConfirmModal
+          title={pending.status === "Archivé" ? "Remettre en ligne" : "Confirmer l’archivage"}
+          message={pending.status === "Archivé" ? contentNotices.confirmRestoreEvent : contentNotices.confirmArchiveEvent}
+          confirmLabel={pending.status === "Archivé" ? "Remettre en ligne" : "Archiver"}
+          busy={busy}
+          onClose={() => !busy && setPending(null)}
+          onConfirm={confirmArchive}
+        />
+      ) : null}
     </section>
   )
 }

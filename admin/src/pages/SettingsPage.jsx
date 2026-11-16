@@ -79,7 +79,18 @@ function readImage(file, setError, setPreview, setFile) {
 }
 
 function applyMapped(mapped, setters) {
-  const { setForm, setLogo, setLogoFile, setClearLogo, setLogoError, setVersion } = setters
+  const {
+    setForm,
+    setLogo,
+    setLogoFile,
+    setClearLogo,
+    setLogoError,
+    setHero,
+    setHeroFile,
+    setClearHero,
+    setHeroError,
+    setVersion,
+  } = setters
   setForm({
     name: mapped.name,
     slogan: mapped.slogan,
@@ -105,11 +116,16 @@ function applyMapped(mapped, setters) {
   setLogoFile(null)
   setClearLogo(false)
   setLogoError("")
+  setHero(mapped.heroImage)
+  setHeroFile(null)
+  setClearHero(false)
+  setHeroError("")
   setVersion((current) => current + 1)
 }
 
 export function SettingsPage() {
   const logoInput = useId()
+  const heroInput = useId()
   const [tab, setTab] = useState("general")
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(EMPTY)
@@ -117,6 +133,10 @@ export function SettingsPage() {
   const [logoFile, setLogoFile] = useState(null)
   const [clearLogo, setClearLogo] = useState(false)
   const [logoError, setLogoError] = useState("")
+  const [hero, setHero] = useState("")
+  const [heroFile, setHeroFile] = useState(null)
+  const [clearHero, setClearHero] = useState(false)
+  const [heroError, setHeroError] = useState("")
   const [notice, setNotice] = useState("")
   const [loading, setLoading] = useState(true)
   const [phase, setPhase] = useState(null)
@@ -139,6 +159,10 @@ export function SettingsPage() {
     setLogoFile,
     setClearLogo,
     setLogoError,
+    setHero,
+    setHeroFile,
+    setClearHero,
+    setHeroError,
     setVersion,
   }
 
@@ -226,6 +250,8 @@ export function SettingsPage() {
     body.set("page_size", form.pageSize)
     if (clearLogo) body.set("clear_logo", "true")
     if (logoFile) body.set("logo", logoFile)
+    if (clearHero) body.set("clear_hero_image", "true")
+    if (heroFile) body.set("hero_image", heroFile)
     const result = await saveLibrarySettings(body)
     if (!result.ok) {
       setPhase(null)
@@ -426,6 +452,62 @@ export function SettingsPage() {
               ) : null}
               {editing ? <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo.</p> : null}
               {logoError ? <p role="alert" className="mt-2 text-unavailable">{logoError}</p> : null}
+            </div>
+            <div className="mt-4">
+              <p className="font-semibold text-heading">Image du bandeau d'accueil</p>
+              <p className="text-muted">Photo pleine largeur affichée en haut de la page d'accueil publique.</p>
+              {hero ? (
+                <img
+                  src={hero}
+                  alt=""
+                  className="mt-2 aspect-[21/9] w-full max-w-xl rounded-control border border-line object-cover"
+                  data-theme-keep=""
+                />
+              ) : (
+                <p className="mt-2 grid aspect-[21/9] w-full max-w-xl place-items-center rounded-control border border-dashed border-line bg-canvas px-4 text-center text-meta text-muted">
+                  Image par défaut du site public
+                </p>
+              )}
+              {editing ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <input
+                    id={heroInput}
+                    className="sr-only"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={busy}
+                    onChange={(event) => {
+                      setClearHero(false)
+                      readImage(event.target.files?.[0], setHeroError, setHero, setHeroFile)
+                      event.target.value = ""
+                    }}
+                  />
+                  <label
+                    htmlFor={heroInput}
+                    className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-line px-3 font-semibold text-violet"
+                  >
+                    <ImagePlus aria-hidden="true" size={18} />
+                    Changer l'image
+                  </label>
+                  {hero || heroFile ? (
+                    <button
+                      type="button"
+                      className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable"
+                      disabled={busy}
+                      onClick={() => {
+                        setClearHero(true)
+                        setHeroFile(null)
+                        setHero("")
+                        setHeroError("")
+                      }}
+                    >
+                      Revenir à l'image par défaut
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+              {editing ? <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo. Préférez une image large (environ 1600×700).</p> : null}
+              {heroError ? <p role="alert" className="mt-2 text-unavailable">{heroError}</p> : null}
             </div>
             <div className="mt-4">
               <p className="font-semibold text-heading">À propos de la bibliothèque</p>

@@ -40,6 +40,8 @@ export function mapCopy(raw) {
 }
 
 export function mapBook(raw) {
+  const copies = Array.isArray(raw.copies) ? raw.copies.map(mapCopy) : []
+  const availableFromCopies = copies.some((copy) => copy.status === "available")
   return {
     id: raw.id,
     title: text(raw.title),
@@ -53,7 +55,9 @@ export function mapBook(raw) {
     publisher: text(raw.publisher),
     isbn: text(raw.isbn),
     archived: Boolean(raw.archived),
-    copies: Array.isArray(raw.copies) ? raw.copies.map(mapCopy) : [],
+    // Disponible dès qu'au moins un exemplaire l'est ; indisponible seulement si tous le sont.
+    available: typeof raw.available === "boolean" ? Boolean(raw.available) : availableFromCopies,
+    copies,
   }
 }
 
@@ -127,6 +131,7 @@ export function mapLibraryInfo(raw) {
     email: text(raw.email),
     notice: text(raw.notice),
     logo: text(raw.logo) || "/images/logo.png",
+    heroImage: text(raw.hero_image),
     about: text(raw.about),
     facebookUrl: text(raw.facebook_url),
     whatsappUrl: text(raw.whatsapp_url),

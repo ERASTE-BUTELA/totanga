@@ -37,7 +37,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 - **API publique.** Lecture seule, sauf une exception : un visiteur peut envoyer un message de contact à la bibliothèque, ou publier un avis public (280 caractères max). Il ne peut ni le modifier ni le supprimer. Seuls les avis sont listés sur l'accueil. L'adresse électronique ou le numéro WhatsApp d'un contact est conservé pour le personnel et n'est jamais renvoyé ni affiché au public. L'administration reste réservée au personnel connecté.
 - **Abus.** Limiter le nombre de requêtes, en particulier sur la connexion. L'adresse de l'administration n'est pas `/admin/`.
 - **Mots de passe.** Validateurs Django actifs (longueur, complexité, mots de passe courants).
-- **Fichiers.** Type et taille contrôlés. Les images du catalogue : JPG, PNG ou WebP, 5 Mo maximum. Aucun envoi de livre (PDF ou autre).
+- **Fichiers.** Type et taille contrôlés. Les images (catalogue, logo, bandeau d'accueil) : JPG, PNG ou WebP, 5 Mo maximum. Aucun envoi de livre (PDF ou autre).
 - **Contenu riche.** Si un champ accepte du HTML, il est nettoyé côté serveur avant enregistrement.
 - **Base.** Pas de SQL écrit à la main : l'ORM Django construit les requêtes. L'utilisateur PostgreSQL de l'application n'est pas super-utilisateur.
 - **Journaux.** Pas de mot de passe, de clé secrète, d'adresse électronique, d'adresse IP ni de corps de message. Le journal du personnel note qui a fait quoi, sur quel objet, et quand. Des sauvegardes régulières de la base sont prévues et restaurées à l'essai.

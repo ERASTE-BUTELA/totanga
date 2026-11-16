@@ -43,6 +43,7 @@ erDiagram
   IMAGE ||--o| EVENEMENT : "illustre"
   IMAGE ||--o| INTERVENANT : "photo"
   IMAGE ||--o| BIBLIOTHEQUE : "logo"
+  IMAGE ||--o| BIBLIOTHEQUE : "bandeau accueil"
   ANNONCE ||--o| ANNONCE_IT : "traduit"
   PUBLICATION ||--o| PUBLICATION_IT : "traduit"
   EVENEMENT ||--o| EVENEMENT_IT : "traduit"
@@ -216,9 +217,11 @@ Déjà en place. On ne le relie pas encore à un prêt.
 | --- | --- | --- | --- |
 | livre | lien | oui | supprimer le livre est déjà refusé tant qu'un exemplaire existe |
 | numéro d'inventaire | texte, 32 | non | unique ; colonne « N.  e. » du répertoire |
-| cote | texte, 80 | oui | non unique ; `code1`, point, `code2` s'il existe, espace, trois lettres Dewey |
+| cote | texte, 80 | oui | non unique ; calculée depuis `code1`, `code2`, `Dewey` |
+| code1, code2, code3, code4 | texte, 40 | non | colonnes du répertoire ; saisies dans le formulaire admin |
+| Dewey | texte, 40 | non | colonne « Dewey » ; entre dans la cote |
 | fonds | texte, 32 | non | colonne « F.N. » |
-| cote secondaire | texte, 40 | non | `code3` et `code4` |
+| cote secondaire | texte, 40 | non | calculée depuis `code3` et `code4` |
 | prix d'acquisition | décimal | non | interne ; absent de l'API publique ; 0 signifie inconnu |
 | rayon | texte, 80 | non | |
 | étagère | texte, 80 | non | |
@@ -355,6 +358,7 @@ Rôle : l'unique fiche de l'établissement. Une seule ligne, imposée par la bas
 | --- | --- | --- | --- |
 | nom | texte, 200 | oui | non traduit |
 | logo | lien vers Image | non | |
+| image du bandeau d'accueil | lien vers Image | non | JPG, PNG ou WebP, 5 Mo max. ; à défaut le site public garde l'image statique |
 | adresse | texte, 300 | oui | |
 | ville | texte, 120 | oui | |
 | téléphone | texte, 40 | oui | |
@@ -435,6 +439,7 @@ Aucune adresse IP, aucun cookie de suivi, aucun compte lecteur.
 | Écran | Information | Où elle est |
 | --- | --- | --- |
 | En-tête | logo, nom | Bibliothèque, logo |
+| Accueil (bandeau) | image du bandeau | Bibliothèque, image |
 | En-tête | recherche | aucun enregistrement ; elle filtre le catalogue |
 | Accueil | annonce mise en avant | calculé : annonce publiée, importante de préférence, la plus récente |
 | Accueil | autres annonces | Annonce, titre, catégorie, date |
@@ -447,7 +452,7 @@ Aucune adresse IP, aucun cookie de suivi, aucun compte lecteur.
 | Catalogue | « 1 024 livres » ou « des milliers » | pas prévu : c'était un chiffre de maquette |
 | Fiche livre | titre, auteurs, année, résumé, éditeur, ISBN, pages, langue, mots-clés | Livre, Auteur, Mot-clé |
 | Fiche livre | Disponible / Indisponible | calculé |
-| Fiche livre | onglet exemplaires, dont Emprunté, numéro, cote, fonds | Exemplaire ; pas le prix, pas le registre |
+| Fiche livre | titre, auteur, éditeur, date publ., classe ; exemplaires avec N. e., F.N., code1–code4, Dewey, prix | Livre et Exemplaire (aligné sur REPERTOIRE) |
 | Fiche livre | Réserver, Favoris | pas prévu : pas de compte lecteur |
 | Annonces | titre, catégorie, important, dates, image, texte | Annonce |
 | Publications | titre, catégorie, signature, résumé, contenu, à la une | Publication |
@@ -481,7 +486,7 @@ Aucune adresse IP, aucun cookie de suivi, aucun compte lecteur.
 | Utilisateurs | rôle Membre, 482 membres | pas prévu : pas de compte lecteur |
 | Nouveau compte | mot de passe généré | écrit dans l'empreinte du Compte ; montré une fois ; absent du journal |
 | Rôles et permissions | cases cochées | pas une table à nous ; droits Django déjà en place |
-| Paramètres, onglet Général | nom, logo, adresse, téléphone, contact, présentation | Bibliothèque et Image |
+| Paramètres, onglet Général | nom, logo, bandeau d'accueil, adresse, téléphone, contact, présentation | Bibliothèque et Image |
 | Paramètres | slogan, thème, mode sombre, fuseau, format de date, éléments par page | pas en base : le fuseau est Kinshasa pour tout le monde, le reste est un choix d'écran |
 | Paramètres | mode maintenance | pas en base dans cette version : couper le site public est une décision à part |
 | Paramètres | favicon | pas dans la fiche validée |

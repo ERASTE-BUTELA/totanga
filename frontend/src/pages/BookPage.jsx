@@ -16,7 +16,7 @@ import { getBookBySlug } from "../api/client.js"
 import { BookCard } from "../components/cards/BookCard.jsx"
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
 import { QueryState } from "../components/ui/QueryState.jsx"
-import { copyStatusLabel, isBookAvailable } from "../features/catalog/availability.js"
+import { copyStatusLabel, isBookAvailable, isCopyAvailable } from "../features/catalog/availability.js"
 import { authorNames, languageLabel } from "../lib/format.js"
 import { useAsync } from "../lib/useAsync.js"
 import { usePageTitle } from "../lib/usePageTitle.js"
@@ -57,7 +57,7 @@ function BookContent({ book }) {
 
   const available = isBookAvailable(book)
   const availableCount = book.copies.filter((copy) => copy.status === "available").length
-  const place = book.copies.find((copy) => copy.status === "available") || book.copies[0]
+  const place = book.copies.find((copy) => isCopyAvailable(copy)) || book.copies[0]
   const similar = book.similar || []
   const authors = authorNames(book.authors)
 
@@ -99,7 +99,42 @@ function BookContent({ book }) {
               {authors}
             </p>
           ) : null}
-          <dl className="mt-2 space-y-3 sm:mt-6">
+          <div className="mt-4 rounded-2xl border border-violet/25 bg-lavender px-4 py-3 sm:mt-5">
+            <p className="inline-flex items-center gap-2 text-meta font-semibold text-violet">
+              <Library className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Cotes des exemplaires
+            </p>
+            {book.copies.length > 0 ? (
+              <ul className="mt-3 space-y-2">
+                {book.copies.map((copy) => {
+                  const free = isCopyAvailable(copy)
+                  return (
+                    <li
+                      key={copy.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3 py-2"
+                    >
+                      <span className="font-mono text-body font-bold tracking-wide text-heading">
+                        {copy.callNumber || "Sans cote"}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-badge font-semibold ${
+                          free ? "bg-available-soft text-available" : "bg-unavailable-soft text-unavailable"
+                        }`}
+                      >
+                        <span className={`h-2 w-2 rounded-full ${free ? "bg-available" : "bg-unavailable"}`} aria-hidden="true" />
+                        {free ? "Disponible" : copyStatusLabel(copy.status)}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <p className="mt-2 text-body font-semibold text-muted">Aucun exemplaire</p>
+            )}
+            <p className="mt-2 text-meta text-muted">Notez la cote d’un exemplaire disponible pour le retrouver en rayon.</p>
+          </div>
+
+          <dl className="mt-4 space-y-3 sm:mt-6">
             <Fact icon={Bookmark} label="Catégorie">
               {book.category?.name ? (
                 <Link
@@ -121,12 +156,11 @@ function BookContent({ book }) {
             <Fact icon={Languages} label="Langue">
               {languageLabel(book.language) || "Non précisée"}
             </Fact>
-            <Fact icon={Library} label="Cote / Référence">
-              {place?.callNumber || "Non précisée"}
-            </Fact>
-            <Fact icon={MapPin} label="Emplacement">
-              {placeLabel(place) || "Non précisé"}
-            </Fact>
+            {placeLabel(place) ? (
+              <Fact icon={MapPin} label="Emplacement">
+                {placeLabel(place)}
+              </Fact>
+            ) : null}
           </dl>
         </div>
 
@@ -137,7 +171,13 @@ function BookContent({ book }) {
               {available ? "Disponible" : "Indisponible"}
             </p>
           </div>
-          <p className="text-meta text-muted sm:mt-3">{availableText(availableCount)}</p>
+          {place?.callNumber ? (
+            <div className="mt-3 rounded-xl border border-line bg-canvas px-3 py-3">
+              <p className="text-meta text-muted">{isCopyAvailable(place) ? "Cote disponible" : "Cote"}</p>
+              <p className="mt-1 font-mono text-card font-bold text-heading">{place.callNumber}</p>
+            </div>
+          ) : null}
+          <p className="mt-3 text-meta text-muted">{availableText(availableCount, book.copies.length)}</p>
           <button
             type="button"
             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-4 font-semibold text-on-primary"
@@ -253,16 +293,31 @@ function BookTabs({ book, authors, tab, setTab }) {
             <p className="text-muted">Aucun exemplaire n'est enregistré.</p>
           ) : (
             <ul className="grid gap-3 md:grid-cols-2">
-              {book.copies.map((copy) => (
-                <li key={copy.id} className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-card">
-                  <p className="text-meta text-muted">{copy.inventoryNumber ? `N. e. ${copy.inventoryNumber}` : "Numéro non précisé"}</p>
-                  <p className="text-body font-semibold text-ink">{copy.callNumber || "Sans cote"}</p>
-                  {copy.secondaryCallNumber ? <p className="mt-1 text-meta text-muted">Cote secondaire : {copy.secondaryCallNumber}</p> : null}
-                  {copy.fonds ? <p className="mt-1 text-meta text-muted">Fonds : {copy.fonds}</p> : null}
-                  <p className="mt-1 text-meta text-muted">{placeLabel(copy) || "Emplacement non précisé"}</p>
-                  <p className="mt-2 text-badge text-violet">{copyStatusLabel(copy.status)}</p>
-                </li>
-              ))}
+              {book.copies.map((copy) => {
+                const free = isCopyAvailable(copy)
+                return (
+                  <li key={copy.id} className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-card">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-meta font-semibold text-violet">Cote à noter</p>
+                        <p className="mt-1 font-mono text-section font-bold tracking-wide text-heading">{copy.callNumber || "Sans cote"}</p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-badge font-semibold ${
+                          free ? "bg-available-soft text-available" : "bg-unavailable-soft text-unavailable"
+                        }`}
+                      >
+                        <span className={`h-2 w-2 rounded-full ${free ? "bg-available" : "bg-unavailable"}`} aria-hidden="true" />
+                        {free ? "Disponible" : copyStatusLabel(copy.status)}
+                      </span>
+                    </div>
+                    {copy.secondaryCallNumber ? <p className="mt-2 text-meta text-muted">Cote secondaire : {copy.secondaryCallNumber}</p> : null}
+                    {copy.inventoryNumber ? <p className="mt-1 text-meta text-muted">N. e. {copy.inventoryNumber}</p> : null}
+                    {copy.fonds ? <p className="mt-1 text-meta text-muted">Fonds : {copy.fonds}</p> : null}
+                    {placeLabel(copy) ? <p className="mt-1 text-meta text-muted">{placeLabel(copy)}</p> : null}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
@@ -279,8 +334,9 @@ function placeLabel(copy) {
   return parts.join(" – ")
 }
 
-function availableText(count) {
-  if (count === 0) return "Aucun exemplaire disponible"
-  if (count === 1) return "1 exemplaire disponible"
-  return `${count} exemplaires disponibles`
+function availableText(availableCount, totalCount) {
+  if (totalCount === 0) return "Aucun exemplaire enregistré"
+  if (availableCount === 0) return "Tous les exemplaires sont indisponibles"
+  if (availableCount === 1) return `1 exemplaire disponible sur ${totalCount}`
+  return `${availableCount} exemplaires disponibles sur ${totalCount}`
 }

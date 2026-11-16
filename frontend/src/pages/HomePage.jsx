@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router"
+import { Link, useNavigate, useOutletContext } from "react-router"
 import { BookOpen, Calendar, CalendarDays, ChevronRight, Landmark, LayoutGrid, Megaphone, Newspaper, Search, Smile, Star } from "lucide-react"
 import { getAnnouncements, getBooks, getCategories, getEvents, getPublications } from "../api/client.js"
 import { BookCard } from "../components/cards/BookCard.jsx"
@@ -8,6 +8,9 @@ import { HomeContact } from "../components/home/HomeContact.jsx"
 import { formatDate } from "../lib/format.js"
 import { useAsync } from "../lib/useAsync.js"
 import { usePageTitle } from "../lib/usePageTitle.js"
+
+const DEFAULT_HERO = "/images/hero/hero-1024.webp"
+const DEFAULT_HERO_SRCSET = "/images/hero/hero-640.webp 640w, /images/hero/hero-960.webp 960w, /images/hero/hero-1024.webp 1024w"
 
 const CATEGORY_ICONS = {
   roman: BookOpen,
@@ -66,6 +69,9 @@ function loadSideContent() {
 export default function HomePage() {
   usePageTitle("Accueil")
   const navigate = useNavigate()
+  const { library } = useOutletContext() || {}
+  const heroSrc = library?.heroImage || DEFAULT_HERO
+  const customHero = Boolean(library?.heroImage)
   // Chargement séparé : le catalogue n'attend plus les annonces / publications / événements.
   const booksState = useAsync(getBooks, [])
   const categoriesState = useAsync(getCategories, [])
@@ -102,8 +108,8 @@ export default function HomePage() {
       <div>
       <section className="page-hero relative overflow-hidden bg-[#140e12] text-on-bar md:h-[clamp(26rem,calc(100svh-16.5rem),34rem)]">
         <img
-          src="/images/hero/hero-1024.webp"
-          srcSet="/images/hero/hero-640.webp 640w, /images/hero/hero-960.webp 960w, /images/hero/hero-1024.webp 1024w"
+          src={heroSrc}
+          srcSet={customHero ? undefined : DEFAULT_HERO_SRCSET}
           sizes="100vw"
           alt=""
           fetchPriority="high"

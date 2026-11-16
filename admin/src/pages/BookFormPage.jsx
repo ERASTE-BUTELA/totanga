@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useId, useRef, useState } from "react"
-import { Archive, ArrowLeft, BookOpen, Check, Eye, Layers, Pencil, Plus, Save, Trash2 } from "lucide-react"
+import { Archive, ArrowLeft, BookOpen, Check, Eye, Layers, Pencil, Plus, Save, Trash2, X } from "lucide-react"
 import { Link, useLocation, useNavigate, useParams } from "react-router"
 import { archiveBook, getBook, listAuthors, listCategories, listPublishers, saveBook } from "../api/catalog.js"
 import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
@@ -19,16 +19,6 @@ function searchPublishers(query) {
   return listPublishers({ q: query, page: 1, pageSize: 50, autocomplete: true })
 }
 
-const LANGUAGES = [
-  ["fr", "Français"],
-  ["en", "Anglais"],
-  ["it", "Italien"],
-  ["ln", "Lingala"],
-  ["kg", "Kikongo"],
-  ["lua", "Tshiluba"],
-  ["sw", "Swahili"],
-  ["other", "Autre"],
-]
 const COPY_STATUSES = ["Disponible", "Emprunté", "Réservé", "En réparation", "Perdu"]
 const MAX_IMAGE = 5 * 1024 * 1024
 
@@ -41,10 +31,45 @@ const STATUS_CLASS = {
 }
 
 const fieldClass = "w-full rounded-control border border-line bg-panel px-3"
+const EMPTY_COPY = {
+  callNumber: "",
+  inventoryNumber: "",
+  fonds: "",
+  code1: "",
+  code2: "",
+  code3: "",
+  code4: "",
+  dewey: "",
+  secondaryCallNumber: "",
+  status: "Disponible",
+}
 
 function categoryLabel(item) {
   if (!item) return ""
   return item.parent_name ? `${item.parent_name} — ${item.name}` : item.name
+}
+
+function registerValue(register, name) {
+  if (!register?.cells) return ""
+  const cell = register.cells.find((item) => item.name === name)
+  return cell?.value || ""
+}
+
+function copyFromApi(copy) {
+  return {
+    id: copy.id,
+    callNumber: copy.call_number || "",
+    inventoryNumber: copy.inventory_number || "",
+    fonds: copy.fonds || "",
+    code1: copy.code1 || registerValue(copy.register, "code1"),
+    code2: copy.code2 || registerValue(copy.register, "code2"),
+    code3: copy.code3 || registerValue(copy.register, "code3"),
+    code4: copy.code4 || registerValue(copy.register, "code4"),
+    dewey: copy.dewey || registerValue(copy.register, "Dewey"),
+    secondaryCallNumber: copy.secondary_call_number || "",
+    status: copy.status,
+    register: copy.register || null,
+  }
 }
 
 function starting(book) {
@@ -56,10 +81,6 @@ function starting(book) {
       category: null,
       year: "",
       publisher: null,
-      isbn: "",
-      language: "fr",
-      pages: "",
-      keywords: [],
       summary: "",
       archived: false,
       copies: [],
@@ -73,32 +94,32 @@ function starting(book) {
     category: book.category_choice || (book.category_id ? { id: book.category_id, name: book.category || "", parent_name: "" } : null),
     year: book.year,
     publisher: book.publisher_choice || null,
-    isbn: book.isbn,
-    language: book.language,
-    pages: book.pages ? String(book.pages) : "",
-    keywords: book.keywords || [],
     summary: book.summary,
     archived: book.state === "archived",
     cover: book.cover || "",
-    copies: (book.copies || []).map((copy) => ({
-      id: copy.id,
-      callNumber: copy.call_number,
-      inventoryNumber: copy.inventory_number || "",
-      fonds: copy.fonds || "",
-      secondaryCallNumber: copy.secondary_call_number || "",
-      price: copy.price || "",
-      section: copy.section || "",
-      shelf: copy.shelf || "",
-      acquiredOn: copy.acquired_on || "",
-      status: copy.status,
-      register: copy.register || null,
-    })),
+    copies: (book.copies || []).map(copyFromApi),
   }
 }
 
 function mark(title) {
   const source = title.trim() || "Livre"
   return source.replace(/['’]/g, "").split(/\s+/).slice(0, 2).map((word) => word[0]).join("").toUpperCase()
+}
+
+function previewCallNumber(copy) {
+  const left = String(copy.code1 || "").trim()
+  const right = String(copy.code2 || "").trim()
+  const letters = String(copy.dewey || "").trim().slice(0, 3)
+  const base = left && right ? `${left}.${right}` : left || right
+  if (base && letters) return `${base} ${letters}`
+  return base || letters || copy.callNumber || "—"
+}
+
+function previewSecondary(copy) {
+  const left = String(copy.code3 || "").trim()
+  const right = String(copy.code4 || "").trim()
+  if (left && right) return `${left}.${right}`
+  return left || right || copy.secondaryCallNumber || ""
 }
 
 export function BookFormPage({ mode }) {
@@ -136,22 +157,17 @@ export function BookFormPage({ mode }) {
 
 function BookForm({ initial, creating, viewing }) {
   const coverInput = useId()
+  const copyModalTitleId = useId()
   const [title, setTitle] = useState(initial.title)
   const [authors, setAuthors] = useState(initial.authors)
   const [category, setCategory] = useState(initial.category)
   const [year, setYear] = useState(initial.year)
   const [publisher, setPublisher] = useState(initial.publisher)
-  const [isbn, setIsbn] = useState(initial.isbn)
-  const [language, setLanguage] = useState(initial.language)
-  const [pages, setPages] = useState(initial.pages)
-  const [keywords, setKeywords] = useState(initial.keywords)
-  const [keyword, setKeyword] = useState("")
   const [summary, setSummary] = useState(initial.summary)
   const [archived, setArchived] = useState(initial.archived)
   const [copies, setCopies] = useState(initial.copies)
   const [adding, setAdding] = useState(false)
-  const emptyCopy = { callNumber: "", inventoryNumber: "", fonds: "", secondaryCallNumber: "", price: "", section: "", shelf: "", acquiredOn: "", status: "Disponible" }
-  const [draft, setDraft] = useState(emptyCopy)
+  const [draft, setDraft] = useState(EMPTY_COPY)
   const [copyError, setCopyError] = useState("")
   const [editingId, setEditingId] = useState(null)
   const navigate = useNavigate()
@@ -171,12 +187,25 @@ function BookForm({ initial, creating, viewing }) {
     if (coverUrl) URL.revokeObjectURL(coverUrl)
   }, [coverUrl])
 
-  function addKeyword(event) {
-    if (event.key !== "Enter") return
-    event.preventDefault()
-    const value = keyword.trim().slice(0, 200)
-    if (value && !keywords.includes(value)) setKeywords((current) => [...current, value])
-    setKeyword("")
+  useEffect(() => {
+    if (!adding) return undefined
+    function onKeyDown(event) {
+      if (event.key === "Escape") closeCopyModal()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [adding])
+
+  function closeCopyModal() {
+    setAdding(false)
+    setDraft(EMPTY_COPY)
+    setCopyError("")
+  }
+
+  function openCopyModal() {
+    setDraft(EMPTY_COPY)
+    setCopyError("")
+    setAdding(true)
   }
 
   function onCover(event) {
@@ -211,33 +240,50 @@ function BookForm({ initial, creating, viewing }) {
     })
   }
 
+  function validateCodes(copy) {
+    const code1 = copy.code1.trim()
+    const code2 = copy.code2.trim()
+    const dewey = copy.dewey.trim()
+    if (!code1 && !code2 && !dewey) {
+      return "Indiquez au moins code1, code2 ou Dewey pour former la cote."
+    }
+    return ""
+  }
+
   function addCopy() {
-    const callNumber = draft.callNumber.trim()
     const inventoryNumber = draft.inventoryNumber.trim()
-    if (!callNumber) {
-      setCopyError("Chaque exemplaire a besoin d'une cote.")
+    const codesError = validateCodes(draft)
+    if (codesError) {
+      setCopyError(codesError)
       return
     }
     if (inventoryNumber && copies.some((copy) => copy.inventoryNumber === inventoryNumber)) {
-      setCopyError("Ce numéro d'inventaire est déjà utilisé.")
+      setCopyError("Ce numéro d'inventaire (N. e.) est déjà utilisé.")
       return
     }
     setCopyError("")
-    setCopies((current) => [...current, {
-      id: `n${Date.now()}`,
-      callNumber,
-      inventoryNumber,
-      fonds: draft.fonds.trim(),
-      secondaryCallNumber: draft.secondaryCallNumber.trim(),
-      price: draft.price.trim(),
-      section: draft.section.trim(),
-      shelf: draft.shelf.trim(),
-      acquiredOn: draft.acquiredOn,
-      status: draft.status,
-      register: null,
-    }])
-    setDraft(emptyCopy)
+    setCopies((current) => [
+      ...current,
+      {
+        id: `n${Date.now()}`,
+        ...EMPTY_COPY,
+        inventoryNumber,
+        fonds: draft.fonds.trim(),
+        code1: draft.code1.trim(),
+        code2: draft.code2.trim(),
+        code3: draft.code3.trim(),
+        code4: draft.code4.trim(),
+        dewey: draft.dewey.trim(),
+        status: draft.status,
+        register: null,
+      },
+    ])
+    setDraft(EMPTY_COPY)
     setAdding(false)
+  }
+
+  function updateCopy(id, patch) {
+    setCopies((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)))
   }
 
   async function save(event) {
@@ -246,14 +292,17 @@ function BookForm({ initial, creating, viewing }) {
     const next = []
     if (!title.trim()) next.push("Le titre est obligatoire.")
     if (authors.length === 0) next.push("Indiquez au moins un auteur.")
-    if (!category) next.push("La catégorie est obligatoire.")
+    if (!category) next.push("La catégorie (CLASSE / SOUS-CLASSE) est obligatoire.")
     const yearNumber = Number(year)
     if (year && (!Number.isInteger(yearNumber) || yearNumber < 1000 || yearNumber > 2100)) {
-      next.push("L'année de publication doit être comprise entre 1000 et 2100.")
+      next.push("La date de publication doit être une année entre 1000 et 2100.")
     }
-    const pageNumber = Number(pages)
-    if (pages && (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > 20000)) {
-      next.push("Le nombre de pages n'est pas valide.")
+    for (const copy of copies) {
+      const codesError = validateCodes(copy)
+      if (codesError) {
+        next.push(`Exemplaire ${copy.inventoryNumber || "sans N. e."} : ${codesError}`)
+        break
+      }
     }
     setProblems(next)
     if (next.length > 0) return
@@ -264,24 +313,28 @@ function BookForm({ initial, creating, viewing }) {
     body.set("category_id", category.id)
     body.set("author_ids", JSON.stringify(authors.map((person) => person.id)))
     body.set("year", year)
-    body.set("language", language)
+    body.set("language", "fr")
     body.set("publisher_id", publisher ? String(publisher.id) : "")
-    body.set("isbn", isbn.trim())
-    body.set("pages", pages)
-    body.set("keywords", JSON.stringify(keywords))
+    body.set("isbn", "")
+    body.set("pages", "")
+    body.set("keywords", JSON.stringify([]))
     body.set("state", publish.current ? "published" : "draft")
-    body.set("copies", JSON.stringify(copies.map((copy) => ({
-      id: typeof copy.id === "number" ? copy.id : undefined,
-      call_number: copy.callNumber,
-      inventory_number: copy.inventoryNumber,
-      fonds: copy.fonds,
-      secondary_call_number: copy.secondaryCallNumber,
-      price: copy.price,
-      section: copy.section,
-      shelf: copy.shelf,
-      acquired_on: copy.acquiredOn,
-      status: copy.status,
-    }))))
+    body.set(
+      "copies",
+      JSON.stringify(
+        copies.map((copy) => ({
+          id: typeof copy.id === "number" ? copy.id : undefined,
+          inventory_number: copy.inventoryNumber,
+          fonds: copy.fonds,
+          code1: copy.code1,
+          code2: copy.code2,
+          code3: copy.code3,
+          code4: copy.code4,
+          dewey: copy.dewey,
+          status: copy.status,
+        })),
+      ),
+    )
     if (coverFile) body.set("cover", coverFile)
     if (removeCover && !coverFile) body.set("remove_cover", "true")
     const result = await saveBook(initial.id, body)
@@ -305,23 +358,29 @@ function BookForm({ initial, creating, viewing }) {
       {notice ? <p role="status" className="rounded-panel border border-available bg-available-soft p-4 text-available">{notice}</p> : null}
       {problems.length > 0 ? (
         <div role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">
-          {problems.map((problem) => <p key={problem}>{problem}</p>)}
+          {problems.map((problem) => (
+            <p key={problem}>{problem}</p>
+          ))}
         </div>
       ) : null}
+
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="flex items-center gap-2 text-section text-heading">
             <BookOpen aria-hidden="true" className="text-violet" size={24} />
-            Informations du livre
+            Fiche livre (répertoire)
           </h2>
-          <p className="mt-2 text-muted">Obligatoires : le titre, au moins un auteur et la catégorie. Les autres champs peuvent rester vides.</p>
+          <p className="mt-2 text-muted">
+            Champs alignés sur le fichier REPERTOIRE : titre, auteur, éditeur, date de publication, classe et résumé.
+            Les codes de cotation se saisissent sur chaque exemplaire.
+          </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1">
+            <label className="grid gap-1 sm:col-span-2">
               <span className="font-semibold text-heading">Titre *</span>
               <input className={fieldClass} value={title} onChange={(event) => setTitle(event.target.value)} maxLength={400} required disabled={viewing} />
             </label>
             <SearchSelect
-              label="Auteurs"
+              label="Auteur"
               multiple
               values={authors}
               onChange={setAuthors}
@@ -332,10 +391,21 @@ function BookForm({ initial, creating, viewing }) {
               disabled={viewing}
               clearable={false}
             />
+            <SearchSelect
+              label="Éditeur"
+              value={publisher}
+              onChange={setPublisher}
+              search={searchPublishers}
+              labelOf={(item) => item.name}
+              placeholder="Rechercher un éditeur…"
+              emptyLabel="Aucun éditeur trouvé."
+              disabled={viewing}
+              clearable={!viewing}
+            />
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <SearchSelect
-              label="Catégorie"
+              label="CLASSE / SOUS-CLASSE"
               value={category}
               onChange={setCategory}
               search={searchCategories}
@@ -345,92 +415,48 @@ function BookForm({ initial, creating, viewing }) {
               disabled={viewing}
               clearable={!viewing}
             />
-            <SearchSelect
-              label="Éditeur (facultatif)"
-              value={publisher}
-              onChange={setPublisher}
-              search={searchPublishers}
-              labelOf={(item) => item.name}
-              placeholder="Rechercher un éditeur du répertoire…"
-              emptyLabel="Aucun éditeur trouvé. Tapez un nom (ex. Harmattan)."
-              disabled={viewing}
-              clearable={!viewing}
-            />
-          </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Année de publication (facultatif)</span>
-              <input className={fieldClass} inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} maxLength={4} disabled={viewing} />
-            </label>
-            <label className="grid gap-1">
-              <span className="font-semibold text-heading">ISBN (facultatif)</span>
-              <input className={fieldClass} value={isbn} onChange={(event) => setIsbn(event.target.value)} maxLength={24} disabled={viewing} />
-            </label>
-            <label className="grid gap-1">
-              <span className="font-semibold text-heading">Langue</span>
-              <select className={fieldClass} value={language} onChange={(event) => setLanguage(event.target.value)} disabled={viewing}>
-                {LANGUAGES.map(([code, label]) => <option key={code} value={code}>{label}</option>)}
-              </select>
-            </label>
-            <label className="grid gap-1">
-              <span className="font-semibold text-heading">Nombre de pages (facultatif)</span>
-              <input className={fieldClass} inputMode="numeric" value={pages} onChange={(event) => setPages(event.target.value)} disabled={viewing} />
+              <span className="font-semibold text-heading">Date publ. (année)</span>
+              <input className={fieldClass} inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} maxLength={4} disabled={viewing} placeholder="ex. 2019" />
             </label>
           </div>
           <label className="mt-3 grid gap-1">
-            <span className="font-semibold text-heading">Mots-clés (facultatif)</span>
-            <span className="flex min-h-11 flex-wrap items-center gap-2 rounded-control border border-line px-2">
-              {keywords.map((item) => (
-                <span key={item} className="inline-flex items-center gap-1 rounded-full bg-lavender px-2 py-1 font-semibold text-violet">
-                  {item}
-                  {viewing ? null : <button type="button" aria-label={`Retirer ${item}`} onClick={() => setKeywords(keywords.filter((word) => word !== item))}>×</button>}
-                </span>
-              ))}
-              {viewing ? null : <input className="min-w-40 flex-1 border-0 bg-transparent py-2" value={keyword} maxLength={200} placeholder="Ajouter un mot-clé" onChange={(event) => setKeyword(event.target.value)} onKeyDown={addKeyword} />}
-            </span>
-          </label>
-          <label className="mt-3 grid gap-1">
-            <span className="font-semibold text-heading">Résumé (facultatif)</span>
-            <textarea className="min-h-32 w-full rounded-control border border-line px-3 py-2" value={summary} onChange={(event) => setSummary(event.target.value)} disabled={viewing} />
+            <span className="font-semibold text-heading">Resumé</span>
+            <textarea className="min-h-28 w-full rounded-control border border-line px-3 py-2" value={summary} onChange={(event) => setSummary(event.target.value)} disabled={viewing} />
           </label>
         </article>
 
         <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
-          <h2 className="text-section text-heading">Couverture (facultatif)</h2>
+          <h2 className="text-section text-heading">Couverture</h2>
           <div className="mt-4 flex items-start gap-4">
             {shownCover ? (
-              <img src={shownCover} alt="" className="h-44 w-32 rounded-md object-cover" />
+              <img src={shownCover} alt="" className="h-56 w-40 rounded-md object-cover shadow-card" />
             ) : (
-              <span className="grid h-44 w-32 place-items-center rounded-md bg-violet px-2 text-center font-semibold text-on-primary">{mark(title)}</span>
+              <span className="grid h-56 w-40 place-items-center rounded-md bg-violet px-2 text-center font-semibold text-on-primary">{mark(title)}</span>
             )}
             <div>
               <input id={coverInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={onCover} />
               {viewing ? null : (
                 <div className="flex flex-wrap gap-2">
                   <label htmlFor={coverInput} className="inline-flex min-h-11 cursor-pointer items-center rounded-control border border-line px-3 font-semibold text-violet">
-                    {shownCover ? "Changer la couverture" : "Ajouter une couverture"}
+                    {shownCover ? "Changer" : "Ajouter"}
                   </label>
                   {shownCover ? (
-                    <button
-                      type="button"
-                      className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable"
-                      onClick={clearCover}
-                    >
+                    <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable" onClick={clearCover}>
                       <Trash2 aria-hidden="true" size={18} />
-                      Enlever la couverture
+                      Enlever
                     </button>
                   ) : null}
                 </div>
               )}
-              <p className="mt-2 text-muted">Formats : JPG, PNG, WebP</p>
-              <p className="text-muted">Taille max. : 5 Mo</p>
+              <p className="mt-2 text-muted">JPG, PNG, WebP · 5 Mo max.</p>
               {coverError ? <p role="alert" className="mt-2 text-unavailable">{coverError}</p> : null}
             </div>
           </div>
           <div className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-4">
             <div>
               <p className="font-semibold text-heading">Archivage</p>
-              <p className="text-muted">{archived ? "Ce livre est archivé. Il n'apparaît pas sur le site public." : "Un livre archivé reste dans le catalogue et disparaît du site public."}</p>
+              <p className="text-muted">{archived ? "Archivé : invisible sur le site public." : "Archiver retire le livre du site public."}</p>
             </div>
             {initial.id && !viewing ? (
               <button
@@ -462,128 +488,194 @@ function BookForm({ initial, creating, viewing }) {
             Exemplaires ({copies.length})
           </h2>
           {viewing ? null : (
-            <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet px-3 font-semibold text-violet" onClick={() => setAdding(true)}>
+            <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet px-3 font-semibold text-violet" onClick={openCopyModal}>
               <Plus aria-hidden="true" size={18} />
               Ajouter un exemplaire
             </button>
           )}
         </div>
+        <p className="mt-2 text-muted">
+          Comme dans le répertoire : <strong>N. e.</strong>, <strong>F.N.</strong>, <strong>code1–code4</strong> et <strong>Dewey</strong>.
+          La cote affichée au public = <strong>code1.code2</strong> + <strong>Dewey</strong> (ex. 302.1 DEF). Cote secondaire = code3.code4.
+        </p>
+
         {adding ? (
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <input className={fieldClass} placeholder="Cote *" aria-label="Cote" maxLength={80} value={draft.callNumber} onChange={(event) => setDraft({ ...draft, callNumber: event.target.value })} />
-            <input className={fieldClass} placeholder="N. e. (facultatif)" aria-label="Numéro d'inventaire" maxLength={32} value={draft.inventoryNumber} onChange={(event) => setDraft({ ...draft, inventoryNumber: event.target.value })} />
-            <input className={fieldClass} placeholder="Fonds (facultatif)" aria-label="Fonds" maxLength={32} value={draft.fonds} onChange={(event) => setDraft({ ...draft, fonds: event.target.value })} />
-            <input className={fieldClass} placeholder="Cote secondaire (facultatif)" aria-label="Cote secondaire" maxLength={40} value={draft.secondaryCallNumber} onChange={(event) => setDraft({ ...draft, secondaryCallNumber: event.target.value })} />
-            <input className={fieldClass} placeholder="Prix d'acquisition (facultatif)" aria-label="Prix d'acquisition" value={draft.price} onChange={(event) => setDraft({ ...draft, price: event.target.value })} />
-            <input className={fieldClass} placeholder="Rayon (facultatif)" aria-label="Rayon" maxLength={80} value={draft.section} onChange={(event) => setDraft({ ...draft, section: event.target.value })} />
-            <input className={fieldClass} placeholder="Étagère (facultatif)" aria-label="Étagère" maxLength={80} value={draft.shelf} onChange={(event) => setDraft({ ...draft, shelf: event.target.value })} />
-            <input className={fieldClass} type="date" aria-label="Date d'acquisition" value={draft.acquiredOn} onChange={(event) => setDraft({ ...draft, acquiredOn: event.target.value })} />
-            <select className={fieldClass} aria-label="Statut de l'exemplaire" value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>
-              {COPY_STATUSES.map((status) => <option key={status}>{status}</option>)}
-            </select>
-            <button type="button" className="inline-flex min-h-11 items-center rounded-control bg-violet px-4 font-semibold text-on-primary" onClick={addCopy}>Ajouter</button>
-            {copyError ? <p role="alert" className="text-unavailable md:col-span-3">{copyError}</p> : null}
+          <div className="fixed inset-0 z-50 grid place-items-center bg-scrim p-4" role="presentation" onClick={closeCopyModal}>
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={copyModalTitleId}
+              className="grid max-h-[90vh] w-full max-w-2xl gap-4 overflow-y-auto rounded-panel border border-line bg-panel p-5 shadow-panel sm:p-6"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 id={copyModalTitleId} className="flex items-center gap-2 text-section text-heading">
+                    <Layers aria-hidden="true" className="text-violet" size={22} />
+                    Nouvel exemplaire
+                  </h3>
+                  <p className="mt-1 text-meta text-muted">La cote publique sera code1.code2 suivi de Dewey (trois lettres).</p>
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-violet"
+                  aria-label="Fermer"
+                  onClick={closeCopyModal}
+                >
+                  <X aria-hidden="true" size={20} />
+                </button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1">
+                  <span className="text-meta font-semibold text-heading">N. e.</span>
+                  <input className={fieldClass} maxLength={32} value={draft.inventoryNumber} onChange={(event) => setDraft({ ...draft, inventoryNumber: event.target.value })} autoFocus />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-meta font-semibold text-heading">F.N.</span>
+                  <input className={fieldClass} maxLength={32} value={draft.fonds} onChange={(event) => setDraft({ ...draft, fonds: event.target.value })} />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-meta font-semibold text-heading">code1 *</span>
+                  <input className={fieldClass} maxLength={40} value={draft.code1} onChange={(event) => setDraft({ ...draft, code1: event.target.value })} />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-meta font-semibold text-heading">code2</span>
+                  <input className={fieldClass} maxLength={40} value={draft.code2} onChange={(event) => setDraft({ ...draft, code2: event.target.value })} />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-meta font-semibold text-heading">code3</span>
+                  <input className={fieldClass} maxLength={40} value={draft.code3} onChange={(event) => setDraft({ ...draft, code3: event.target.value })} />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-meta font-semibold text-heading">code4</span>
+                  <input className={fieldClass} maxLength={40} value={draft.code4} onChange={(event) => setDraft({ ...draft, code4: event.target.value })} />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-meta font-semibold text-heading">Dewey</span>
+                  <input className={fieldClass} maxLength={40} value={draft.dewey} onChange={(event) => setDraft({ ...draft, dewey: event.target.value })} />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-meta font-semibold text-heading">Statut</span>
+                  <select className={fieldClass} value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>
+                    {COPY_STATUSES.map((status) => (
+                      <option key={status}>{status}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <p className="rounded-control border border-line bg-canvas px-3 py-2 text-meta text-muted">
+                Cote prévue : <span className="font-semibold text-heading">{previewCallNumber(draft)}</span>
+                {previewSecondary(draft) ? (
+                  <>
+                    {" "}
+                    · secondaire : <span className="font-semibold text-heading">{previewSecondary(draft)}</span>
+                  </>
+                ) : null}
+              </p>
+
+              {copyError ? <p role="alert" className="text-unavailable">{copyError}</p> : null}
+
+              <div className="flex flex-wrap justify-end gap-2">
+                <button type="button" className="inline-flex min-h-11 items-center rounded-control border border-line px-4 font-semibold text-heading" onClick={closeCopyModal}>
+                  Annuler
+                </button>
+                <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary" onClick={addCopy}>
+                  <Plus aria-hidden="true" size={18} />
+                  Ajouter l'exemplaire
+                </button>
+              </div>
+            </div>
           </div>
         ) : null}
+
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[40rem] text-left">
+          <table className="w-full min-w-[52rem] text-left">
             <thead>
               <tr className="border-b border-line text-muted">
                 <th className="px-3 py-3 font-semibold">#</th>
                 <th className="px-3 py-3 font-semibold">N. e.</th>
+                <th className="px-3 py-3 font-semibold">F.N.</th>
+                <th className="px-3 py-3 font-semibold">Codes / Dewey</th>
                 <th className="px-3 py-3 font-semibold">Cote</th>
-                <th className="px-3 py-3 font-semibold">Fonds</th>
-                <th className="px-3 py-3 font-semibold">Prix</th>
-                <th className="px-3 py-3 font-semibold">Rayon</th>
                 <th className="px-3 py-3 font-semibold">Statut</th>
                 <th className="px-3 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {copies.length === 0 ? (
-                <tr><td colSpan={8} className="px-3 py-6 text-muted">Aucun exemplaire.</td></tr>
-              ) : copies.map((copy, index) => (
-                <Fragment key={copy.id}>
-                <tr className="border-b border-line">
-                  <td className="px-3 py-3">{index + 1}</td>
-                  <td className="px-3 py-3">
-                    {editingId === copy.id ? (
-                      <input className={fieldClass} aria-label="Numéro d'inventaire" maxLength={32} value={copy.inventoryNumber} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, inventoryNumber: event.target.value } : item))} />
-                    ) : (copy.inventoryNumber || "—")}
-                  </td>
-                  <td className="px-3 py-3 font-semibold text-heading">
-                    {editingId === copy.id ? (
-                      <span className="grid gap-1">
-                        <input className={fieldClass} aria-label="Cote" maxLength={80} value={copy.callNumber} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, callNumber: event.target.value } : item))} />
-                        <input className={fieldClass} aria-label="Cote secondaire" maxLength={40} value={copy.secondaryCallNumber} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, secondaryCallNumber: event.target.value } : item))} />
-                      </span>
-                    ) : copy.callNumber}
-                    {editingId === copy.id || !copy.secondaryCallNumber ? null : <span className="mt-1 block text-meta font-normal text-muted">Cote secondaire : {copy.secondaryCallNumber}</span>}
-                  </td>
-                  <td className="px-3 py-3">
-                    {editingId === copy.id ? (
-                      <input className={fieldClass} aria-label="Fonds" maxLength={32} value={copy.fonds} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, fonds: event.target.value } : item))} />
-                    ) : (copy.fonds || "—")}
-                  </td>
-                  <td className="px-3 py-3">
-                    {editingId === copy.id ? (
-                      <input className={fieldClass} aria-label="Prix d'acquisition" value={copy.price} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, price: event.target.value } : item))} />
-                    ) : (copy.price || "—")}
-                  </td>
-                  <td className="px-3 py-3">
-                    {editingId === copy.id ? (
-                      <span className="grid gap-1">
-                        <input className={fieldClass} aria-label="Rayon" maxLength={80} value={copy.section} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, section: event.target.value } : item))} />
-                        <input className={fieldClass} aria-label="Étagère" maxLength={80} value={copy.shelf} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, shelf: event.target.value } : item))} />
-                        <input className={fieldClass} type="date" aria-label="Date d'acquisition" value={copy.acquiredOn} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, acquiredOn: event.target.value } : item))} />
-                      </span>
-                    ) : (
-                      <>
-                        {[copy.section, copy.shelf].filter(Boolean).join(" – ") || "—"}
-                        {copy.acquiredOn ? <span className="mt-1 block text-meta text-muted">{copy.acquiredOn}</span> : null}
-                      </>
-                    )}
-                  </td>
-                  <td className="px-3 py-3">
-                    {editingId === copy.id ? (
-                      <select className={fieldClass} aria-label="Statut" value={copy.status} onChange={(event) => setCopies(copies.map((item) => item.id === copy.id ? { ...item, status: event.target.value } : item))}>
-                        {COPY_STATUSES.map((status) => <option key={status}>{status}</option>)}
-                      </select>
-                    ) : (
-                      <span className={`rounded-full px-3 py-1 font-semibold ${STATUS_CLASS[copy.status] || ""}`}>{copy.status}</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-3">
-                    {viewing ? null : (
-                      <span className="flex gap-1">
-                        <button type="button" aria-label="Modifier l'exemplaire" className="inline-flex h-11 w-11 items-center justify-center rounded-control text-gold" onClick={() => setEditingId(editingId === copy.id ? null : copy.id)}>
-                          <Pencil size={18} />
-                        </button>
-                        <button type="button" aria-label="Retirer l'exemplaire" className="inline-flex h-11 w-11 items-center justify-center rounded-control text-unavailable" onClick={() => setCopies(copies.filter((item) => item.id !== copy.id))}>
-                          <Archive size={18} />
-                        </button>
-                      </span>
-                    )}
+                <tr>
+                  <td colSpan={7} className="px-3 py-6 text-muted">
+                    Aucun exemplaire.
                   </td>
                 </tr>
-                {copy.register ? (
-                  <tr className="border-b border-line bg-paper">
-                    <td colSpan={8} className="px-3 py-3">
-                      <p className="font-semibold text-heading">Ligne du registre d'origine</p>
-                      <p className="text-meta text-muted">Ligne {copy.register.source_line} — {copy.register.status}</p>
-                      <dl className="mt-2 grid gap-2 sm:grid-cols-2">
-                        {copy.register.cells.map((cell) => (
-                          <div key={cell.name}>
-                            <dt className="text-meta text-muted">{cell.name}</dt>
-                            <dd className="whitespace-pre-wrap text-body text-ink">{cell.value || "—"}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    </td>
-                  </tr>
-                ) : null}
-                </Fragment>
-              ))}
+              ) : (
+                copies.map((copy, index) => (
+                  <Fragment key={copy.id}>
+                    <tr className="border-b border-line">
+                      <td className="px-3 py-3">{index + 1}</td>
+                      <td className="px-3 py-3">
+                        {editingId === copy.id ? (
+                          <input className={fieldClass} maxLength={32} value={copy.inventoryNumber} onChange={(event) => updateCopy(copy.id, { inventoryNumber: event.target.value })} />
+                        ) : (
+                          copy.inventoryNumber || "—"
+                        )}
+                      </td>
+                      <td className="px-3 py-3">
+                        {editingId === copy.id ? (
+                          <input className={fieldClass} maxLength={32} value={copy.fonds} onChange={(event) => updateCopy(copy.id, { fonds: event.target.value })} />
+                        ) : (
+                          copy.fonds || "—"
+                        )}
+                      </td>
+                      <td className="px-3 py-3">
+                        {editingId === copy.id ? (
+                          <span className="grid gap-1 sm:grid-cols-2">
+                            <input className={fieldClass} aria-label="code1" placeholder="code1" maxLength={40} value={copy.code1} onChange={(event) => updateCopy(copy.id, { code1: event.target.value })} />
+                            <input className={fieldClass} aria-label="code2" placeholder="code2" maxLength={40} value={copy.code2} onChange={(event) => updateCopy(copy.id, { code2: event.target.value })} />
+                            <input className={fieldClass} aria-label="code3" placeholder="code3" maxLength={40} value={copy.code3} onChange={(event) => updateCopy(copy.id, { code3: event.target.value })} />
+                            <input className={fieldClass} aria-label="code4" placeholder="code4" maxLength={40} value={copy.code4} onChange={(event) => updateCopy(copy.id, { code4: event.target.value })} />
+                            <input className={fieldClass} aria-label="Dewey" placeholder="Dewey" maxLength={40} value={copy.dewey} onChange={(event) => updateCopy(copy.id, { dewey: event.target.value })} />
+                          </span>
+                        ) : (
+                          <span className="text-meta">
+                            {[copy.code1, copy.code2, copy.code3, copy.code4].filter(Boolean).join(" · ") || "—"}
+                            {copy.dewey ? <span className="mt-1 block text-muted">Dewey : {copy.dewey}</span> : null}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 font-semibold text-heading">
+                        {previewCallNumber(copy)}
+                        {previewSecondary(copy) ? <span className="mt-1 block text-meta font-normal text-muted">Secondaire : {previewSecondary(copy)}</span> : null}
+                      </td>
+                      <td className="px-3 py-3">
+                        {editingId === copy.id ? (
+                          <select className={fieldClass} value={copy.status} onChange={(event) => updateCopy(copy.id, { status: event.target.value })}>
+                            {COPY_STATUSES.map((status) => (
+                              <option key={status}>{status}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className={`rounded-full px-3 py-1 font-semibold ${STATUS_CLASS[copy.status] || ""}`}>{copy.status}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3">
+                        {viewing ? null : (
+                          <span className="flex gap-1">
+                            <button type="button" aria-label="Modifier l'exemplaire" className="inline-flex h-11 w-11 items-center justify-center rounded-control text-gold" onClick={() => setEditingId(editingId === copy.id ? null : copy.id)}>
+                              <Pencil size={18} />
+                            </button>
+                            <button type="button" aria-label="Retirer l'exemplaire" className="inline-flex h-11 w-11 items-center justify-center rounded-control text-unavailable" onClick={() => setCopies(copies.filter((item) => item.id !== copy.id))}>
+                              <Archive size={18} />
+                            </button>
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  </Fragment>
+                ))
+              )}
             </tbody>
           </table>
         </div>

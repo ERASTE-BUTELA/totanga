@@ -3,6 +3,7 @@ import { useListNotice } from "../lib/useListNotice.js"
 import { Archive, BookOpen, Layers, Library } from "lucide-react"
 import { archiveBook, listBooks } from "../api/catalog.js"
 import { bookNotices } from "./texts.js"
+import { ConfirmModal } from "../components/ConfirmModal.jsx"
 import { RowActions } from "../components/RowActions.jsx"
 import { CatalogListPage } from "./CatalogListPage.jsx"
 import { usePagedCatalog } from "./usePagedCatalog.js"
@@ -44,21 +45,26 @@ export function BooksPage() {
   const { data, error, onPageRequest, reload } = usePagedCatalog(loadBooks)
   const [notice, setNotice] = useListNotice()
   const [actionError, setActionError] = useState("")
+  const [pending, setPending] = useState(null)
+  const [busy, setBusy] = useState(false)
   const rows = data?.results || []
   const stats = data?.stats
   const categories = data?.categories || []
 
-  async function onRemove(row) {
-    const archive = row.status !== "Archivé"
-    const question = archive ? bookNotices.confirmArchive : bookNotices.confirmRestore
-    if (!window.confirm(question)) return
-    const result = await archiveBook(row.id, archive)
+  async function confirmArchive() {
+    if (!pending || busy) return
+    const archive = pending.status !== "Archivé"
+    setBusy(true)
+    const result = await archiveBook(pending.id, archive)
+    setBusy(false)
     if (!result.ok) {
       setActionError(result.error)
+      setPending(null)
       return
     }
     setActionError("")
     setNotice(archive ? bookNotices.archived : bookNotices.restored)
+    setPending(null)
     reload()
   }
 
@@ -162,12 +168,22 @@ export function BooksPage() {
                 viewTo={`/catalogue/livres/${row.id}`}
                 editTo={`/catalogue/livres/${row.id}/modifier`}
                 removeLabel={row.status === "Archivé" ? "Désarchiver" : "Archiver"}
-                onRemove={() => onRemove(row)}
+                onRemove={() => setPending(row)}
               />
             ),
           },
         ]}
       />
+      {pending ? (
+        <ConfirmModal
+          title={pending.status === "Archivé" ? "Remettre au catalogue" : "Confirmer l’archivage"}
+          message={pending.status === "Archivé" ? bookNotices.confirmRestore : bookNotices.confirmArchive}
+          confirmLabel={pending.status === "Archivé" ? "Désarchiver" : "Archiver"}
+          busy={busy}
+          onClose={() => !busy && setPending(null)}
+          onConfirm={confirmArchive}
+        />
+      ) : null}
     </>
   )
 }

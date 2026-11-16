@@ -51,6 +51,14 @@ class Library(models.Model):
         related_name="library_favicons",
         verbose_name="favicon",
     )
+    hero_image = models.ForeignKey(
+        StoredImage,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="library_heroes",
+        verbose_name="image du bandeau d'accueil",
+    )
     language = models.CharField("langue par défaut", max_length=40, default="Français")
     theme = models.CharField("thème", max_length=40, default="Violet (Totanga)")
     dark_mode = models.BooleanField("mode sombre", default=False)

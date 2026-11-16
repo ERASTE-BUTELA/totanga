@@ -2,6 +2,7 @@ import { useState } from "react"
 import { BookOpen, UserRound, Users } from "lucide-react"
 import { deleteAuthor, listAuthors } from "../api/catalog.js"
 import { useListNotice } from "../lib/useListNotice.js"
+import { ConfirmModal } from "../components/ConfirmModal.jsx"
 import { RowActions } from "../components/RowActions.jsx"
 import { CatalogListPage } from "./CatalogListPage.jsx"
 import { usePagedCatalog } from "./usePagedCatalog.js"
@@ -28,17 +29,23 @@ export function AuthorsPage() {
   const { data, error, onPageRequest, reload } = usePagedCatalog(loadAuthors)
   const [notice] = useListNotice()
   const [actionError, setActionError] = useState("")
+  const [pending, setPending] = useState(null)
+  const [busy, setBusy] = useState(false)
   const rows = data?.results || []
   const stats = data?.stats
 
-  async function onRemove(row) {
-    if (!window.confirm(`Supprimer « ${row.name} » ?`)) return
-    const result = await deleteAuthor(row.id)
+  async function confirmRemove() {
+    if (!pending || busy) return
+    setBusy(true)
+    const result = await deleteAuthor(pending.id)
+    setBusy(false)
     if (!result.ok) {
       setActionError(result.error)
+      setPending(null)
       return
     }
     setActionError("")
+    setPending(null)
     reload()
   }
 
@@ -88,12 +95,21 @@ export function AuthorsPage() {
                 viewTo={`/catalogue/auteurs/${row.id}`}
                 editTo={`/catalogue/auteurs/${row.id}/modifier`}
                 removeLabel="Supprimer"
-                onRemove={() => onRemove(row)}
+                onRemove={() => setPending(row)}
               />
             ),
           },
         ]}
       />
+      {pending ? (
+        <ConfirmModal
+          title="Confirmer la suppression"
+          message={`Supprimer « ${pending.name} » ? Cette action est définitive.`}
+          busy={busy}
+          onClose={() => !busy && setPending(null)}
+          onConfirm={confirmRemove}
+        />
+      ) : null}
     </>
   )
 }

@@ -6,6 +6,7 @@ import {
   Building2,
   CalendarDays,
   ChevronDown,
+  ChevronRight,
   CircleQuestionMark,
   FileText,
   LayoutDashboard,
@@ -21,7 +22,7 @@ import {
   Users,
   Wrench,
 } from "lucide-react"
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router"
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router"
 import { listMessages } from "../api/content.js"
 import { getLibrarySettings, setMaintenanceMode } from "../api/settings.js"
 import { subscribeAlerts, setUnreadMessages } from "../lib/alertsStore.js"
@@ -93,64 +94,104 @@ const CHILD_ICONS = {
   categories: Tag,
 }
 
-const CRUMBS = {
-  "/catalogue/livres": "Livres",
-  "/catalogue/auteurs": "Auteurs",
-  "/catalogue/editeurs": "Éditeurs",
-  "/catalogue/categories": "Catégories",
-}
+const HOME = { label: "Tableau de bord", to: "/" }
 
-const FORM_TRAILS = {
-  "/catalogue/livres/nouveau": {
-    parts: ["Livres", "Nouveau livre"],
-    subtitle: "Ajoutez un livre et ses exemplaires.",
-  },
-  "/catalogue/auteurs/nouveau": {
-    parts: ["Auteurs", "Nouvel auteur"],
-    subtitle: "Ajoutez un auteur au catalogue.",
-  },
-  "/catalogue/editeurs/nouveau": {
-    parts: ["Éditeurs", "Nouvel éditeur"],
-    subtitle: "Ajoutez une maison d'édition au catalogue.",
-  },
-  "/catalogue/categories/nouveau": {
-    parts: ["Catégories", "Nouvelle catégorie"],
-    subtitle: "Ajoutez une catégorie de classification.",
-  },
+function crumb(label, to) {
+  return to ? { label, to } : { label }
 }
 
 function trailFor(pathname) {
-  if (pathname === "/publications") {
-    return { parts: ["Publications"], subtitle: SUBTITLES["/publications"] }
+  const catalog = crumb("Catalogue")
+  const books = crumb("Livres", "/catalogue/livres")
+  const authors = crumb("Auteurs", "/catalogue/auteurs")
+  const publishers = crumb("Éditeurs", "/catalogue/editeurs")
+  const categories = crumb("Catégories", "/catalogue/categories")
+  const announcements = crumb("Annonces", "/annonces")
+  const publications = crumb("Publications", "/publications")
+  const events = crumb("Événements", "/evenements")
+  const users = crumb("Utilisateurs et rôles", "/utilisateurs")
+  const account = crumb("Mon compte", "/compte/profil")
+
+  const exact = {
+    "/": { items: [crumb("Tableau de bord")], subtitle: SUBTITLES["/"] },
+    "/catalogue/livres": { items: [HOME, catalog, crumb("Livres")], subtitle: SUBTITLES["/catalogue/livres"] },
+    "/catalogue/auteurs": { items: [HOME, catalog, crumb("Auteurs")], subtitle: SUBTITLES["/catalogue/auteurs"] },
+    "/catalogue/editeurs": { items: [HOME, catalog, crumb("Éditeurs")], subtitle: SUBTITLES["/catalogue/editeurs"] },
+    "/catalogue/categories": { items: [HOME, catalog, crumb("Catégories")], subtitle: SUBTITLES["/catalogue/categories"] },
+    "/catalogue/livres/nouveau": { items: [HOME, catalog, books, crumb("Nouveau livre")], subtitle: "Ajoutez un livre et ses exemplaires." },
+    "/catalogue/auteurs/nouveau": { items: [HOME, catalog, authors, crumb("Nouvel auteur")], subtitle: "Ajoutez un auteur au catalogue." },
+    "/catalogue/editeurs/nouveau": { items: [HOME, catalog, publishers, crumb("Nouvel éditeur")], subtitle: "Ajoutez une maison d'édition au catalogue." },
+    "/catalogue/categories/nouveau": { items: [HOME, catalog, categories, crumb("Nouvelle catégorie")], subtitle: "Ajoutez une catégorie de classification." },
+    "/annonces": { items: [HOME, crumb("Annonces")], subtitle: SUBTITLES["/annonces"] },
+    "/publications": { items: [HOME, crumb("Publications")], subtitle: SUBTITLES["/publications"] },
+    "/evenements": { items: [HOME, crumb("Événements")], subtitle: SUBTITLES["/evenements"] },
+    "/utilisateurs": { items: [HOME, crumb("Utilisateurs et rôles")], subtitle: SUBTITLES["/utilisateurs"] },
+    "/utilisateurs/nouveau": { items: [HOME, users, crumb("Nouvel utilisateur")], subtitle: "Créez un compte du personnel. Le mot de passe est généré automatiquement." },
+    "/utilisateurs/roles": { items: [HOME, users, crumb("Rôles et permissions")], subtitle: "Définissez les rôles et gérez les permissions d'accès au système." },
+    "/journal": { items: [HOME, crumb("Journal")], subtitle: SUBTITLES["/journal"] },
+    "/parametres": { items: [HOME, crumb("Paramètres")], subtitle: SUBTITLES["/parametres"] },
+    "/compte/profil": { items: [HOME, account, crumb("Mon profil")], subtitle: SUBTITLES["/compte/profil"] },
+    "/compte/mot-de-passe": { items: [HOME, account, crumb("Changer le mot de passe")], subtitle: SUBTITLES["/compte/mot-de-passe"] },
+    "/compte/preferences": { items: [HOME, account, crumb("Préférences")], subtitle: SUBTITLES["/compte/preferences"] },
+    "/compte/notifications": { items: [HOME, account, crumb("Alertes")], subtitle: SUBTITLES["/compte/notifications"] },
+    "/compte/aide": { items: [HOME, account, crumb("Aide et support")], subtitle: SUBTITLES["/compte/aide"] },
+    "/acces-refuse": { items: [HOME, crumb("Accès refusé")], subtitle: "" },
   }
-  if (FORM_TRAILS[pathname]) return FORM_TRAILS[pathname]
+  if (exact[pathname]) return exact[pathname]
+
   const rules = [
-    [/^\/annonces\/nouveau$/, ["Annonces", "Nouvelle annonce"], "Rédigez une annonce, puis publiez-la ou enregistrez un brouillon.", null],
-    [/^\/annonces\/\d+\/modifier$/, ["Annonces", "Modifier une annonce"], "Mettez à jour l'annonce, puis publiez-la ou enregistrez un brouillon.", null],
-    [/^\/annonces\/\d+$/, ["Annonces", "Voir une annonce"], "Fiche de l'annonce.", null],
-    [/^\/publications\/nouveau$/, ["Publications", "Nouvelle publication"], "Rédigez le contenu de la publication et ses informations.", null],
-    [/^\/publications\/\d+\/modifier$/, ["Publications", "Modifier une publication"], "Mettez à jour le contenu de la publication et ses informations.", null],
-    [/^\/publications\/\d+$/, ["Publications", "Voir une publication"], "Fiche de la publication.", null],
-    [/^\/evenements\/nouveau$/, ["Événements", "Nouvel événement"], "Ajoutez un événement, un atelier ou une activité.", null],
-    [/^\/evenements\/\d+\/modifier$/, ["Événements", "Modifier un événement"], "Mettez à jour cet événement.", null],
-    [/^\/evenements\/\d+$/, ["Événements", "Voir un événement"], "Fiche de l'événement.", null],
-    [/^\/utilisateurs\/nouveau$/, ["Utilisateurs et rôles", "Nouvel utilisateur"], "Créez un compte du personnel. Le mot de passe est généré automatiquement.", null],
-    [/^\/utilisateurs\/roles$/, ["Utilisateurs et rôles", "Rôles et permissions"], "Définissez les rôles et gérez les permissions d'accès au système.", null],
-    [/^\/utilisateurs\/\d+$/, ["Utilisateurs et rôles", "Voir un compte"], "Fiche du compte du personnel.", null],
-    [/^\/catalogue\/livres\/\d+\/modifier$/, ["Livres", "Modifier un livre"], "Mettez à jour les informations du livre et ses exemplaires."],
-    [/^\/catalogue\/livres\/\d+$/, ["Livres", "Voir un livre"], "Fiche du livre et de ses exemplaires."],
-    [/^\/catalogue\/auteurs\/\d+\/modifier$/, ["Auteurs", "Modifier un auteur"], "Mettez à jour cet auteur."],
-    [/^\/catalogue\/auteurs\/\d+$/, ["Auteurs", "Voir un auteur"], "Fiche de l'auteur."],
-    [/^\/catalogue\/editeurs\/\d+\/modifier$/, ["Éditeurs", "Modifier un éditeur"], "Mettez à jour cet éditeur."],
-    [/^\/catalogue\/editeurs\/\d+$/, ["Éditeurs", "Voir un éditeur"], "Fiche de l'éditeur."],
-    [/^\/catalogue\/categories\/\d+\/modifier$/, ["Catégories", "Modifier une catégorie"], "Mettez à jour cette catégorie."],
-    [/^\/catalogue\/categories\/\d+$/, ["Catégories", "Voir une catégorie"], "Fiche de la catégorie."],
+    [/^\/annonces\/nouveau$/, [HOME, announcements, crumb("Nouvelle annonce")], "Rédigez une annonce, puis publiez-la ou enregistrez un brouillon."],
+    [/^\/annonces\/\d+\/modifier$/, [HOME, announcements, crumb("Modifier une annonce")], "Mettez à jour l'annonce, puis publiez-la ou enregistrez un brouillon."],
+    [/^\/annonces\/\d+$/, [HOME, announcements, crumb("Voir une annonce")], "Fiche de l'annonce."],
+    [/^\/publications\/nouveau$/, [HOME, publications, crumb("Nouvelle publication")], "Rédigez le contenu de la publication et ses informations."],
+    [/^\/publications\/\d+\/modifier$/, [HOME, publications, crumb("Modifier une publication")], "Mettez à jour le contenu de la publication et ses informations."],
+    [/^\/publications\/\d+$/, [HOME, publications, crumb("Voir une publication")], "Fiche de la publication."],
+    [/^\/evenements\/nouveau$/, [HOME, events, crumb("Nouvel événement")], "Ajoutez un événement, un atelier ou une activité."],
+    [/^\/evenements\/\d+\/modifier$/, [HOME, events, crumb("Modifier un événement")], "Mettez à jour cet événement."],
+    [/^\/evenements\/\d+$/, [HOME, events, crumb("Voir un événement")], "Fiche de l'événement."],
+    [/^\/utilisateurs\/\d+$/, [HOME, users, crumb("Voir un compte")], "Fiche du compte du personnel."],
+    [/^\/catalogue\/livres\/\d+\/modifier$/, [HOME, catalog, books, crumb("Modifier un livre")], "Mettez à jour les informations du livre et ses exemplaires."],
+    [/^\/catalogue\/livres\/\d+$/, [HOME, catalog, books, crumb("Voir un livre")], "Fiche du livre et de ses exemplaires."],
+    [/^\/catalogue\/auteurs\/\d+\/modifier$/, [HOME, catalog, authors, crumb("Modifier un auteur")], "Mettez à jour cet auteur."],
+    [/^\/catalogue\/auteurs\/\d+$/, [HOME, catalog, authors, crumb("Voir un auteur")], "Fiche de l'auteur."],
+    [/^\/catalogue\/editeurs\/\d+\/modifier$/, [HOME, catalog, publishers, crumb("Modifier un éditeur")], "Mettez à jour cet éditeur."],
+    [/^\/catalogue\/editeurs\/\d+$/, [HOME, catalog, publishers, crumb("Voir un éditeur")], "Fiche de l'éditeur."],
+    [/^\/catalogue\/categories\/\d+\/modifier$/, [HOME, catalog, categories, crumb("Modifier une catégorie")], "Mettez à jour cette catégorie."],
+    [/^\/catalogue\/categories\/\d+$/, [HOME, catalog, categories, crumb("Voir une catégorie")], "Fiche de la catégorie."],
   ]
-  for (const [pattern, parts, subtitle, root] of rules) {
-    if (pattern.test(pathname)) return { parts, subtitle, root }
+  for (const [pattern, items, subtitle] of rules) {
+    if (pattern.test(pathname)) return { items, subtitle }
   }
-  if (CRUMBS[pathname]) return { parts: [CRUMBS[pathname]], subtitle: SUBTITLES[pathname] || "" }
-  return null
+  return { items: [HOME, crumb(titleFallback(pathname))], subtitle: SUBTITLES[pathname] || "" }
+}
+
+function titleFallback(pathname) {
+  return ACCOUNT_TITLES[pathname] || "Page"
+}
+
+function AdminBreadcrumb({ items }) {
+  if (!items?.length) return null
+  return (
+    <nav aria-label="Fil d'Ariane" className="min-w-0">
+      <ol className="flex flex-wrap items-center gap-1.5 text-body">
+        {items.map((item, index) => {
+          const last = index === items.length - 1
+          return (
+            <li key={`${item.label}-${index}`} className="flex min-w-0 items-center gap-1.5">
+              {index > 0 ? <ChevronRight className="h-4 w-4 shrink-0 text-muted" aria-hidden="true" /> : null}
+              {item.to && !last ? (
+                <Link to={item.to} className="truncate font-semibold text-violet hover:underline">
+                  {item.label}
+                </Link>
+              ) : (
+                <span className={`truncate font-semibold ${last ? "text-heading" : "text-violet"}`}>{item.label}</span>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
+  )
 }
 
 function itemClass(active) {
@@ -269,7 +310,7 @@ export function AdminShell() {
     || (path === "/acces-refuse" ? "Accès refusé" : "")
     || "Introuvable"
   const trail = trailFor(path)
-  const subtitle = trail?.subtitle || SUBTITLES[path] || ""
+  const currentLabel = trail?.items?.[trail.items.length - 1]?.label || title
 
   return (
     <div className="min-h-dvh lg:grid lg:h-dvh lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
@@ -285,20 +326,8 @@ export function AdminShell() {
         <div className="flex min-w-0 items-center gap-3">
           <span className="h-8 w-1.5 shrink-0 rounded-full bg-gold-bright" aria-hidden="true" />
           <div className="min-w-0">
-            <h1 className="text-bar truncate text-heading">
-              {trail ? (
-                <>
-                  {trail.root !== null ? <span className="text-violet">{trail.root || "Catalogue"}</span> : null}
-                  {trail.parts.map((part, index) => (
-                    <span key={part}>
-                      {trail.root !== null || index > 0 ? <span className="px-1 text-muted">›</span> : null}
-                      <span className={index === trail.parts.length - 1 ? "text-heading" : "text-violet"}>{part}</span>
-                    </span>
-                  ))}
-                </>
-              ) : title}
-            </h1>
-            {subtitle ? <p className="truncate text-muted">{subtitle}</p> : null}
+            <h1 className="sr-only">{currentLabel}</h1>
+            <AdminBreadcrumb items={trail?.items} />
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">

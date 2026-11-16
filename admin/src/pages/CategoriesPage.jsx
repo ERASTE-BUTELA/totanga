@@ -2,6 +2,7 @@ import { useState } from "react"
 import { BookOpen, Layers, Tag } from "lucide-react"
 import { deleteCategory, listCategories } from "../api/catalog.js"
 import { useListNotice } from "../lib/useListNotice.js"
+import { ConfirmModal } from "../components/ConfirmModal.jsx"
 import { RowActions } from "../components/RowActions.jsx"
 import { CatalogListPage } from "./CatalogListPage.jsx"
 import { CategoryFormModal } from "./CategoryFormPage.jsx"
@@ -26,17 +27,23 @@ export function CategoriesPage() {
   const [notice, setNotice] = useListNotice()
   const [actionError, setActionError] = useState("")
   const [modal, setModal] = useState(null)
+  const [pending, setPending] = useState(null)
+  const [busy, setBusy] = useState(false)
   const rows = data?.results || []
   const stats = data?.stats
 
-  async function onRemove(row) {
-    if (!window.confirm(`Supprimer « ${row.name} » ?`)) return
-    const result = await deleteCategory(row.id)
+  async function confirmRemove() {
+    if (!pending || busy) return
+    setBusy(true)
+    const result = await deleteCategory(pending.id)
+    setBusy(false)
     if (!result.ok) {
       setActionError(result.error)
+      setPending(null)
       return
     }
     setActionError("")
+    setPending(null)
     reload()
   }
 
@@ -85,7 +92,7 @@ export function CategoriesPage() {
                 onView={() => setModal({ mode: "view", categoryId: row.id })}
                 onEdit={() => setModal({ mode: "edit", categoryId: row.id })}
                 removeLabel="Supprimer"
-                onRemove={() => onRemove(row)}
+                onRemove={() => setPending(row)}
               />
             ),
           },
@@ -97,6 +104,15 @@ export function CategoriesPage() {
           categoryId={modal.categoryId}
           onClose={() => setModal(null)}
           onSaved={onSaved}
+        />
+      ) : null}
+      {pending ? (
+        <ConfirmModal
+          title="Confirmer la suppression"
+          message={`Supprimer « ${pending.name} » ? Cette action est définitive.`}
+          busy={busy}
+          onClose={() => !busy && setPending(null)}
+          onConfirm={confirmRemove}
         />
       ) : null}
     </>

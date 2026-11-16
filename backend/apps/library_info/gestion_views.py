@@ -209,6 +209,19 @@ def _apply_general(library, data, files, user):
             return error
         logo = stored
 
+    hero_image = library.hero_image
+    if _truthy(data.get("clear_hero_image")):
+        hero_image = None
+    elif files.get("hero_image"):
+        stored, error = _store_image(
+            files["hero_image"],
+            alt_text=f"Bandeau d'accueil {name}",
+            user=user,
+        )
+        if error:
+            return error
+        hero_image = stored
+
     library.name = name
     library.slogan = slogan
     library.address = address
@@ -225,6 +238,7 @@ def _apply_general(library, data, files, user):
     library.logo = logo
     # Favicon = logo (plus de champ séparé dans l'interface).
     library.favicon = logo
+    library.hero_image = hero_image
     library.language = language
     library.theme = theme
     library.dark_mode = dark_mode

@@ -253,6 +253,11 @@ def _new_copy(book, item, cells):
         call_number=call_number(cells["code1"], cells["code2"], cells["Dewey"])[:80],
         inventory_number=item["inventory"] or None,
         fonds=tidy(cells["F.N."])[:32],
+        code1=tidy(cells["code1"])[:40],
+        code2=tidy(cells["code2"])[:40],
+        code3=tidy(cells["code3"])[:40],
+        code4=tidy(cells["code4"])[:40],
+        dewey=tidy(cells["Dewey"])[:40],
         secondary_call_number=secondary_call_number(cells["code3"], cells["code4"])[:40],
         acquisition_price=acquisition_price(cells["Prix"]),
         section="",
@@ -266,6 +271,11 @@ def _new_copy(book, item, cells):
 def _fill_copy(copy, item, cells):
     copy.call_number = call_number(cells["code1"], cells["code2"], cells["Dewey"])[:80]
     copy.fonds = tidy(cells["F.N."])[:32]
+    copy.code1 = tidy(cells["code1"])[:40]
+    copy.code2 = tidy(cells["code2"])[:40]
+    copy.code3 = tidy(cells["code3"])[:40]
+    copy.code4 = tidy(cells["code4"])[:40]
+    copy.dewey = tidy(cells["Dewey"])[:40]
     copy.secondary_call_number = secondary_call_number(cells["code3"], cells["code4"])[:40]
     copy.acquisition_price = acquisition_price(cells["Prix"])
     copy.status = CopyStatus.AVAILABLE

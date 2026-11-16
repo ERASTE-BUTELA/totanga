@@ -16,6 +16,9 @@ from apps.accounts.audit import record_staff_action
 from apps.accounts.authentication import CsrfEnforcedAuthentication
 from apps.common.slugs import unique_slug
 
+from apps.catalog.repertoire import call_number as build_call_number
+from apps.catalog.repertoire import secondary_call_number as build_secondary_call_number
+from apps.catalog.repertoire import tidy
 from apps.catalog.search import filter_books
 from apps.catalog.validators import prepare_catalog_image
 
@@ -134,6 +137,11 @@ def _copy_payload(copy):
         "call_number": copy.call_number,
         "inventory_number": copy.inventory_number or "",
         "fonds": copy.fonds,
+        "code1": copy.code1,
+        "code2": copy.code2,
+        "code3": copy.code3,
+        "code4": copy.code4,
+        "dewey": copy.dewey,
         "secondary_call_number": copy.secondary_call_number,
         "price": _money(copy.acquisition_price),
         "place": _place(copy.section, copy.shelf),
@@ -977,7 +985,25 @@ class BookDetailView(APIView):
 
 
 def _copy_from_data(copy, data):
-    call_number = str(data.get("call_number", copy.call_number if copy.pk else "")).strip()
+    has_codes = any(key in data for key in ("code1", "code2", "code3", "code4", "dewey"))
+    code1 = tidy(data.get("code1", copy.code1 if copy.pk else ""))[:40]
+    code2 = tidy(data.get("code2", copy.code2 if copy.pk else ""))[:40]
+    code3 = tidy(data.get("code3", copy.code3 if copy.pk else ""))[:40]
+    code4 = tidy(data.get("code4", copy.code4 if copy.pk else ""))[:40]
+    dewey = tidy(data.get("dewey", copy.dewey if copy.pk else ""))[:40]
+    if has_codes:
+        built = build_call_number(code1, code2, dewey)
+        secondary = build_secondary_call_number(code3, code4)
+        call = built[:80]
+        if not call:
+            return "Indiquez au moins code1 ou code2 (ou Dewey) pour former la cote."
+    else:
+        call = str(data.get("call_number", copy.call_number if copy.pk else "")).strip()
+        secondary = str(
+            data.get("secondary_call_number", copy.secondary_call_number if copy.pk else "")
+        ).strip()[:40]
+        if not call:
+            return "Chaque exemplaire a besoin d'une cote (code1 / code2 / Dewey)."
     section = str(data.get("section", copy.section if copy.pk else "")).strip()
     shelf = str(data.get("shelf", copy.shelf if copy.pk else "")).strip()
     place = str(data.get("place", "")).strip()
@@ -985,8 +1011,6 @@ def _copy_from_data(copy, data):
         section, shelf = _split_place(place)
     status = str(data.get("status", copy.status if copy.pk else "")).strip()
     status = LABEL_TO_STATUS.get(status, status)
-    if not call_number:
-        return "Chaque exemplaire a besoin d'une cote."
     if status not in STATUS_LABELS:
         return "Le statut d'un exemplaire n'est pas reconnu."
     acquired = data.get("acquired_on", copy.acquired_on if copy.pk else None)
@@ -995,12 +1019,15 @@ def _copy_from_data(copy, data):
     else:
         acquired = str(acquired)[:10]
     inventory = str(data.get("inventory_number", copy.inventory_number if copy.pk else "") or "").strip()
-    copy.call_number = call_number[:80]
+    copy.call_number = call[:80]
     copy.inventory_number = inventory or None
     copy.fonds = str(data.get("fonds", copy.fonds if copy.pk else "")).strip()[:32]
-    copy.secondary_call_number = str(
-        data.get("secondary_call_number", copy.secondary_call_number if copy.pk else "")
-    ).strip()[:40]
+    copy.code1 = code1
+    copy.code2 = code2
+    copy.code3 = code3
+    copy.code4 = code4
+    copy.dewey = dewey
+    copy.secondary_call_number = secondary[:40]
     if "price" in data:
         copy.acquisition_price = _parse_price(data.get("price"))
     copy.section = section[:80]

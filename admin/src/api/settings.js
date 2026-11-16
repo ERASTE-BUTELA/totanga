@@ -64,5 +64,6 @@ export function mapLibrarySettings(raw) {
     pageSize: String(raw?.page_size || 10),
     maintenance: Boolean(raw?.maintenance),
     logo: String(raw?.logo || "") || "/admin/images/logo.png",
+    heroImage: String(raw?.hero_image || ""),
   }
 }

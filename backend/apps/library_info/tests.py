@@ -108,6 +108,7 @@ class LibrarySettingsApiTests(TestCase):
         self.assertEqual(public.data["name"], "Bibliothèque Totanga Kinshasa")
         self.assertTrue(public.data["logo"].startswith("/media/"))
         self.assertEqual(public.data["facebook_url"], "https://facebook.com/totanga")
+        self.assertEqual(public.data.get("hero_image"), "")
         self.assertEqual(
             public.data["social_links"],
             [
@@ -115,6 +116,47 @@ class LibrarySettingsApiTests(TestCase):
                 {"label": "WhatsApp", "url": "https://wa.me/243800000001"},
             ],
         )
+
+    def test_admin_can_set_and_clear_hero_image(self):
+        token = self._login("admin_settings")
+        Library.get_solo()
+        response = self.client.patch(
+            "/api/gestion/parametres/",
+            {
+                "name": "Bibliothèque Totanga",
+                "address": "Avenue de la Paix",
+                "city": "Kinshasa",
+                "phone": "+243 800 000 000",
+                "email": "contact@exemple.totanga.test",
+                "hero_image": image_upload("hero.jpg"),
+            },
+            format="multipart",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        library = Library.objects.get(pk=1)
+        self.assertTrue(library.hero_image_id)
+        public = self.client.get("/api/bibliotheque/")
+        self.assertTrue(public.data["hero_image"].startswith("/media/"))
+
+        clear = self.client.patch(
+            "/api/gestion/parametres/",
+            {
+                "name": "Bibliothèque Totanga",
+                "address": "Avenue de la Paix",
+                "city": "Kinshasa",
+                "phone": "+243 800 000 000",
+                "email": "contact@exemple.totanga.test",
+                "clear_hero_image": "true",
+            },
+            format="multipart",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(clear.status_code, 200, clear.data)
+        library.refresh_from_db()
+        self.assertFalse(library.hero_image_id)
+        public = self.client.get("/api/bibliotheque/")
+        self.assertEqual(public.data["hero_image"], "")
 
     def test_admin_can_persist_maps_location(self):
         token = self._login("admin_settings")

@@ -6,9 +6,18 @@ const COPY_STATUS_LABELS = {
   lost: "Perdu",
 }
 
+export function isCopyAvailable(copy) {
+  return copy?.status === "available"
+}
+
 export function isBookAvailable(book) {
+  // Un livre est disponible dès qu'au moins un exemplaire l'est.
+  // Indisponible seulement si tous les exemplaires sont indisponibles (ou s'il n'y en a aucun).
+  if (Array.isArray(book?.copies) && book.copies.length > 0) {
+    return book.copies.some((copy) => isCopyAvailable(copy))
+  }
   if (typeof book?.available === "boolean") return book.available
-  return Array.isArray(book?.copies) && book.copies.some((copy) => copy.status === "available")
+  return false
 }
 
 export function bookStatusLabel(book) {
