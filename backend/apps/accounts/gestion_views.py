@@ -17,12 +17,23 @@ from .audit import (
     ACTION_LOGIN,
     ACTION_LOGIN_REFUSED,
     ACTION_LOGOUT,
+    ACTION_PASSWORD_RESET,
+    ACTION_ROLES_UPDATED,
     ACTION_USER_CREATED,
     record_staff_action,
 )
 from .authentication import CsrfEnforcedAuthentication
 from .login_guard import clear_failures, is_locked, note_failure
-from .roles import ROLE_ADMIN, ROLE_EDITOR, ROLE_LIBRARIAN, can_enter_admin, role_of
+from .roles import (
+    ROLE_ADMIN,
+    ROLE_EDITOR,
+    ROLE_LIBRARIAN,
+    ROLE_PRIORITY,
+    apply_role_grants,
+    can_enter_admin,
+    list_role_payloads,
+    role_of,
+)
 from .session_limits import stamp_session
 
 User = get_user_model()
@@ -77,7 +88,8 @@ def _draw_password():
 def generated_password(user):
     """Mot de passe aléatoire, contrôlé par les validateurs Django.
 
-    Le texte n'est jamais journalisé. Il n'est renvoyé qu'une fois, à la création.
+    Le texte n'est jamais journalisé. Il n'est renvoyé qu'une fois
+    (création du compte ou réinitialisation par un administrateur).
     """
 
     for _ in range(20):
@@ -259,6 +271,100 @@ class StaffUserListView(APIView):
             target_id=user.pk,
         )
         return Response(_staff_row(user, password), status=201)
+
+
+class StaffPasswordResetView(APIView):
+    """Réinitialise le mot de passe d'un compte. Réservé à accounts.change_user.
+
+    Le nouveau mot de passe est généré ici et renvoyé une seule fois.
+    """
+
+    authentication_classes = [CsrfEnforcedAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        if not request.user.has_perm("accounts.change_user"):
+            return Response(
+                {"detail": "Vous n'avez pas l'autorisation d'effectuer cette action."},
+                status=403,
+            )
+        person = User.objects.filter(pk=user_id).first()
+        if person is None:
+            return Response({"detail": "Ce compte n'existe pas."}, status=404)
+        if person.is_superuser and not request.user.is_superuser:
+            return Response(
+                {"detail": "Vous n'avez pas l'autorisation d'effectuer cette action."},
+                status=403,
+            )
+        password = generated_password(person)
+        if not password:
+            return Response(
+                {"detail": "Le mot de passe n'a pas pu être généré. Réessayez."},
+                status=400,
+            )
+        person.set_password(password)
+        person.save(update_fields=["password"])
+        record_staff_action(
+            actor=request.user,
+            action=ACTION_PASSWORD_RESET,
+            target_type="accounts.User",
+            target_id=person.pk,
+        )
+        return Response(_staff_row(person, password))
+
+
+class StaffRoleListView(APIView):
+    """Lecture et enregistrement des droits des trois rôles du personnel."""
+
+    authentication_classes = [CsrfEnforcedAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.has_perm("accounts.view_user"):
+            return Response(
+                {"detail": "Vous n'avez pas l'autorisation d'effectuer cette action."},
+                status=403,
+            )
+        return Response({"roles": list_role_payloads()})
+
+    def put(self, request):
+        if not request.user.has_perm("accounts.change_user"):
+            return Response(
+                {"detail": "Vous n'avez pas l'autorisation d'effectuer cette action."},
+                status=403,
+            )
+        data = request.data if isinstance(request.data, dict) else {}
+        rows = data.get("roles")
+        if not isinstance(rows, list) or not rows:
+            return Response({"detail": "Indiquez les rôles à enregistrer."}, status=400)
+        by_code = {}
+        for row in rows:
+            if not isinstance(row, dict):
+                return Response({"detail": "Indiquez les rôles à enregistrer."}, status=400)
+            code = row.get("code")
+            if code not in ROLE_PRIORITY:
+                return Response({"detail": "Un rôle demandé n'existe pas."}, status=400)
+            if code in by_code:
+                return Response({"detail": "Chaque rôle ne peut apparaître qu'une fois."}, status=400)
+            by_code[code] = row.get("grants")
+        missing = [code for code in ROLE_PRIORITY if code not in by_code]
+        if missing:
+            return Response({"detail": "Tous les rôles doivent être envoyés ensemble."}, status=400)
+        try:
+            with transaction.atomic():
+                for code in ROLE_PRIORITY:
+                    apply_role_grants(code, by_code[code])
+        except ValueError as error:
+            return Response({"detail": str(error)}, status=400)
+        except RuntimeError:
+            return Response({"detail": "Les rôles n'ont pas pu être enregistrés. Réessayez."}, status=400)
+        record_staff_action(
+            actor=request.user,
+            action=ACTION_ROLES_UPDATED,
+            target_type="auth.Group",
+            target_id="",
+        )
+        return Response({"roles": list_role_payloads()})
 
 
 class StaffJournalView(APIView):

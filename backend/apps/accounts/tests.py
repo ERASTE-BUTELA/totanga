@@ -670,3 +670,142 @@ class StaffVisitorMessageReadTests(TestCase):
         self.assertEqual(all_read.status_code, 200)
         self.assertEqual(all_read.json()["unread_count"], 0)
         self.assertEqual(VisitorMessage.objects.filter(is_read=False).count(), 0)
+
+
+class StaffPasswordResetTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        sync_roles()
+        self.client = APIClient(enforce_csrf_checks=True)
+        self.admin = User.objects.create_user("admin-mdp", password=PASSWORD)
+        self.admin.groups.add(Group.objects.get(name=ROLE_ADMIN))
+        self.librarian = User.objects.create_user("biblio-mdp", password=PASSWORD)
+        self.librarian.groups.add(Group.objects.get(name=ROLE_LIBRARIAN))
+
+    def token(self):
+        self.client.get("/api/gestion/session/")
+        csrf = self.client.cookies["csrftoken"].value
+        response = self.client.post(
+            "/api/gestion/session/",
+            {"username": "admin-mdp", "password": PASSWORD},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        self.assertEqual(response.status_code, 200)
+        return self.client.cookies["csrftoken"].value
+
+    def test_admin_resets_password_once_without_logging_it(self):
+        token = self.token()
+        reset = self.client.post(
+            f"/api/gestion/utilisateurs/{self.librarian.pk}/mot-de-passe/",
+            {},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(reset.status_code, 200)
+        password = reset.json()["password"]
+        self.assertGreaterEqual(len(password), 20)
+        self.librarian.refresh_from_db()
+        self.assertTrue(self.librarian.check_password(password))
+        self.assertFalse(self.librarian.check_password(PASSWORD))
+        action = StaffAction.objects.get(action="reinitialisation_mot_de_passe")
+        self.assertEqual(action.actor, self.admin)
+        self.assertEqual(action.target_id, str(self.librarian.pk))
+        self.assertNotIn(password, f"{action.action} {action.target_type} {action.target_id}")
+
+    def test_librarian_cannot_reset_password(self):
+        self.client.get("/api/gestion/session/")
+        csrf = self.client.cookies["csrftoken"].value
+        self.client.post(
+            "/api/gestion/session/",
+            {"username": "biblio-mdp", "password": PASSWORD},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        refused = self.client.post(
+            f"/api/gestion/utilisateurs/{self.admin.pk}/mot-de-passe/",
+            {},
+            format="json",
+            HTTP_X_CSRFTOKEN=self.client.cookies["csrftoken"].value,
+        )
+        self.assertEqual(refused.status_code, 403)
+
+
+class StaffRolesApiTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        sync_roles()
+        self.client = APIClient(enforce_csrf_checks=True)
+        self.admin = User.objects.create_user("admin-roles", password=PASSWORD)
+        self.admin.groups.add(Group.objects.get(name=ROLE_ADMIN))
+        self.librarian = User.objects.create_user("biblio-roles", password=PASSWORD)
+        self.librarian.groups.add(Group.objects.get(name=ROLE_LIBRARIAN))
+
+    def login_as(self, username):
+        self.client = APIClient(enforce_csrf_checks=True)
+        self.client.get("/api/gestion/session/")
+        csrf = self.client.cookies["csrftoken"].value
+        response = self.client.post(
+            "/api/gestion/session/",
+            {"username": username, "password": PASSWORD},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        self.assertEqual(response.status_code, 200)
+        return self.client.cookies["csrftoken"].value
+
+    def test_admin_can_save_role_permissions(self):
+        token = self.login_as("admin-roles")
+        listed = self.client.get("/api/gestion/roles/")
+        self.assertEqual(listed.status_code, 200)
+        roles = listed.json()["roles"]
+        self.assertEqual([role["code"] for role in roles], [ROLE_ADMIN, ROLE_LIBRARIAN, ROLE_EDITOR])
+        for role in roles:
+            if role["code"] == ROLE_LIBRARIAN:
+                role["grants"]["announcements"]["view"] = True
+                role["grants"]["announcements"]["add"] = True
+        saved = self.client.put(
+            "/api/gestion/roles/",
+            {"roles": [{"code": role["code"], "grants": role["grants"]} for role in roles]},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(saved.status_code, 200)
+        self.librarian = User.objects.get(pk=self.librarian.pk)
+        self.assertTrue(self.librarian.has_perm("announcements.view_announcement"))
+        self.assertTrue(self.librarian.has_perm("announcements.add_announcement"))
+        self.assertTrue(StaffAction.objects.filter(action="modification_roles", actor=self.admin).exists())
+
+    def test_admin_cannot_drop_account_management(self):
+        token = self.login_as("admin-roles")
+        roles = self.client.get("/api/gestion/roles/").json()["roles"]
+        for role in roles:
+            if role["code"] == ROLE_ADMIN:
+                role["grants"]["users"]["change"] = False
+        refused = self.client.put(
+            "/api/gestion/roles/",
+            {"roles": [{"code": role["code"], "grants": role["grants"]} for role in roles]},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(refused.status_code, 400)
+
+    def test_sync_roles_keeps_custom_grants_unless_reset(self):
+        token = self.login_as("admin-roles")
+        roles = self.client.get("/api/gestion/roles/").json()["roles"]
+        for role in roles:
+            if role["code"] == ROLE_EDITOR:
+                role["grants"]["settings"]["view"] = True
+        self.client.put(
+            "/api/gestion/roles/",
+            {"roles": [{"code": role["code"], "grants": role["grants"]} for role in roles]},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        sync_roles()
+        editor = User.objects.create_user("redacteur-custom", password=PASSWORD)
+        editor.groups.add(Group.objects.get(name=ROLE_EDITOR))
+        self.assertTrue(editor.has_perm("analytics.view_sitestat"))
+        sync_roles(reset=True)
+        editor = User.objects.get(pk=editor.pk)
+        self.assertFalse(editor.has_perm("analytics.view_sitestat"))

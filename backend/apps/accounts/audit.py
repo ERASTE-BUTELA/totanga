@@ -4,6 +4,8 @@ ACTION_LOGIN = "connexion"
 ACTION_LOGOUT = "deconnexion"
 ACTION_LOGIN_REFUSED = "connexion_refusee"
 ACTION_USER_CREATED = "creation_compte"
+ACTION_PASSWORD_RESET = "reinitialisation_mot_de_passe"
+ACTION_ROLES_UPDATED = "modification_roles"
 
 
 def record_staff_action(*, actor, action, target_type="", target_id=""):

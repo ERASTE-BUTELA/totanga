@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react"
-import { ArrowLeft, BookOpen, CalendarDays, Check, Crown, FileText, KeyRound, LayoutDashboard, Megaphone, Pencil, Plus, RotateCcw, Settings, Shield, ShieldCheck, Users } from "lucide-react"
+import { ArrowLeft, BookOpen, CalendarDays, Check, Crown, FileText, KeyRound, LayoutDashboard, Megaphone, Pencil, RotateCcw, Settings, Shield, ShieldCheck, Users } from "lucide-react"
 import { Link } from "react-router"
-import { listStaff } from "../api/staff.js"
+import { listRoles, listStaff, saveRoles } from "../api/staff.js"
+import { canOpen } from "../nav/entries.js"
+import { useSession } from "../session/SessionContext.jsx"
 
 const ACTIONS = [
   { id: "view", label: "Consulter" },
@@ -11,92 +13,69 @@ const ACTIONS = [
 ]
 
 const MODULES = [
-  { id: "dashboard", label: "Tableau de bord", hint: "", icon: LayoutDashboard },
+  { id: "dashboard", label: "Tableau de bord", hint: "Ouvert à tout le personnel connecté", icon: LayoutDashboard, locked: true },
   { id: "catalog", label: "Catalogue", hint: "Livres, auteurs, catégories, exemplaires", icon: BookOpen },
   { id: "announcements", label: "Annonces", hint: "", icon: Megaphone },
   { id: "publications", label: "Publications", hint: "", icon: FileText },
-  { id: "events", label: "Événements", hint: "", icon: CalendarDays },
+  { id: "events", label: "Événements", hint: "Pas de suppression : archivage seulement", icon: CalendarDays },
   { id: "users", label: "Utilisateurs et rôles", hint: "", icon: Users },
   { id: "settings", label: "Paramètres", hint: "", icon: Settings },
 ]
 
 const ICONS = { crown: Crown, book: BookOpen, pen: Pencil }
 
-function blankGrants() {
-  return Object.fromEntries(MODULES.map((item) => [item.id, { view: false, add: false, change: false, delete: false }]))
-}
-
-function withGrants(allowed) {
-  const grants = blankGrants()
-  for (const [module, actions] of Object.entries(allowed)) {
-    for (const action of actions) grants[module][action] = true
-  }
-  return grants
-}
-
-function serverRoles() {
-  return [
-    {
-      code: "administrateur",
-      label: "Administrateur",
-      description: "Accès complet au système.",
-      icon: "crown",
-      grants: withGrants({
-        dashboard: ["view"],
-        catalog: ["view", "add", "change"],
-        announcements: ["view", "add", "change"],
-        events: ["view", "add", "change"],
-        users: ["view", "add", "change"],
-      }),
-    },
-    {
-      code: "bibliothecaire",
-      label: "Bibliothécaire",
-      description: "Gestion du catalogue (livres, exemplaires, auteurs, catégories).",
-      icon: "book",
-      grants: withGrants({
-        dashboard: ["view"],
-        catalog: ["view", "add", "change"],
-      }),
-    },
-    {
-      code: "redacteur",
-      label: "Rédacteur",
-      description: "Annonces, publications et événements.",
-      icon: "pen",
-      grants: withGrants({
-        dashboard: ["view"],
-        announcements: ["view", "add", "change"],
-        events: ["view", "add", "change"],
-      }),
-    },
-  ]
-}
-
 function permissionCount(roles) {
-  return roles.reduce((sum, role) => sum + MODULES.reduce((count, item) => count + ACTIONS.filter((action) => role.grants[item.id][action.id]).length, 0), 0)
+  return roles.reduce((sum, role) => sum + MODULES.reduce((count, item) => count + ACTIONS.filter((action) => role.grants?.[item.id]?.[action.id]).length, 0), 0)
+}
+
+function actionDisabled(moduleId, actionId) {
+  if (moduleId === "dashboard") return true
+  if (moduleId === "events" && actionId === "delete") return true
+  if (moduleId === "users" && actionId === "delete") return true
+  if (moduleId === "settings" && (actionId === "add" || actionId === "delete")) return true
+  return false
 }
 
 export function RolesPage() {
-  const [roles, setRoles] = useState(serverRoles)
+  const session = useSession()
+  const canEdit = canOpen(session.account?.permissions ?? [], "accounts.change_user", session.account?.role)
+  const [roles, setRoles] = useState([])
   const [selected, setSelected] = useState("administrateur")
   const [people, setPeople] = useState([])
   const [notice, setNotice] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
   const current = roles.find((role) => role.code === selected) || roles[0]
-  const Icon = ICONS[current.icon] || Shield
+  const Icon = ICONS[current?.icon] || Shield
 
   useEffect(() => {
-    listStaff().then((result) => {
-      if (result.ok) setPeople(result.data)
+    let active = true
+    Promise.all([listRoles(), listStaff()]).then(([rolesResult, staffResult]) => {
+      if (!active) return
+      if (!rolesResult.ok) {
+        setError(rolesResult.error)
+        setLoading(false)
+        return
+      }
+      setRoles(rolesResult.data)
+      setSelected(rolesResult.data[0]?.code || "administrateur")
+      if (staffResult.ok) setPeople(staffResult.data)
+      setLoading(false)
     })
+    return () => {
+      active = false
+    }
   }, [])
 
   function update(code, patch) {
     setRoles((items) => items.map((role) => (role.code === code ? { ...role, ...patch } : role)))
     setNotice("")
+    setError("")
   }
 
   function setGrant(module, action, value) {
+    if (!current || actionDisabled(module, action) || !canEdit) return
     update(current.code, {
       grants: {
         ...current.grants,
@@ -106,19 +85,53 @@ export function RolesPage() {
   }
 
   function setRow(module, value) {
+    if (!current || !canEdit) return
+    const next = { ...current.grants[module] }
+    for (const action of ACTIONS) {
+      if (!actionDisabled(module, action.id)) next[action.id] = value
+    }
     update(current.code, {
       grants: {
         ...current.grants,
-        [module]: { view: value, add: value, change: value, delete: value },
+        [module]: next,
       },
     })
   }
 
-  function addRole() {
-    const code = `nouveau-${roles.length + 1}`
-    setRoles((items) => [...items, { code, label: "Nouveau rôle", description: "", icon: "pen", grants: blankGrants() }])
-    setSelected(code)
+  async function reloadDefaults() {
+    if (busy) return
+    setBusy(true)
+    setError("")
     setNotice("")
+    const result = await listRoles()
+    setBusy(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    setRoles(result.data)
+    setSelected(result.data[0]?.code || "administrateur")
+    setNotice("Affichage rechargé depuis le serveur.")
+  }
+
+  async function save() {
+    if (!canEdit || busy || roles.length === 0) return
+    setBusy(true)
+    setError("")
+    setNotice("")
+    const result = await saveRoles(roles.map((role) => ({ code: role.code, grants: role.grants })))
+    setBusy(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    setRoles(result.data)
+    setNotice("Les modifications ont été enregistrées. Elles s'appliquent aux prochains contrôles d'accès.")
+  }
+
+  if (loading) return <p>Chargement…</p>
+  if (!current) {
+    return <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error || "Aucun rôle n'est disponible."}</p>
   }
 
   const associated = people.filter((person) => roles.some((role) => role.code === person.role)).length
@@ -136,6 +149,9 @@ export function RolesPage() {
           Rôles et permissions
         </Link>
       </div>
+      {error ? <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-4 text-unavailable">{error}</p> : null}
+      {notice ? <p role="status" className="rounded-panel border border-available bg-available-soft p-4 text-available">{notice}</p> : null}
+      {!canEdit ? <p className="rounded-panel border border-line bg-panel p-4 text-muted">Seul un administrateur peut enregistrer les modifications de rôles.</p> : null}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           ["Rôles au total", roles.length, Users, "bg-lavender text-violet"],
@@ -154,13 +170,7 @@ export function RolesPage() {
       </div>
       <div className="grid items-start gap-4 xl:grid-cols-[18rem_minmax(0,1fr)]">
         <article className="rounded-panel border border-line bg-panel p-4 shadow-card">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="font-semibold text-heading">Rôles ({roles.length})</h2>
-            <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control px-2 font-semibold text-violet" onClick={addRole}>
-              <Plus aria-hidden="true" size={18} />
-              Nouveau rôle
-            </button>
-          </div>
+          <h2 className="font-semibold text-heading">Rôles ({roles.length})</h2>
           <ul className="mt-3 grid gap-2">
             {roles.map((role) => {
               const RoleIcon = ICONS[role.icon] || Shield
@@ -192,19 +202,19 @@ export function RolesPage() {
               <Icon aria-hidden="true" className="text-violet" size={22} />
               Détails du rôle : {current.label}
             </h2>
-            <button type="button" className="inline-flex min-h-11 items-center gap-2 font-semibold text-violet" onClick={() => document.getElementById("nom-du-role")?.focus()}>
+            <span className="inline-flex min-h-11 items-center gap-2 font-semibold text-muted">
               <Pencil aria-hidden="true" size={18} />
-              Modifier le rôle
-            </button>
+              {canEdit ? "Cochez les droits ci-dessous" : "Lecture seule"}
+            </span>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Nom du rôle *</span>
-              <input id="nom-du-role" className="w-full rounded-control border border-line px-3" value={current.label} onChange={(event) => update(current.code, { label: event.target.value })} />
+              <span className="font-semibold text-heading">Nom du rôle</span>
+              <input className="w-full rounded-control border border-line bg-canvas px-3" value={current.label} readOnly />
             </label>
             <label className="grid gap-1">
               <span className="font-semibold text-heading">Description</span>
-              <input className="w-full rounded-control border border-line px-3" value={current.description} onChange={(event) => update(current.code, { description: event.target.value })} />
+              <input className="w-full rounded-control border border-line bg-canvas px-3" value={current.description || ""} readOnly />
             </label>
           </div>
           <h3 className="mt-6 flex items-center gap-2 font-semibold text-heading">
@@ -224,9 +234,10 @@ export function RolesPage() {
               </thead>
               <tbody>
                 {MODULES.map((item) => {
-                  const row = current.grants[item.id]
+                  const row = current.grants[item.id] || { view: false, add: false, change: false, delete: false }
                   const ModuleIcon = item.icon
-                  const all = ACTIONS.every((action) => row[action.id])
+                  const editableActions = ACTIONS.filter((action) => !actionDisabled(item.id, action.id))
+                  const all = editableActions.length > 0 && editableActions.every((action) => row[action.id])
                   return (
                     <tr key={item.id} className="border-b border-line">
                       <td className="px-3 py-3">
@@ -239,11 +250,25 @@ export function RolesPage() {
                         </span>
                       </td>
                       <td className="px-3 py-3 text-center">
-                        <input type="checkbox" className="h-5 w-5 accent-violet" checked={all} aria-label={`Tout autoriser pour ${item.label}`} onChange={(event) => setRow(item.id, event.target.checked)} />
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 accent-violet"
+                          checked={all}
+                          disabled={!canEdit || editableActions.length === 0}
+                          aria-label={`Tout autoriser pour ${item.label}`}
+                          onChange={(event) => setRow(item.id, event.target.checked)}
+                        />
                       </td>
                       {ACTIONS.map((action) => (
                         <td key={action.id} className="px-3 py-3 text-center">
-                          <input type="checkbox" className="h-5 w-5 accent-violet" checked={row[action.id]} aria-label={`${action.label} ${item.label}`} onChange={(event) => setGrant(item.id, action.id, event.target.checked)} />
+                          <input
+                            type="checkbox"
+                            className="h-5 w-5 accent-violet"
+                            checked={Boolean(row[action.id])}
+                            disabled={!canEdit || actionDisabled(item.id, action.id)}
+                            aria-label={`${action.label} ${item.label}`}
+                            onChange={(event) => setGrant(item.id, action.id, event.target.checked)}
+                          />
                         </td>
                       ))}
                     </tr>
@@ -257,20 +282,19 @@ export function RolesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link to="/utilisateurs" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading">
           <ArrowLeft aria-hidden="true" size={18} />
-          Retour à la liste des rôles
+          Retour à la liste
         </Link>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-violet" onClick={() => { setRoles(serverRoles()); setSelected("administrateur"); setNotice("") }}>
+          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-violet" disabled={busy} onClick={reloadDefaults}>
             <RotateCcw aria-hidden="true" size={18} />
-            Réinitialiser
+            Recharger
           </button>
-          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary" onClick={() => setNotice("L'affichage est mis à jour sur cet écran. Les droits du serveur restent inchangés.")}>
+          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary disabled:opacity-60" disabled={!canEdit || busy} onClick={save}>
             <Check aria-hidden="true" size={18} />
-            Enregistrer les modifications
+            {busy ? "Enregistrement…" : "Enregistrer les modifications"}
           </button>
         </div>
       </div>
-      {notice ? <p className="text-muted">{notice}</p> : null}
     </section>
   )
 }
