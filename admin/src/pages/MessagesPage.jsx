@@ -107,6 +107,7 @@ function MessageModal({ row, thread, onClose, onReplied, onSelectRelated }) {
   const canWhatsapp = Boolean(row?.whatsapp)
   const canReply = canEmail || canWhatsapp
   const replies = Array.isArray(row?.replies) ? row.replies : []
+  const alreadyReplied = replies.length > 0 || Number(row?.reply_count) > 0
   const related = (thread || []).filter((item) => item.id !== row?.id)
 
   useEffect(() => {
@@ -135,7 +136,7 @@ function MessageModal({ row, thread, onClose, onReplied, onSelectRelated }) {
 
   async function sendReply(event) {
     event.preventDefault()
-    if (!canReply || busy) return
+    if (!canReply || busy || alreadyReplied) return
     const channel = replyChannel === "whatsapp" && canWhatsapp ? "whatsapp" : "email"
     if (channel === "email" && !canEmail) {
       setError("Ce message n'a pas d'adresse électronique.")
@@ -248,7 +249,7 @@ function MessageModal({ row, thread, onClose, onReplied, onSelectRelated }) {
         {error ? <p role="alert" className="rounded-control border border-unavailable bg-unavailable-soft px-3 py-2 text-unavailable">{error}</p> : null}
         {notice ? <p role="status" className="rounded-control border border-available bg-available-soft px-3 py-2 text-available">{notice}</p> : null}
 
-        {canReply && replyOpen ? (
+        {canReply && !alreadyReplied && replyOpen ? (
           <form className="grid gap-3 rounded-control border border-line bg-canvas p-4" onSubmit={sendReply}>
             {canEmail && canWhatsapp ? (
               <div className="flex flex-wrap gap-2">
@@ -321,7 +322,13 @@ function MessageModal({ row, thread, onClose, onReplied, onSelectRelated }) {
         ) : null}
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {canReply && !replyOpen ? (
+          {alreadyReplied ? (
+            <span className="inline-flex min-h-11 items-center gap-2 rounded-control border border-available bg-available-soft px-4 font-semibold text-available">
+              <Check aria-hidden="true" size={18} />
+              Envoyé
+            </span>
+          ) : null}
+          {canReply && !alreadyReplied && !replyOpen ? (
             <button
               type="button"
               className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet px-4 font-semibold text-violet"
@@ -335,7 +342,7 @@ function MessageModal({ row, thread, onClose, onReplied, onSelectRelated }) {
               {canEmail ? "Répondre" : "Enregistrer une réponse WhatsApp"}
             </button>
           ) : null}
-          {!canReply ? <p className="mr-auto text-muted">Aucun moyen de réponse enregistré.</p> : null}
+          {!canReply && !alreadyReplied ? <p className="mr-auto text-muted">Aucun moyen de réponse enregistré.</p> : null}
           <button type="button" className="inline-flex min-h-11 items-center rounded-control bg-violet px-4 font-semibold text-on-primary" disabled={busy} onClick={onClose}>
             Fermer
           </button>
