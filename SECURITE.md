@@ -104,7 +104,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | `python manage.py check --deploy` réussi avec les réglages de production | Appliqué |
 | Pas de compte lecteur. L'email ou le WhatsApp d'un message est réservé au personnel et n'est pas publié | Appliqué |
 | Message public : création seulement, texte sans balise, 8 envois par heure sur l'adresse de connexion | Appliqué |
-| Réponse du personnel par courriel : réservée au personnel habilité, uniquement si le visiteur a laissé une adresse ; SMTP via `.env` ; journal sans adresse ni corps de message | Appliqué |
+| Réponse du personnel par courriel : réservée au personnel habilité, uniquement si le visiteur a laissé une adresse ; SMTP via `.env` ; expéditeur = `DEFAULT_FROM_EMAIL` (boîte SMTP) ; journal sans adresse ni corps de message | Appliqué |
 | Aucune ressource chargée depuis un site externe (sauf carte Google Maps Embed pour la localisation de la bibliothèque) | Appliqué |
 | Politique de contenu CSP | À faire |
 | Dire à Django qu'un reverse proxy termine le HTTPS (`SECURE_PROXY_SSL_HEADER`) | Appliqué |

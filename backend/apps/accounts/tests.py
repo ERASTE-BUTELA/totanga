@@ -755,7 +755,10 @@ class StaffVisitorMessageReadTests(TestCase):
         self.assertEqual(all_read.json()["unread_count"], 0)
         self.assertEqual(VisitorMessage.objects.filter(is_read=False).count(), 0)
 
-    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="Bibliothèque Totanga <support@bibtotanga.com>",
+    )
     def test_admin_can_reply_by_email(self):
         from django.core import mail
 
@@ -775,7 +778,16 @@ class StaffVisitorMessageReadTests(TestCase):
         self.assertEqual(replied.status_code, 200)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["yubu@exemple.totanga.test"])
+        self.assertEqual(mail.outbox[0].from_email, "Bibliothèque Totanga <support@bibtotanga.com>")
         self.assertIn("catalogue", mail.outbox[0].body)
+        self.assertIn("Notre réponse", mail.outbox[0].body)
+        html = mail.outbox[0].alternatives[0][0]
+        self.assertIn("text/html", mail.outbox[0].alternatives[0][1])
+        self.assertIn("Bibliothèque", html)
+        self.assertIn("Totanga", html)
+        self.assertIn("Notre r", html)
+        self.assertIn("catalogue", html)
+        self.assertNotIn("<script", html.lower())
         self.assertNotIn("yubu@exemple.totanga.test", f"{StaffAction.objects.last().action} {StaffAction.objects.last().target_type}")
         action = StaffAction.objects.get(action="reponse_message_visiteur")
         self.assertEqual(action.target_id, str(message.pk))

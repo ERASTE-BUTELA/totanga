@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ subject }}</title>
+</head>
+<body style="margin:0;padding:0;background:#e8edf4;font-family:Arial,Helvetica,sans-serif;color:#1a2a4a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#e8edf4;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:4px;overflow:hidden;">
+          {# En-tête marine + vague orange #}
+          <tr>
+            <td style="background:#1e2f6b;padding:28px 32px 36px 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td valign="middle" style="padding-right:14px;">
+                    <div style="width:48px;height:48px;border:2px solid #ffffff;border-radius:10px;text-align:center;line-height:48px;font-size:22px;color:#ffffff;">&#128214;</div>
+                  </td>
+                  <td valign="middle">
+                    <div style="font-size:13px;letter-spacing:0.04em;color:#d9e2f5;line-height:1.2;">Biblioth&egrave;que</div>
+                    <div style="font-size:26px;font-weight:700;color:#ffffff;line-height:1.15;">Totanga</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="height:8px;background:#f5a623;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          {# Corps #}
+          <tr>
+            <td style="padding:32px 36px 16px 36px;background:#ffffff;">
+              <p style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:#1e2f6b;">Bonjour {{ visitor_name }},</p>
+              <p style="margin:0 0 22px 0;font-size:15px;line-height:1.55;color:#2c3a55;">
+                Merci pour votre message. Voici notre r&eacute;ponse &agrave; votre question&nbsp;:
+              </p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef2f8;border-radius:12px;">
+                <tr>
+                  <td style="padding:20px 22px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td valign="top" width="36" style="padding-right:12px;font-size:20px;line-height:1.2;color:#1e2f6b;">&#10067;</td>
+                        <td valign="top" style="font-size:14px;line-height:1.5;color:#2c3a55;">
+                          <strong style="color:#1e2f6b;">Votre question ({{ subject_label }})&nbsp;:</strong>
+                          <div style="margin-top:6px;">{{ question|linebreaksbr }}</div>
+                        </td>
+                      </tr>
+                    </table>
+                    <div style="border-top:1px solid #d5dce8;margin:16px 0;"></div>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td valign="top" width="36" style="padding-right:12px;font-size:20px;line-height:1.2;color:#1e2f6b;">&#8617;</td>
+                        <td valign="top" style="font-size:14px;line-height:1.5;color:#2c3a55;">
+                          <strong style="color:#1e2f6b;">Notre r&eacute;ponse&nbsp;:</strong>
+                          <div style="margin-top:6px;">{{ reply|linebreaksbr }}</div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:24px 0 0 0;font-size:15px;line-height:1.55;color:#2c3a55;">
+                N&rsquo;h&eacute;sitez pas &agrave; nous contacter pour toute autre demande. Nous restons &agrave; votre disposition.
+              </p>
+
+              <div style="width:64px;height:4px;background:#f5a623;border-radius:2px;margin:28px 0 14px 0;"></div>
+              <p style="margin:0;font-size:16px;font-weight:700;color:#1e2f6b;">{{ library_name }}</p>
+              <p style="margin:4px 0 0 0;font-size:14px;font-style:italic;color:#4a5870;">Service de communication et d&rsquo;assistance</p>
+              {% if actor_name %}
+              <p style="margin:10px 0 0 0;font-size:12px;color:#6b778c;">R&eacute;ponse envoy&eacute;e par {{ actor_name }}.</p>
+              {% endif %}
+            </td>
+          </tr>
+
+          {# Pied de page contact #}
+          <tr>
+            <td style="background:#eceff4;padding:18px 24px;border-top:1px solid #dce2ec;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="font-size:12px;line-height:1.6;color:#4a5870;padding:4px 8px;">
+                    &#9993;&nbsp;<a href="mailto:{{ contact_email }}" style="color:#1e2f6b;text-decoration:none;">{{ contact_email }}</a>
+                    &nbsp;&nbsp;|&nbsp;&nbsp;
+                    &#127760;&nbsp;<a href="{{ website_url }}" style="color:#1e2f6b;text-decoration:none;">{{ website_label }}</a>
+                    &nbsp;&nbsp;|&nbsp;&nbsp;
+                    &#128205;&nbsp;{{ location_label }}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
