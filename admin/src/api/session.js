@@ -50,3 +50,30 @@ export async function login(username, password) {
 export async function logout() {
   await send("/api/gestion/session/", { method: "DELETE" })
 }
+
+const PASSWORD_CHANGE_MESSAGES = new Set([
+  "Indiquez l'ancien mot de passe et le nouveau (avec confirmation).",
+  "Le mot de passe est trop long.",
+  "L'ancien mot de passe est incorrect.",
+  "La confirmation ne correspond pas au nouveau mot de passe.",
+  "Le nouveau mot de passe doit être différent de l'ancien.",
+  "Le nouveau mot de passe ne respecte pas les règles (longueur, complexité, mots de passe trop courants).",
+])
+
+export async function changeOwnPassword({ currentPassword, newPassword, confirmPassword }) {
+  const response = await send("/api/gestion/compte/mot-de-passe/", {
+    method: "POST",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+      confirm_password: confirmPassword,
+    }),
+  })
+  if (!response) return { ok: false, error: "Le serveur n'a pas répondu. Réessayez." }
+  const payload = await response.json().catch(() => ({}))
+  const detail = typeof payload.detail === "string" ? payload.detail : ""
+  if (response.ok) return { ok: true, detail: detail || "Mot de passe modifié. Reconnectez-vous." }
+  if (PASSWORD_CHANGE_MESSAGES.has(detail)) return { ok: false, error: detail }
+  if (response.status === 403) return { ok: false, error: "Session expirée. Reconnectez-vous." }
+  return { ok: false, error: "Le mot de passe n'a pas pu être modifié. Réessayez." }
+}

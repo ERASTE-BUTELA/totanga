@@ -1,6 +1,9 @@
 from django.urls import path
 
+from apps.visitor_messages.gestion_views import StaffMessageReplyView
+
 from .gestion_views import (
+    AccountPasswordView,
     AccountView,
     DashboardView,
     SessionView,
@@ -14,6 +17,7 @@ from .gestion_views import (
 urlpatterns = [
     path("session/", SessionView.as_view(), name="staff-session"),
     path("compte/", AccountView.as_view(), name="staff-account"),
+    path("compte/mot-de-passe/", AccountPasswordView.as_view(), name="staff-account-password"),
     path("tableau-de-bord/", DashboardView.as_view(), name="staff-dashboard"),
     path("utilisateurs/", StaffUserListView.as_view(), name="staff-users"),
     path(
@@ -24,4 +28,9 @@ urlpatterns = [
     path("roles/", StaffRoleListView.as_view(), name="staff-roles"),
     path("journal/", StaffJournalView.as_view(), name="staff-journal"),
     path("messages/", StaffMessageListView.as_view(), name="staff-messages"),
+    path(
+        "messages/<int:message_id>/repondre/",
+        StaffMessageReplyView.as_view(),
+        name="staff-message-reply",
+    ),
 ]

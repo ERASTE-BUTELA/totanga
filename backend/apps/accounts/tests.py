@@ -306,6 +306,56 @@ class StaffSessionApiTests(TestCase):
         self.assertNotIn("depannage@totanga.local", response.content.decode())
         self.assertEqual(self.client.get("/api/gestion/utilisateurs/").status_code, 200)
 
+    def test_staff_changes_own_password_and_is_logged_out(self):
+        self.assertEqual(self.login(self.librarian.username, PASSWORD).status_code, 200)
+        new_password = "MotDePasse-Personnel-2027!"
+        changed = self.client.post(
+            "/api/gestion/compte/mot-de-passe/",
+            {
+                "current_password": PASSWORD,
+                "new_password": new_password,
+                "confirm_password": new_password,
+            },
+            format="json",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(changed.status_code, 200)
+        self.assertNotIn(new_password, changed.content.decode())
+        self.assertNotIn(PASSWORD, changed.content.decode())
+        self.librarian.refresh_from_db()
+        self.assertTrue(self.librarian.check_password(new_password))
+        self.assertFalse(self.librarian.check_password(PASSWORD))
+        self.assertEqual(self.client.get("/api/gestion/compte/").status_code, 401)
+        action = StaffAction.objects.get(action="changement_mot_de_passe")
+        self.assertEqual(action.actor_id, self.librarian.pk)
+        self.assertNotIn(new_password, f"{action.action} {action.target_type} {action.target_id}")
+
+        guest = APIClient(enforce_csrf_checks=True)
+        token = guest.get("/api/gestion/session/").cookies["csrftoken"].value
+        signed = guest.post(
+            "/api/gestion/session/",
+            {"username": self.librarian.username, "password": new_password},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(signed.status_code, 200)
+
+    def test_password_change_rejects_wrong_current_password(self):
+        self.assertEqual(self.login(self.librarian.username, PASSWORD).status_code, 200)
+        refused = self.client.post(
+            "/api/gestion/compte/mot-de-passe/",
+            {
+                "current_password": "Mauvais-Mot-De-Passe-2026",
+                "new_password": "MotDePasse-Personnel-2027!",
+                "confirm_password": "MotDePasse-Personnel-2027!",
+            },
+            format="json",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(refused.status_code, 400)
+        self.librarian.refresh_from_db()
+        self.assertTrue(self.librarian.check_password(PASSWORD))
+
     def test_admin_creates_a_staff_account_with_a_generated_password(self):
         self.assertEqual(self.login(self.admin.username, PASSWORD).status_code, 200)
         supplied = "MotDePasse-Choisi-Par-Le-Client"
@@ -364,6 +414,40 @@ class StaffSessionApiTests(TestCase):
         self.assertEqual(signed.status_code, 200)
         self.assertEqual(signed.json()["role"], ROLE_LIBRARIAN)
         self.assertNotIn(password, signed.content.decode())
+
+    def test_staff_can_change_own_password_and_is_logged_out(self):
+        self.assertEqual(self.login(self.librarian.username, PASSWORD).status_code, 200)
+        replacement = "MotDePasse-Personnel-2027!"
+        changed = self.client.post(
+            "/api/gestion/compte/mot-de-passe/",
+            {
+                "current_password": PASSWORD,
+                "new_password": replacement,
+                "confirm_password": replacement,
+            },
+            format="json",
+            HTTP_X_CSRFTOKEN=self.token(),
+        )
+        self.assertEqual(changed.status_code, 200)
+        self.assertNotIn(replacement, changed.content.decode())
+        self.assertNotIn(PASSWORD, changed.content.decode())
+        self.librarian.refresh_from_db()
+        self.assertTrue(self.librarian.check_password(replacement))
+        self.assertFalse(self.librarian.check_password(PASSWORD))
+        self.assertEqual(self.client.get("/api/gestion/compte/").status_code, 401)
+        action = StaffAction.objects.get(action="changement_mot_de_passe")
+        self.assertEqual(action.actor_id, self.librarian.pk)
+        self.assertNotIn(replacement, f"{action.action} {action.target_type} {action.target_id}")
+
+        guest = APIClient(enforce_csrf_checks=True)
+        token = guest.get("/api/gestion/session/").cookies["csrftoken"].value
+        signed = guest.post(
+            "/api/gestion/session/",
+            {"username": self.librarian.username, "password": replacement},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(signed.status_code, 200)
 
     def test_staff_creation_rejects_the_wrong_role_and_a_duplicate(self):
         self.assertEqual(self.login(self.librarian.username, PASSWORD).status_code, 200)
@@ -670,6 +754,50 @@ class StaffVisitorMessageReadTests(TestCase):
         self.assertEqual(all_read.status_code, 200)
         self.assertEqual(all_read.json()["unread_count"], 0)
         self.assertEqual(VisitorMessage.objects.filter(is_read=False).count(), 0)
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_admin_can_reply_by_email(self):
+        from django.core import mail
+
+        message = VisitorMessage.objects.create(
+            name="Yubu",
+            email="yubu@exemple.totanga.test",
+            subject="autre",
+            body="Puis-je consulter les livres à distance ?",
+        )
+        token = self.token()
+        replied = self.client.post(
+            f"/api/gestion/messages/{message.pk}/repondre/",
+            {"body": "Oui, le catalogue est consultable en ligne sur le site."},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(replied.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["yubu@exemple.totanga.test"])
+        self.assertIn("catalogue", mail.outbox[0].body)
+        self.assertNotIn("yubu@exemple.totanga.test", f"{StaffAction.objects.last().action} {StaffAction.objects.last().target_type}")
+        action = StaffAction.objects.get(action="reponse_message_visiteur")
+        self.assertEqual(action.target_id, str(message.pk))
+        message.refresh_from_db()
+        self.assertTrue(message.is_read)
+
+    def test_reply_without_email_is_refused(self):
+        message = VisitorMessage.objects.create(
+            name="Sans mail",
+            email="",
+            whatsapp="+243800000000",
+            subject="generale",
+            body="Contact WhatsApp seulement.",
+        )
+        token = self.token()
+        refused = self.client.post(
+            f"/api/gestion/messages/{message.pk}/repondre/",
+            {"body": "Bonjour"},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(refused.status_code, 400)
 
 
 class StaffPasswordResetTests(TestCase):

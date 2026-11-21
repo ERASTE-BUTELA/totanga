@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react"
-import { Check, Inbox, Mail, X } from "lucide-react"
-import { listMessages, markAllMessagesRead, markMessageRead } from "../api/content.js"
+import { Check, Inbox, Mail, Send, X } from "lucide-react"
+import { listMessages, markAllMessagesRead, markMessageRead, replyToMessage } from "../api/content.js"
 import { setUnreadMessages } from "../lib/alertsStore.js"
 
 function formatWhen(value) {
@@ -35,14 +35,20 @@ function contactLine(row) {
   return <span className="text-muted">Contact non indiqué</span>
 }
 
-function MessageModal({ row, onClose }) {
+function MessageModal({ row, onClose, onReplied }) {
   const titleId = useId()
   const closeRef = useRef(null)
+  const [replyOpen, setReplyOpen] = useState(false)
+  const [reply, setReply] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
+  const canEmail = Boolean(row?.email)
 
   useEffect(() => {
     closeRef.current?.focus()
     function onKey(event) {
-      if (event.key === "Escape") onClose()
+      if (event.key === "Escape" && !busy) onClose()
     }
     document.addEventListener("keydown", onKey)
     const previous = document.body.style.overflow
@@ -51,17 +57,51 @@ function MessageModal({ row, onClose }) {
       document.removeEventListener("keydown", onKey)
       document.body.style.overflow = previous
     }
-  }, [onClose])
+  }, [busy, onClose])
+
+  useEffect(() => {
+    setReplyOpen(false)
+    setReply("")
+    setError("")
+    setNotice("")
+  }, [row?.id])
 
   if (!row) return null
 
+  async function sendReply(event) {
+    event.preventDefault()
+    if (!canEmail || busy) return
+    const body = reply.trim()
+    if (!body) {
+      setError("Indiquez une réponse.")
+      return
+    }
+    if (body.length > 2000) {
+      setError("La réponse est limitée à 2 000 caractères.")
+      return
+    }
+    setBusy(true)
+    setError("")
+    setNotice("")
+    const result = await replyToMessage(row.id, body)
+    setBusy(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    setNotice("La réponse a été envoyée par courriel.")
+    setReply("")
+    setReplyOpen(false)
+    onReplied?.(result.data)
+  }
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-scrim p-4" role="presentation" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-scrim p-4" role="presentation" onClick={() => !busy && onClose()}>
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="form-save-card grid w-full max-w-lg gap-4 rounded-panel bg-panel p-5 shadow-panel sm:p-6"
+        className="form-save-card grid max-h-[90vh] w-full max-w-lg gap-4 overflow-y-auto rounded-panel bg-panel p-5 shadow-panel sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -78,6 +118,7 @@ function MessageModal({ row, onClose }) {
             type="button"
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-violet"
             aria-label="Fermer"
+            disabled={busy}
             onClick={onClose}
           >
             <X aria-hidden="true" size={20} />
@@ -85,8 +126,70 @@ function MessageModal({ row, onClose }) {
         </div>
         <p className="text-muted">Contact : {contactLine(row)}</p>
         <p className="whitespace-pre-wrap text-heading">{row.body}</p>
-        <div className="flex justify-end">
-          <button type="button" className="inline-flex min-h-11 items-center rounded-control bg-violet px-4 font-semibold text-on-primary" onClick={onClose}>
+
+        {error ? <p role="alert" className="rounded-control border border-unavailable bg-unavailable-soft px-3 py-2 text-unavailable">{error}</p> : null}
+        {notice ? <p role="status" className="rounded-control border border-available bg-available-soft px-3 py-2 text-available">{notice}</p> : null}
+
+        {canEmail && replyOpen ? (
+          <form className="grid gap-3 rounded-control border border-line bg-canvas p-4" onSubmit={sendReply}>
+            <label className="grid gap-1">
+              <span className="font-semibold text-heading">Réponse à {row.email}</span>
+              <textarea
+                className="min-h-32 w-full rounded-control border border-line bg-panel px-3 py-2 text-heading"
+                value={reply}
+                maxLength={2000}
+                required
+                disabled={busy}
+                placeholder="Écrivez votre réponse…"
+                onChange={(event) => setReply(event.target.value)}
+              />
+              <span className="text-muted">{reply.trim().length}/2000</span>
+            </label>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center rounded-control border border-line bg-panel px-4 font-semibold text-heading"
+                disabled={busy}
+                onClick={() => {
+                  setReplyOpen(false)
+                  setError("")
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className="inline-flex min-h-11 items-center gap-2 rounded-control bg-violet px-4 font-semibold text-on-primary disabled:opacity-60"
+                disabled={busy || !reply.trim()}
+              >
+                <Send aria-hidden="true" size={18} />
+                {busy ? "Envoi…" : "Envoyer"}
+              </button>
+            </div>
+          </form>
+        ) : null}
+
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {canEmail && !replyOpen ? (
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet px-4 font-semibold text-violet"
+              onClick={() => {
+                setReplyOpen(true)
+                setNotice("")
+                setError("")
+              }}
+            >
+              <Mail aria-hidden="true" size={18} />
+              Répondre par e-mail
+            </button>
+          ) : null}
+          {!canEmail ? (
+            <p className="mr-auto text-muted">
+              {row.whatsapp ? "Pas d’e-mail : utilisez le lien WhatsApp ci-dessus." : "Aucun moyen de réponse enregistré."}
+            </p>
+          ) : null}
+          <button type="button" className="inline-flex min-h-11 items-center rounded-control bg-violet px-4 font-semibold text-on-primary" disabled={busy} onClick={onClose}>
             Fermer
           </button>
         </div>
@@ -151,6 +254,15 @@ export function VisitorMessagesPanel() {
     setSelected((current) => (current?.id === row.id ? { ...current, is_read: true } : current))
     const remaining = Number(result.data?.unread_count)
     setUnreadMessages(Number.isFinite(remaining) ? remaining : Math.max(0, unread - 1))
+  }
+
+  function onReplied(data) {
+    setRows((current) =>
+      (current || []).map((item) => (item.id === selected?.id ? { ...item, is_read: true } : item)),
+    )
+    setSelected((current) => (current ? { ...current, is_read: true } : current))
+    const remaining = Number(data?.unread_count)
+    if (Number.isFinite(remaining)) setUnreadMessages(remaining)
   }
 
   async function markAll() {
@@ -254,7 +366,7 @@ export function VisitorMessagesPanel() {
         {visible.length} affichée{visible.length > 1 ? "s" : ""}
         {unread > 0 ? ` · ${unread} non lue${unread > 1 ? "s" : ""}` : ""}
       </p>
-      {selected ? <MessageModal row={selected} onClose={() => setSelected(null)} /> : null}
+      {selected ? <MessageModal row={selected} onClose={() => setSelected(null)} onReplied={onReplied} /> : null}
     </div>
   )
 }

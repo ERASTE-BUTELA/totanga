@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { ArrowRight, Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react"
-import { Navigate } from "react-router"
+import { Navigate, useLocation } from "react-router"
 import { LOGIN_FAILED, SESSION_EXPIRED } from "../api/messages.js"
 import { DASHBOARD_PATH } from "../lib/paths.js"
 import { useTheme } from "../lib/useTheme.js"
@@ -11,12 +11,14 @@ const asset = (path) => `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`
 export function LoginPage() {
   useTheme()
   const session = useSession()
+  const location = useLocation()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [visible, setVisible] = useState(false)
   const [remember, setRemember] = useState(false)
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
+  const passwordNotice = typeof location.state?.notice === "string" ? location.state.notice : ""
 
   if (session.status === "loading") {
     return <p className="px-6 py-10 text-heading">Chargement…</p>
@@ -83,6 +85,11 @@ export function LoginPage() {
           <p className="mt-2 text-muted">Accédez à votre tableau de bord pour gérer la bibliothèque.</p>
 
           <form className="mt-6 grid gap-4" onSubmit={onSubmit} noValidate={false}>
+            {passwordNotice && !notice ? (
+              <p role="status" className="rounded-control border border-available bg-available-soft px-3 py-3 text-available">
+                {passwordNotice}
+              </p>
+            ) : null}
             {notice ? (
               <p role="alert" className="rounded-control bg-unavailable-soft px-3 py-3 text-unavailable">
                 {notice}

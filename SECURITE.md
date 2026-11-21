@@ -91,6 +91,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | Limitation des tentatives de connexion : 5 échecs, puis 15 minutes, même réponse si le compte n'existe pas | Appliqué |
 | Journal des actions du personnel : qui, quoi, quel objet, quand, sans mot de passe, clé, adresse ni message | Appliqué |
 | Réinitialisation du mot de passe d'un compte : réservée à `accounts.change_user`, mot de passe généré côté serveur, affiché une seule fois, jamais journalisé | Appliqué |
+| Changement de son propre mot de passe : ancien + nouveau + confirmation, validateurs Django, déconnexion immédiate, journal sans mot de passe | Appliqué |
 | Modification des droits des trois rôles : réservée à `accounts.change_user`, sans `delete_book`, l'administrateur garde la gestion des comptes ; `sync_roles` ne réécrit les droits qu'à la création ou avec `--reset` | Appliqué |
 | Statistiques de fréquentation : empreinte quotidienne (jamais d'IP en base), agrégats, purge des événements à 90 jours, permission `analytics.view_sitestat` | Appliqué |
 | Limitation des envois de visites (`site_visits`, 60 par minute, adresse de connexion) | Appliqué |
@@ -103,6 +104,7 @@ Le site public n'a pas de compte lecteur. Les fondations du site appliquent déj
 | `python manage.py check --deploy` réussi avec les réglages de production | Appliqué |
 | Pas de compte lecteur. L'email ou le WhatsApp d'un message est réservé au personnel et n'est pas publié | Appliqué |
 | Message public : création seulement, texte sans balise, 8 envois par heure sur l'adresse de connexion | Appliqué |
+| Réponse du personnel par courriel : réservée au personnel habilité, uniquement si le visiteur a laissé une adresse ; SMTP via `.env` ; journal sans adresse ni corps de message | Appliqué |
 | Aucune ressource chargée depuis un site externe (sauf carte Google Maps Embed pour la localisation de la bibliothèque) | Appliqué |
 | Politique de contenu CSP | À faire |
 | Dire à Django qu'un reverse proxy termine le HTTPS (`SECURE_PROXY_SSL_HEADER`) | Appliqué |

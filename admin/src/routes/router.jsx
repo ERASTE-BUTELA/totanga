@@ -29,6 +29,7 @@ import { JournalPage } from "../pages/JournalPage.jsx"
 import { LoginPage } from "../pages/LoginPage.jsx"
 import { NotFoundPage } from "../pages/NotFoundPage.jsx"
 import { NotificationsPage } from "../pages/NotificationsPage.jsx"
+import { PasswordChangePage } from "../pages/PasswordChangePage.jsx"
 import { PreferencesPage } from "../pages/PreferencesPage.jsx"
 import { ProfilePage } from "../pages/ProfilePage.jsx"
 import { PublicationFormPage } from "../pages/PublicationFormPage.jsx"
@@ -128,7 +129,7 @@ export const router = createBrowserRouter(
             { path: "utilisateurs/roles", element: <Allowed permission="accounts.view_user"><RolesPage /></Allowed> },
             { path: "utilisateurs/:userId", element: <Allowed permission="accounts.view_user"><UserViewPage /></Allowed> },
             { path: "compte/profil", element: <ProfilePage /> },
-            { path: "compte/mot-de-passe", element: <SoonPage /> },
+            { path: "compte/mot-de-passe", element: <PasswordChangePage /> },
             { path: "compte/preferences", element: <PreferencesPage /> },
             { path: "compte/notifications", element: <NotificationsPage /> },
             { path: "messages", element: <Navigate to="/compte/notifications?onglet=messages" replace /> },

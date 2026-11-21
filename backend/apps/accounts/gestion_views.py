@@ -17,6 +17,7 @@ from .audit import (
     ACTION_LOGIN,
     ACTION_LOGIN_REFUSED,
     ACTION_LOGOUT,
+    ACTION_PASSWORD_CHANGE,
     ACTION_PASSWORD_RESET,
     ACTION_ROLES_UPDATED,
     ACTION_USER_CREATED,
@@ -204,6 +205,63 @@ class AccountView(APIView):
 
     def get(self, request):
         return Response(account_payload(request.user))
+
+
+class AccountPasswordView(APIView):
+    """Le personnel change son propre mot de passe, puis la session est fermée."""
+
+    authentication_classes = [CsrfEnforcedAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data if isinstance(request.data, dict) else {}
+        current = data.get("current_password", "")
+        new_password = data.get("new_password", "")
+        confirm = data.get("confirm_password", "")
+        current = current if isinstance(current, str) else ""
+        new_password = new_password if isinstance(new_password, str) else ""
+        confirm = confirm if isinstance(confirm, str) else ""
+
+        if not current or not new_password or not confirm:
+            return Response(
+                {"detail": "Indiquez l'ancien mot de passe et le nouveau (avec confirmation)."},
+                status=400,
+            )
+        if len(current) > MAX_PASSWORD_LENGTH or len(new_password) > MAX_PASSWORD_LENGTH:
+            return Response({"detail": "Le mot de passe est trop long."}, status=400)
+        if not request.user.check_password(current):
+            return Response({"detail": "L'ancien mot de passe est incorrect."}, status=400)
+        if new_password != confirm:
+            return Response({"detail": "La confirmation ne correspond pas au nouveau mot de passe."}, status=400)
+        if new_password == current:
+            return Response(
+                {"detail": "Le nouveau mot de passe doit être différent de l'ancien."},
+                status=400,
+            )
+        try:
+            validate_password(new_password, user=request.user)
+        except ValidationError:
+            return Response(
+                {
+                    "detail": (
+                        "Le nouveau mot de passe ne respecte pas les règles "
+                        "(longueur, complexité, mots de passe trop courants)."
+                    )
+                },
+                status=400,
+            )
+
+        user = request.user
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        record_staff_action(
+            actor=user,
+            action=ACTION_PASSWORD_CHANGE,
+            target_type="accounts.User",
+            target_id=user.pk,
+        )
+        logout(request)
+        return Response({"ok": True, "detail": "Mot de passe modifié. Reconnectez-vous."})
 
 
 class StaffUserListView(APIView):

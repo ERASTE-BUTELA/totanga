@@ -132,6 +132,30 @@ export function markAllMessagesRead() {
   }).then(finish)
 }
 
+const REPLY_MESSAGES = new Set([
+  "Vous n'avez pas l'autorisation d'effectuer cette action.",
+  "Ce message n'existe pas.",
+  "Ce message n'a pas d'adresse électronique.",
+  "Indiquez une réponse (2 000 caractères maximum).",
+  "L'envoi de courriel n'est pas encore configuré.",
+  "Le courriel n'a pas pu être envoyé. Réessayez plus tard.",
+])
+
+export function replyToMessage(id, body) {
+  return request(`/api/gestion/messages/${id}/repondre/`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  }).then(async (response) => {
+    const result = await finish(response)
+    if (result.ok) return result
+    if (REPLY_MESSAGES.has(result.error)) return result
+    if (response?.status === 503) {
+      return { ok: false, error: "L'envoi de courriel n'est pas encore configuré." }
+    }
+    return { ok: false, error: result.error || "Le courriel n'a pas pu être envoyé. Réessayez plus tard." }
+  })
+}
+
 export function listPublications() {
   return listAll("/api/gestion/publications/")
 }
