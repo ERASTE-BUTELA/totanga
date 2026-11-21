@@ -69,7 +69,7 @@ function AboutContent({ library, counts }) {
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-stretch">
-      <div className="order-2 flex min-w-0 flex-col gap-8 lg:order-1">
+      <div className="order-2 flex min-h-0 min-w-0 flex-col gap-8 lg:order-1 lg:h-full">
         <PhotoCarousel />
 
         <section aria-labelledby="chiffres">
@@ -89,22 +89,24 @@ function AboutContent({ library, counts }) {
 
         <section
           id="fonctionnement-bibliotheque"
-          className="rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6"
+          className="flex min-h-0 flex-1 flex-col rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6"
           aria-labelledby="fonctionnement"
         >
-          <h2 id="fonctionnement" className="flex items-center gap-2 text-section text-heading">
+          <h2 id="fonctionnement" className="flex shrink-0 items-center gap-2 text-section text-heading">
             <Building2 className="h-6 w-6 text-violet" aria-hidden="true" />
             Fonctionnement de la bibliothèque
           </h2>
-          <p className="mt-2 text-meta font-semibold uppercase tracking-wide text-violet">Structure et fonctionnement</p>
-          {richTextIsEmpty(library.functioning) ? (
-            <p className="mt-4 text-article text-muted">Les informations de fonctionnement seront publiées prochainement.</p>
-          ) : (
-            <SafeHtml html={library.functioning} className="rich-text mt-4 space-y-4 text-article text-ink" />
-          )}
+          <p className="mt-2 shrink-0 text-meta font-semibold uppercase tracking-wide text-violet">Structure et fonctionnement</p>
+          <div className="scrollbar-hidden mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            {richTextIsEmpty(library.functioning) ? (
+              <p className="text-article text-muted">Les informations de fonctionnement seront publiées prochainement.</p>
+            ) : (
+              <SafeHtml html={library.functioning} className="rich-text space-y-4 text-article text-ink" />
+            )}
+          </div>
         </section>
 
-        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand px-5 py-6 text-on-brand sm:px-8">
+        <section className="mt-auto flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand px-5 py-6 text-on-brand sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <BookOpen className="h-8 w-8 shrink-0" aria-hidden="true" />
             <div>
@@ -118,9 +120,9 @@ function AboutContent({ library, counts }) {
         </section>
       </div>
 
-      <div className="order-1 flex min-w-0 flex-col gap-6 lg:order-2">
+      <div className="order-1 flex min-h-0 min-w-0 flex-col gap-6 lg:order-2 lg:h-full">
         <aside
-          className="flex max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-card lg:max-h-[min(70vh,42rem)]"
+          className="flex min-h-[20rem] max-h-[70vh] flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-card lg:max-h-none"
           aria-labelledby="histoire-bibliotheque"
         >
           <h2 id="histoire-bibliotheque" className="flex shrink-0 items-center gap-2 px-5 pt-5 text-section text-heading sm:px-6 sm:pt-6">
@@ -136,7 +138,7 @@ function AboutContent({ library, counts }) {
           </div>
         </aside>
 
-        <section id="contact-bibliotheque" className="rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6" aria-labelledby="nous-trouver">
+        <section id="contact-bibliotheque" className="mt-auto shrink-0 rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6" aria-labelledby="nous-trouver">
           <h2 id="nous-trouver" className="flex items-center gap-2 text-section text-heading">
             <MapPin className="h-6 w-6 text-violet" aria-hidden="true" />
             Nous trouver
