@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, Mail, MapPin, Megaphone, Newspaper, Phone } from "lucide-react"
 import { Link } from "react-router"
 import { getAnnouncements, getBooks, getEvents, getLibraryInfo, getPublications } from "../api/client.js"
@@ -72,7 +72,7 @@ function AboutContent({ library, counts }) {
       <div className="order-2 flex min-h-0 min-w-0 flex-col gap-8 lg:order-1 lg:h-full">
         <PhotoCarousel />
 
-        <section aria-labelledby="chiffres">
+        <section aria-labelledby="chiffres" className="shrink-0">
           <h2 id="chiffres" className="text-section text-heading">
             La bibliothèque en chiffres
           </h2>
@@ -89,24 +89,26 @@ function AboutContent({ library, counts }) {
 
         <section
           id="fonctionnement-bibliotheque"
-          className="flex min-h-0 flex-1 flex-col rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6"
+          className="flex min-h-[22rem] flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-card"
           aria-labelledby="fonctionnement"
         >
-          <h2 id="fonctionnement" className="flex shrink-0 items-center gap-2 text-section text-heading">
-            <Building2 className="h-6 w-6 text-violet" aria-hidden="true" />
-            Fonctionnement de la bibliothèque
-          </h2>
-          <p className="mt-2 shrink-0 text-meta font-semibold uppercase tracking-wide text-violet">Structure et fonctionnement</p>
-          <div className="scrollbar-hidden mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="shrink-0 px-5 pt-5 sm:px-6 sm:pt-6">
+            <h2 id="fonctionnement" className="flex items-center gap-2 text-section text-heading">
+              <Building2 className="h-6 w-6 text-violet" aria-hidden="true" />
+              Fonctionnement de la bibliothèque
+            </h2>
+            <p className="mt-2 text-meta font-semibold uppercase tracking-wide text-violet">Structure et fonctionnement</p>
+          </div>
+          <PanelScroll className="mt-4 min-h-0 flex-1 px-5 pb-5 sm:px-6 sm:pb-6">
             {richTextIsEmpty(library.functioning) ? (
               <p className="text-article text-muted">Les informations de fonctionnement seront publiées prochainement.</p>
             ) : (
               <SafeHtml html={library.functioning} className="rich-text space-y-4 text-article text-ink" />
             )}
-          </div>
+          </PanelScroll>
         </section>
 
-        <section className="mt-auto flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand px-5 py-6 text-on-brand sm:px-8">
+        <section className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand px-5 py-6 text-on-brand sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <BookOpen className="h-8 w-8 shrink-0" aria-hidden="true" />
             <div>
@@ -122,20 +124,20 @@ function AboutContent({ library, counts }) {
 
       <div className="order-1 flex min-h-0 min-w-0 flex-col gap-6 lg:order-2 lg:h-full">
         <aside
-          className="flex min-h-[20rem] max-h-[70vh] flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-card lg:max-h-none"
+          className="flex min-h-[22rem] flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-card"
           aria-labelledby="histoire-bibliotheque"
         >
           <h2 id="histoire-bibliotheque" className="flex shrink-0 items-center gap-2 px-5 pt-5 text-section text-heading sm:px-6 sm:pt-6">
             <span className="h-6 w-1 rounded-full bg-violet" aria-hidden="true" />
             Histoire de la bibliothèque
           </h2>
-          <div className="scrollbar-hidden mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 sm:px-6 sm:pb-6">
+          <PanelScroll className="mt-4 min-h-0 flex-1 px-5 pb-5 sm:px-6 sm:pb-6">
             {richTextIsEmpty(library.about) ? (
               <p className="text-article text-muted">L'histoire de la bibliothèque sera publiée prochainement.</p>
             ) : (
               <SafeHtml html={library.about} className="rich-text space-y-4 text-article text-ink" />
             )}
-          </div>
+          </PanelScroll>
         </aside>
 
         <section id="contact-bibliotheque" className="mt-auto shrink-0 rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6" aria-labelledby="nous-trouver">
@@ -197,6 +199,30 @@ function AboutContent({ library, counts }) {
           )}
         </section>
       </div>
+    </div>
+  )
+}
+
+/** Zone à hauteur limitée : la molette fait défiler la page ; la barre de défilement reste utilisable. */
+function PanelScroll({ className = "", children }) {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return undefined
+
+    function onWheel(event) {
+      event.preventDefault()
+      window.scrollBy({ top: event.deltaY, left: event.deltaX, behavior: "auto" })
+    }
+
+    node.addEventListener("wheel", onWheel, { passive: false })
+    return () => node.removeEventListener("wheel", onWheel)
+  }, [])
+
+  return (
+    <div ref={ref} className={`overflow-y-auto overscroll-contain ${className}`.trim()}>
+      {children}
     </div>
   )
 }
