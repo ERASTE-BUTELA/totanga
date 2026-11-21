@@ -10,7 +10,7 @@ import { richTextIsEmpty } from "../lib/richText.js"
 import { useAsync } from "../lib/useAsync.js"
 import { usePageTitle } from "../lib/usePageTitle.js"
 
-const PHOTOS = [
+const DEFAULT_PHOTOS = [
   "/images/hero/hero-960.webp",
   "/images/visuels/lecture.webp",
   "/images/visuels/lectures.webp",
@@ -70,7 +70,7 @@ function AboutContent({ library, counts }) {
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-stretch">
       <div className="order-2 flex min-h-0 min-w-0 flex-col gap-8 lg:order-1 lg:h-full">
-        <PhotoCarousel />
+        <PhotoCarousel photos={library.carouselImages} />
 
         <section aria-labelledby="chiffres" className="shrink-0">
           <h2 id="chiffres" className="text-section text-heading">
@@ -227,10 +227,15 @@ function PanelScroll({ className = "", children }) {
   )
 }
 
-function PhotoCarousel() {
+function PhotoCarousel({ photos }) {
+  const slides = Array.isArray(photos) && photos.length > 0 ? photos : DEFAULT_PHOTOS
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
+
+  useEffect(() => {
+    setIndex(0)
+  }, [slides.length, slides[0]])
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -241,33 +246,35 @@ function PhotoCarousel() {
   }, [])
 
   useEffect(() => {
-    if (reducedMotion || paused) return undefined
+    if (reducedMotion || paused || slides.length < 2) return undefined
     const timer = window.setInterval(() => {
-      setIndex((current) => (current + 1) % PHOTOS.length)
+      setIndex((current) => (current + 1) % slides.length)
     }, 5000)
     return () => window.clearInterval(timer)
-  }, [reducedMotion, paused])
+  }, [reducedMotion, paused, slides.length])
 
   function show(step) {
-    setIndex((current) => (current + step + PHOTOS.length) % PHOTOS.length)
+    setIndex((current) => (current + step + slides.length) % slides.length)
   }
 
   return (
     <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-      <img src={PHOTOS[index]} alt="" className="h-64 w-full rounded-2xl object-cover sm:h-80" />
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-3 font-semibold text-violet" onClick={() => show(-1)} aria-label="Photo précédente">
-          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-          Précédent
-        </button>
-        <p className="text-meta text-muted">
-          {index + 1} / {PHOTOS.length}
-        </p>
-        <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-3 font-semibold text-violet" onClick={() => show(1)} aria-label="Photo suivante">
-          Suivant
-          <ChevronRight className="h-4 w-4" aria-hidden="true" />
-        </button>
-      </div>
+      <img src={slides[index] || slides[0]} alt="" className="h-64 w-full rounded-2xl object-cover sm:h-80" />
+      {slides.length > 1 ? (
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-3 font-semibold text-violet" onClick={() => show(-1)} aria-label="Photo précédente">
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            Précédent
+          </button>
+          <p className="text-meta text-muted">
+            {index + 1} / {slides.length}
+          </p>
+          <button type="button" className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-3 font-semibold text-violet" onClick={() => show(1)} aria-label="Photo suivante">
+            Suivant
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
     </div>
   )
 }

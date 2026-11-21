@@ -60,6 +60,13 @@ export function mapLibrarySettings(raw) {
     longitude: raw?.longitude === null || raw?.longitude === undefined ? "" : String(raw.longitude),
     about: String(raw?.about || ""),
     functioning: String(raw?.functioning || ""),
+    carouselImages: (Array.isArray(raw?.carousel_images) ? raw.carousel_images : [])
+      .map((item) => ({
+        id: Number(item.id) || 0,
+        url: String(item.url || ""),
+        position: Number(item.position) || 0,
+      }))
+      .filter((item) => item.id && item.url),
     language: String(raw?.language || "Français"),
     theme: String(raw?.theme || "Violet (Totanga)"),
     darkMode: Boolean(raw?.dark_mode),

@@ -134,6 +134,9 @@ export function mapLibraryInfo(raw) {
     heroImage: text(raw.hero_image),
     about: text(raw.about),
     functioning: text(raw.functioning),
+    carouselImages: (Array.isArray(raw.carousel_images) ? raw.carousel_images : [])
+      .map((item) => text(item.url || item))
+      .filter(Boolean),
     facebookUrl: text(raw.facebook_url),
     whatsappUrl: text(raw.whatsapp_url),
     youtubeUrl: text(raw.youtube_url),

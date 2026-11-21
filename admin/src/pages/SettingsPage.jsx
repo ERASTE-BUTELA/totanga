@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react"
-import { Bell, BookOpen, CalendarDays, Check, Database, Globe, ImagePlus, Library, Mail, MapPin, Pencil, Phone, Settings, Shield, X } from "lucide-react"
+import { Bell, BookOpen, CalendarDays, Check, Database, ImagePlus, Library, Mail, MapPin, Pencil, Phone, Settings, Shield, Trash2, X } from "lucide-react"
 import { FormSaveOverlay } from "../components/FormSaveOverlay.jsx"
 import { setSiteFavicon } from "../lib/favicon.js"
 import { mapsEmbedSrc, parseMapsCoords } from "../lib/maps.js"
@@ -18,6 +18,7 @@ const TABS = [
 ]
 
 const MAX_IMAGE = 5 * 1024 * 1024
+const CAROUSEL_MAX = 6
 const fieldClass = "w-full rounded-control border border-line bg-panel px-3 disabled:cursor-default disabled:bg-canvas disabled:text-heading"
 const DEFAULT_LOGO = "/images/logo.png"
 
@@ -46,22 +47,6 @@ const EMPTY = {
   dateFormat: "31 déc. 2026",
   timeFormat: "24 heures (14:30)",
   pageSize: "10",
-}
-
-function Switch({ checked, label, onClick, disabled }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      className={`relative h-8 w-14 shrink-0 rounded-full disabled:cursor-default disabled:opacity-70 ${checked ? "bg-violet" : "bg-line"}`}
-      onClick={onClick}
-    >
-      <span className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-panel ${checked ? "translate-x-6" : ""}`} />
-    </button>
-  )
 }
 
 function readImage(file, setError, setPreview, setFile) {
@@ -94,6 +79,8 @@ function applyMapped(mapped, setters) {
     setHeroFile,
     setClearHero,
     setHeroError,
+    setCarousel,
+    setCarouselError,
     setVersion,
   } = setters
   setForm({
@@ -130,12 +117,22 @@ function applyMapped(mapped, setters) {
   setHeroFile(null)
   setClearHero(false)
   setHeroError("")
+  setCarousel(
+    (mapped.carouselImages || []).map((item) => ({
+      key: `saved-${item.id}`,
+      id: item.id,
+      url: item.url,
+      file: null,
+    })),
+  )
+  setCarouselError("")
   setVersion((current) => current + 1)
 }
 
 export function SettingsPage() {
   const logoInput = useId()
   const heroInput = useId()
+  const carouselInput = useId()
   const [tab, setTab] = useState("general")
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(EMPTY)
@@ -147,6 +144,8 @@ export function SettingsPage() {
   const [heroFile, setHeroFile] = useState(null)
   const [clearHero, setClearHero] = useState(false)
   const [heroError, setHeroError] = useState("")
+  const [carousel, setCarousel] = useState([])
+  const [carouselError, setCarouselError] = useState("")
   const [notice, setNotice] = useState("")
   const [loading, setLoading] = useState(true)
   const [phase, setPhase] = useState(null)
@@ -173,6 +172,8 @@ export function SettingsPage() {
     setHeroFile,
     setClearHero,
     setHeroError,
+    setCarousel,
+    setCarouselError,
     setVersion,
   }
 
@@ -274,6 +275,13 @@ export function SettingsPage() {
     if (logoFile) body.set("logo", logoFile)
     if (clearHero) body.set("clear_hero_image", "true")
     if (heroFile) body.set("hero_image", heroFile)
+    body.set(
+      "carousel_keep",
+      carousel.filter((item) => item.id).map((item) => String(item.id)).join(","),
+    )
+    carousel.forEach((item) => {
+      if (item.file) body.append("carousel_images", item.file)
+    })
     const result = await saveLibrarySettings(body)
     if (!result.ok) {
       setPhase(null)
@@ -327,7 +335,7 @@ export function SettingsPage() {
         ) : null}
       </div>
       {tab === "general" ? (
-        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid items-start gap-4">
           <article className="rounded-panel border border-line bg-panel p-4 shadow-card sm:p-5">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <Settings aria-hidden="true" className="text-violet" size={22} />
@@ -477,12 +485,12 @@ export function SettingsPage() {
               <img src={logo} alt="Logo de la Bibliothèque Totanga" className="theme-logo mt-2 h-16 w-auto rounded-control bg-panel" />
               {editing ? (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <input id={logoInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => {
+                  <input id={logoInput} className="hidden" type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => {
                     setClearLogo(false)
                     readImage(event.target.files?.[0], setLogoError, setLogo, setLogoFile)
                     event.target.value = ""
                   }} />
-                  <label htmlFor={logoInput} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-line px-3 font-semibold text-violet">
+                  <label htmlFor={logoInput} className={`inline-flex min-h-11 items-center gap-2 rounded-control border border-line px-3 font-semibold text-violet ${busy ? "pointer-events-none opacity-50" : "cursor-pointer"}`}>
                     <ImagePlus aria-hidden="true" size={18} />
                     Changer le logo
                   </label>
@@ -499,120 +507,153 @@ export function SettingsPage() {
               {editing ? <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo.</p> : null}
               {logoError ? <p role="alert" className="mt-2 text-unavailable">{logoError}</p> : null}
             </div>
-            <div className="mt-4">
-              <p className="font-semibold text-heading">Image du bandeau d'accueil</p>
-              <p className="text-muted">Photo pleine largeur affichée en haut de la page d'accueil publique.</p>
-              {hero ? (
-                <img
-                  src={hero}
-                  alt=""
-                  className="mt-2 aspect-[21/9] w-full max-w-xl rounded-control border border-line object-cover"
-                  data-theme-keep=""
-                />
-              ) : (
-                <p className="mt-2 grid aspect-[21/9] w-full max-w-xl place-items-center rounded-control border border-dashed border-line bg-canvas px-4 text-center text-meta text-muted">
-                  Image par défaut du site public
-                </p>
-              )}
-              {editing ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <input
-                    id={heroInput}
-                    className="sr-only"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    disabled={busy}
-                    onChange={(event) => {
-                      setClearHero(false)
-                      readImage(event.target.files?.[0], setHeroError, setHero, setHeroFile)
-                      event.target.value = ""
-                    }}
+            <div className="mt-4 grid items-start gap-6 lg:grid-cols-2">
+              <div className="min-w-0">
+                <p className="font-semibold text-heading">Image du bandeau d'accueil</p>
+                <p className="text-muted">Photo pleine largeur affichée en haut de la page d'accueil publique.</p>
+                {hero ? (
+                  <img
+                    src={hero}
+                    alt=""
+                    className="mt-2 aspect-[21/9] w-full rounded-control border border-line object-cover"
+                    data-theme-keep=""
                   />
-                  <label
-                    htmlFor={heroInput}
-                    className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-line px-3 font-semibold text-violet"
-                  >
-                    <ImagePlus aria-hidden="true" size={18} />
-                    Changer l'image
-                  </label>
-                  {hero || heroFile ? (
-                    <button
-                      type="button"
-                      className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable"
+                ) : (
+                  <p className="mt-2 grid aspect-[21/9] w-full place-items-center rounded-control border border-dashed border-line bg-canvas px-4 text-center text-meta text-muted">
+                    Image par défaut du site public
+                  </p>
+                )}
+                {editing ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <input
+                      id={heroInput}
+                      className="hidden"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
                       disabled={busy}
-                      onClick={() => {
-                        setClearHero(true)
-                        setHeroFile(null)
-                        setHero("")
-                        setHeroError("")
+                      onChange={(event) => {
+                        setClearHero(false)
+                        readImage(event.target.files?.[0], setHeroError, setHero, setHeroFile)
+                        event.target.value = ""
                       }}
+                    />
+                    <label
+                      htmlFor={heroInput}
+                      className={`inline-flex min-h-11 items-center gap-2 rounded-control border border-line px-3 font-semibold text-violet ${busy ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
                     >
-                      Revenir à l'image par défaut
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-              {editing ? <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo. Préférez une image large (environ 1600×700).</p> : null}
-              {heroError ? <p role="alert" className="mt-2 text-unavailable">{heroError}</p> : null}
+                      <ImagePlus aria-hidden="true" size={18} />
+                      Changer l'image
+                    </label>
+                    {hero || heroFile ? (
+                      <button
+                        type="button"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-control border border-unavailable px-3 font-semibold text-unavailable"
+                        disabled={busy}
+                        onClick={() => {
+                          setClearHero(true)
+                          setHeroFile(null)
+                          setHero("")
+                          setHeroError("")
+                        }}
+                      >
+                        Revenir à l'image par défaut
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+                {editing ? <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo. Préférez une image large (environ 1600×700).</p> : null}
+                {heroError ? <p role="alert" className="mt-2 text-unavailable">{heroError}</p> : null}
+              </div>
+
+              <div className="min-w-0">
+                <p className="font-semibold text-heading">Photos du carrousel (À propos)</p>
+                <p className="text-muted">
+                  Jusqu&apos;à {CAROUSEL_MAX} photos. Sans photo enregistrée, le site affiche les images par défaut.
+                </p>
+                {carousel.length === 0 ? (
+                  <p className="mt-2 rounded-control border border-dashed border-line bg-canvas px-4 py-8 text-center text-meta text-muted">
+                    Aucune photo du carrousel pour le moment.
+                  </p>
+                ) : (
+                  <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {carousel.map((item) => (
+                      <li key={item.key} className="overflow-hidden rounded-control border border-line bg-canvas">
+                        <img src={item.url} alt="" className="h-28 w-full object-cover" />
+                        {editing ? (
+                          <div className="p-2">
+                            <button
+                              type="button"
+                              className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-control border border-unavailable px-2 font-semibold text-unavailable"
+                              disabled={busy}
+                              onClick={() => {
+                                if (item.url.startsWith("blob:")) URL.revokeObjectURL(item.url)
+                                setCarousel((current) => current.filter((row) => row.key !== item.key))
+                              }}
+                            >
+                              <Trash2 aria-hidden="true" size={16} />
+                              Retirer
+                            </button>
+                          </div>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {editing ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <input
+                      id={carouselInput}
+                      className="hidden"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      disabled={busy || carousel.length >= CAROUSEL_MAX}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0]
+                        event.target.value = ""
+                        if (!file) return
+                        const allowed = ["image/jpeg", "image/png", "image/webp"]
+                        if (!allowed.includes(file.type)) {
+                          setCarouselError("Seuls les fichiers JPG, PNG ou WebP sont acceptés.")
+                          return
+                        }
+                        if (file.size > MAX_IMAGE) {
+                          setCarouselError("L'image ne doit pas dépasser 5 Mo.")
+                          return
+                        }
+                        setCarouselError("")
+                        setCarousel((current) => {
+                          if (current.length >= CAROUSEL_MAX) return current
+                          return [
+                            ...current,
+                            {
+                              key: `new-${Date.now()}-${current.length}`,
+                              id: null,
+                              url: URL.createObjectURL(file),
+                              file,
+                            },
+                          ]
+                        })
+                      }}
+                    />
+                    <label
+                      htmlFor={carouselInput}
+                      className={`inline-flex min-h-11 items-center gap-2 rounded-control border border-line px-3 font-semibold text-violet ${
+                        busy || carousel.length >= CAROUSEL_MAX ? "pointer-events-none opacity-50" : "cursor-pointer"
+                      }`}
+                    >
+                      <ImagePlus aria-hidden="true" size={18} />
+                      Ajouter une photo
+                    </label>
+                    <p className="text-muted">
+                      {carousel.length}/{CAROUSEL_MAX}
+                    </p>
+                  </div>
+                ) : null}
+                {carouselError ? <p role="alert" className="mt-2 text-unavailable">{carouselError}</p> : null}
+              </div>
             </div>
           </article>
-          <div className="grid content-start gap-4">
-            <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
-              <h2 className="flex items-center gap-2 text-section text-heading">
-                <Globe aria-hidden="true" className="text-violet" size={22} />
-                Apparence et langue
-              </h2>
-              <label className="mt-4 grid gap-1">
-                <span className="font-semibold text-heading">Langue par défaut</span>
-                <select className={fieldClass} value={form.language} onChange={(event) => set("language", event.target.value)} disabled={locked}>
-                  <option>Français</option>
-                </select>
-              </label>
-              <label className="mt-3 grid gap-1">
-                <span className="font-semibold text-heading">Thème de l'interface</span>
-                <select className={fieldClass} value={form.theme} onChange={(event) => set("theme", event.target.value)} disabled={locked}>
-                  <option>Violet (Totanga)</option>
-                </select>
-              </label>
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <p className="font-semibold text-heading">Mode clair / sombre</p>
-                <Switch checked={form.darkMode} label="Mode clair ou sombre" disabled={locked} onClick={() => set("darkMode", !form.darkMode)} />
-              </div>
-            </article>
-            <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
-              <h2 className="text-section text-heading">Paramètres de fonctionnement</h2>
-              <div className="mt-4 grid gap-3">
-                <label className="grid gap-1">
-                  <span className="font-semibold text-heading">Fuseau horaire</span>
-                  <select className={fieldClass} value={form.timezone} onChange={(event) => set("timezone", event.target.value)} disabled={locked}>
-                    <option>(UTC+01:00) Kinshasa</option>
-                  </select>
-                </label>
-                <label className="grid gap-1">
-                  <span className="font-semibold text-heading">Format de date</span>
-                  <select className={fieldClass} value={form.dateFormat} onChange={(event) => set("dateFormat", event.target.value)} disabled={locked}>
-                    <option>31 déc. 2026</option>
-                    <option>31/12/2026</option>
-                  </select>
-                </label>
-                <label className="grid gap-1">
-                  <span className="font-semibold text-heading">Format d'heure</span>
-                  <select className={fieldClass} value={form.timeFormat} onChange={(event) => set("timeFormat", event.target.value)} disabled={locked}>
-                    <option>24 heures (14:30)</option>
-                    <option>12 heures (02:30 PM)</option>
-                  </select>
-                </label>
-                <label className="grid gap-1">
-                  <span className="font-semibold text-heading">Nombre d'éléments par page</span>
-                  <select className={fieldClass} value={form.pageSize} onChange={(event) => set("pageSize", event.target.value)} disabled={locked}>
-                    <option>10</option>
-                    <option>25</option>
-                    <option>50</option>
-                  </select>
-                </label>
-              </div>
-            </article>
-          </div>
+
           <div className="grid items-stretch gap-4 xl:grid-cols-2">
             <article className="flex min-h-0 flex-col rounded-panel border border-line bg-panel p-4 shadow-card sm:p-5">
               <h2 className="text-section text-heading">Histoire de la bibliothèque</h2>

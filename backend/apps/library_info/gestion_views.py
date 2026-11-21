@@ -13,10 +13,11 @@ from apps.catalog.models import StoredImage
 from apps.catalog.validators import prepare_catalog_image
 
 from .html import sanitize_rich_text
-from .models import Library
+from .models import Library, LibraryCarouselImage
 from .serializers import library_payload
 
 ACTION_LIBRARY_UPDATED = "mise_a_jour_bibliotheque"
+CAROUSEL_MAX = 6
 
 PAGE_SIZES = {10, 25, 50}
 LANGUAGES = {"Français"}
@@ -250,6 +251,10 @@ def _apply_general(library, data, files, user):
             return error
         hero_image = stored
 
+    carousel_error = _apply_carousel(library, data, files, user, library_name=name)
+    if carousel_error:
+        return carousel_error
+
     library.name = name
     library.slogan = slogan
     library.address = address
@@ -290,6 +295,66 @@ def _apply_general(library, data, files, user):
         elif hasattr(exc, "messages"):
             messages.extend(exc.messages)
         return messages[0] if messages else "L'enregistrement a été refusé."
+    return ""
+
+
+def _apply_carousel(library, data, files, user, *, library_name):
+    """Conserve les ids listés, ajoute les nouveaux fichiers, plafonne à CAROUSEL_MAX."""
+
+    keep_raw = str(data.get("carousel_keep", "")).strip()
+    if "carousel_keep" not in data and not files.getlist("carousel_images"):
+        return ""
+
+    keep_ids = []
+    for part in keep_raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if not part.isdigit():
+            return "La liste des photos du carrousel est invalide."
+        keep_ids.append(int(part))
+
+    existing = {
+        row.pk: row
+        for row in library.carousel_images.select_related("image").all()
+    }
+    for pk in keep_ids:
+        if pk not in existing:
+            return "Une photo du carrousel est introuvable."
+
+    remove_ids = [pk for pk in existing if pk not in keep_ids]
+    if remove_ids:
+        LibraryCarouselImage.objects.filter(library=library, pk__in=remove_ids).delete()
+
+    new_files = files.getlist("carousel_images") if hasattr(files, "getlist") else []
+    created = []
+    for upload in new_files:
+        if not upload:
+            continue
+        stored, error = _store_image(
+            upload,
+            alt_text=f"Carrousel {library_name}",
+            user=user,
+        )
+        if error:
+            return error
+        created.append(stored)
+
+    total = len(keep_ids) + len(created)
+    if total > CAROUSEL_MAX:
+        return f"Le carrousel accepte au plus {CAROUSEL_MAX} photos."
+
+    position = 0
+    for pk in keep_ids:
+        LibraryCarouselImage.objects.filter(pk=pk, library=library).update(position=position)
+        position += 1
+    for stored in created:
+        LibraryCarouselImage.objects.create(
+            library=library,
+            image=stored,
+            position=position,
+        )
+        position += 1
     return ""
 
 

@@ -128,3 +128,29 @@ class Library(models.Model):
             },
         )
         return library
+
+
+class LibraryCarouselImage(models.Model):
+    """Photo du carrousel de la page À propos (ordre = position)."""
+
+    library = models.ForeignKey(
+        Library,
+        on_delete=models.CASCADE,
+        related_name="carousel_images",
+        verbose_name="bibliothèque",
+    )
+    image = models.ForeignKey(
+        StoredImage,
+        on_delete=models.PROTECT,
+        related_name="library_carousel",
+        verbose_name="image",
+    )
+    position = models.PositiveSmallIntegerField("ordre", default=0)
+
+    class Meta:
+        ordering = ("position", "id")
+        verbose_name = "photo du carrousel"
+        verbose_name_plural = "photos du carrousel"
+
+    def __str__(self):
+        return f"Carrousel #{self.position}"

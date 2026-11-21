@@ -175,6 +175,55 @@ class LibrarySettingsApiTests(TestCase):
         public = self.client.get("/api/bibliotheque/")
         self.assertEqual(public.data["hero_image"], "")
 
+    def test_admin_can_manage_carousel_images(self):
+        token = self._login("admin_settings")
+        Library.get_solo()
+        base = {
+            "name": "Bibliothèque Totanga",
+            "address": "Avenue de la Paix",
+            "city": "Kinshasa",
+            "phone": "+243 800 000 000",
+            "email": "contact@exemple.totanga.test",
+        }
+        created = self.client.patch(
+            "/api/gestion/parametres/",
+            {
+                **base,
+                "carousel_keep": "",
+                "carousel_images": image_upload("carousel-a.jpg"),
+            },
+            format="multipart",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(created.status_code, 200, created.data)
+        self.assertEqual(len(created.data["carousel_images"]), 1)
+        kept_id = created.data["carousel_images"][0]["id"]
+        public = self.client.get("/api/bibliotheque/")
+        self.assertEqual(len(public.data["carousel_images"]), 1)
+        self.assertTrue(public.data["carousel_images"][0]["url"].startswith("/media/"))
+
+        replaced = self.client.patch(
+            "/api/gestion/parametres/",
+            {
+                **base,
+                "carousel_keep": str(kept_id),
+                "carousel_images": image_upload("carousel-b.jpg"),
+            },
+            format="multipart",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(replaced.status_code, 200, replaced.data)
+        self.assertEqual(len(replaced.data["carousel_images"]), 2)
+
+        cleared = self.client.patch(
+            "/api/gestion/parametres/",
+            {**base, "carousel_keep": ""},
+            format="multipart",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(cleared.status_code, 200, cleared.data)
+        self.assertEqual(cleared.data["carousel_images"], [])
+
     def test_admin_can_persist_maps_location(self):
         token = self._login("admin_settings")
         Library.get_solo()

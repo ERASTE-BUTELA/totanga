@@ -8,6 +8,16 @@ def _media(field):
     return url if url.startswith("/") else f"/{url}"
 
 
+def _carousel_payload(library):
+    items = []
+    for row in library.carousel_images.select_related("image").all():
+        url = _media(row.image.file) if row.image_id else ""
+        if not url:
+            continue
+        items.append({"id": row.pk, "url": url, "position": row.position})
+    return items
+
+
 def _social_links(library):
     links = []
     if library.facebook_url:
@@ -46,6 +56,7 @@ def library_payload(library, *, staff=False):
         # Le favicon du site suit toujours le logo.
         "favicon": _media(library.logo.file) if library.logo_id else "",
         "hero_image": _media(library.hero_image.file) if library.hero_image_id else "",
+        "carousel_images": _carousel_payload(library),
         "language": library.language,
         "theme": library.theme,
         "dark_mode": library.dark_mode,
