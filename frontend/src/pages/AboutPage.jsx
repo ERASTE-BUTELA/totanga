@@ -104,6 +104,38 @@ function AboutContent({ library, counts }) {
           )}
         </section>
 
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand px-5 py-6 text-on-brand sm:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <BookOpen className="h-8 w-8 shrink-0" aria-hidden="true" />
+            <div>
+              <p className="text-card">Le catalogue de la bibliothèque</p>
+              <p className="text-body text-on-brand/80">Consultez les livres disponibles sur place.</p>
+            </div>
+          </div>
+          <Link to="/catalogue" className="inline-flex min-h-11 items-center rounded-full bg-panel px-4 font-semibold text-violet">
+            Voir le catalogue
+          </Link>
+        </section>
+      </div>
+
+      <div className="order-1 flex min-w-0 flex-col gap-6 lg:order-2">
+        <aside
+          className="flex max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-card lg:max-h-[min(70vh,42rem)]"
+          aria-labelledby="histoire-bibliotheque"
+        >
+          <h2 id="histoire-bibliotheque" className="flex shrink-0 items-center gap-2 px-5 pt-5 text-section text-heading sm:px-6 sm:pt-6">
+            <span className="h-6 w-1 rounded-full bg-violet" aria-hidden="true" />
+            Histoire de la bibliothèque
+          </h2>
+          <div className="scrollbar-hidden mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 sm:px-6 sm:pb-6">
+            {richTextIsEmpty(library.about) ? (
+              <p className="text-article text-muted">L'histoire de la bibliothèque sera publiée prochainement.</p>
+            ) : (
+              <SafeHtml html={library.about} className="rich-text space-y-4 text-article text-ink" />
+            )}
+          </div>
+        </aside>
+
         <section id="contact-bibliotheque" className="rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6" aria-labelledby="nous-trouver">
           <h2 id="nous-trouver" className="flex items-center gap-2 text-section text-heading">
             <MapPin className="h-6 w-6 text-violet" aria-hidden="true" />
@@ -162,38 +194,6 @@ function AboutContent({ library, counts }) {
             </p>
           )}
         </section>
-
-        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand px-5 py-6 text-on-brand sm:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <BookOpen className="h-8 w-8 shrink-0" aria-hidden="true" />
-            <div>
-              <p className="text-card">Le catalogue de la bibliothèque</p>
-              <p className="text-body text-on-brand/80">Consultez les livres disponibles sur place.</p>
-            </div>
-          </div>
-          <Link to="/catalogue" className="inline-flex min-h-11 items-center rounded-full bg-panel px-4 font-semibold text-violet">
-            Voir le catalogue
-          </Link>
-        </section>
-      </div>
-
-      <div className="relative order-1 min-h-80 lg:order-2 lg:min-h-0">
-        <aside
-          className="flex max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-card lg:absolute lg:inset-0 lg:max-h-none"
-          aria-labelledby="histoire-bibliotheque"
-        >
-          <h2 id="histoire-bibliotheque" className="flex shrink-0 items-center gap-2 px-5 pt-5 text-section text-heading sm:px-6 sm:pt-6">
-            <span className="h-6 w-1 rounded-full bg-violet" aria-hidden="true" />
-            Histoire de la bibliothèque
-          </h2>
-          <div className="scrollbar-hidden mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 sm:px-6 sm:pb-6">
-            {richTextIsEmpty(library.about) ? (
-              <p className="text-article text-muted">L'histoire de la bibliothèque sera publiée prochainement.</p>
-            ) : (
-              <SafeHtml html={library.about} className="rich-text space-y-4 text-article text-ink" />
-            )}
-          </div>
-        </aside>
       </div>
     </div>
   )
