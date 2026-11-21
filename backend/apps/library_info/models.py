@@ -19,6 +19,15 @@ class Library(models.Model):
     website = models.URLField("site web", blank=True)
     facebook_url = models.URLField("Facebook", blank=True)
     whatsapp_url = models.URLField("WhatsApp", blank=True)
+    youtube_url = models.URLField("YouTube", blank=True)
+    instagram_url = models.URLField("Instagram", blank=True)
+    tiktok_url = models.URLField("TikTok", blank=True)
+    hours_text = models.CharField(
+        "horaires d'ouverture",
+        max_length=300,
+        blank=True,
+        help_text="Texte libre, ex. Lundi à vendredi 8 h – 17 h",
+    )
     maps_url = models.CharField("localisation Google Maps", max_length=500, blank=True)
     latitude = models.DecimalField(
         "latitude",

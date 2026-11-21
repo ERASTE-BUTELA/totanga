@@ -14,6 +14,7 @@ import {
   Lock,
   LogOut,
   Megaphone,
+  Menu,
   ScrollText,
   Settings,
   SlidersHorizontal,
@@ -21,6 +22,7 @@ import {
   User,
   Users,
   Wrench,
+  X,
 } from "lucide-react"
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router"
 import { listMessages } from "../api/content.js"
@@ -171,20 +173,22 @@ function titleFallback(pathname) {
 
 function AdminBreadcrumb({ items }) {
   if (!items?.length) return null
+  const last = items[items.length - 1]
   return (
     <nav aria-label="Fil d'Ariane" className="min-w-0">
-      <ol className="flex flex-wrap items-center gap-1.5 text-body">
+      <p className="truncate font-semibold text-heading sm:hidden">{last.label}</p>
+      <ol className="hidden flex-wrap items-center gap-1.5 text-body sm:flex">
         {items.map((item, index) => {
-          const last = index === items.length - 1
+          const isLast = index === items.length - 1
           return (
             <li key={`${item.label}-${index}`} className="flex min-w-0 items-center gap-1.5">
               {index > 0 ? <ChevronRight className="h-4 w-4 shrink-0 text-muted" aria-hidden="true" /> : null}
-              {item.to && !last ? (
+              {item.to && !isLast ? (
                 <Link to={item.to} className="truncate font-semibold text-violet hover:underline">
                   {item.label}
                 </Link>
               ) : (
-                <span className={`truncate font-semibold ${last ? "text-heading" : "text-violet"}`}>{item.label}</span>
+                <span className={`truncate font-semibold ${isLast ? "text-heading" : "text-violet"}`}>{item.label}</span>
               )}
             </li>
           )
@@ -207,9 +211,12 @@ export function AdminShell() {
   const navigate = useNavigate()
   const location = useLocation()
   const menuId = useId()
+  const navId = useId()
   const buttonRef = useRef(null)
   const panelRef = useRef(null)
+  const navButtonRef = useRef(null)
   const [open, setOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
   const [catalogueOpen, setCatalogueOpen] = useState(false)
   const [maintenance, setMaintenance] = useState(false)
   const [maintenanceBusy, setMaintenanceBusy] = useState(false)
@@ -227,9 +234,16 @@ export function AdminShell() {
     session.account?.role,
   )
 
+  const path = normalizeAdminPath(location.pathname)
+
   useEffect(() => {
     setOpen(false)
+    setNavOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    if (path.startsWith("/catalogue")) setCatalogueOpen(true)
+  }, [path])
 
   useEffect(() => subscribeAlerts((snapshot) => setAlertsUnread(snapshot.total)), [])
 
@@ -284,6 +298,23 @@ export function AdminShell() {
     }
   }, [open])
 
+  useEffect(() => {
+    if (!navOpen) return undefined
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    function onKey(event) {
+      if (event.key === "Escape") {
+        setNavOpen(false)
+        navButtonRef.current?.focus()
+      }
+    }
+    document.addEventListener("keydown", onKey)
+    return () => {
+      document.body.style.overflow = previous
+      document.removeEventListener("keydown", onKey)
+    }
+  }, [navOpen])
+
   async function onLogout() {
     await session.signOut()
     navigate(LOGIN_PATH, { replace: true })
@@ -303,7 +334,6 @@ export function AdminShell() {
     setMaintenance(Boolean(result.data?.maintenance))
   }
 
-  const path = normalizeAdminPath(location.pathname)
   const page = PAGES.find((item) => item.to === path)
   const title = page?.label
     || ACCOUNT_TITLES[path]
@@ -315,16 +345,32 @@ export function AdminShell() {
   return (
     <div className="min-h-dvh lg:grid lg:h-dvh lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
       <a className="skip-link" href="#contenu">Aller au contenu</a>
-      <div className="flex items-center bg-violet-dark px-4 py-4">
+      <div className="hidden items-center bg-violet-dark px-4 py-4 lg:flex">
         <img
           src={`${import.meta.env.BASE_URL}images/logo.png`}
           alt="Bibliothèque Totanga, Sœurs des pauvres de Bergame"
           className="theme-logo h-16 w-auto rounded-control bg-panel px-2 py-1"
         />
       </div>
-      <header className="flex items-center justify-between gap-4 border-b border-line bg-panel px-4 py-3 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="h-8 w-1.5 shrink-0 rounded-full bg-gold-bright" aria-hidden="true" />
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-line bg-panel px-3 py-3 sm:gap-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <button
+            ref={navButtonRef}
+            type="button"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-line bg-panel text-violet shadow-card lg:hidden"
+            aria-expanded={navOpen}
+            aria-controls={navId}
+            aria-label={navOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            onClick={() => setNavOpen((current) => !current)}
+          >
+            {navOpen ? <X aria-hidden="true" size={22} /> : <Menu aria-hidden="true" size={22} />}
+          </button>
+          <img
+            src={`${import.meta.env.BASE_URL}images/logo.png`}
+            alt=""
+            className="theme-logo h-9 w-auto shrink-0 rounded-control bg-lavender px-1.5 py-0.5 lg:hidden"
+          />
+          <span className="hidden h-8 w-1.5 shrink-0 rounded-full bg-gold-bright sm:block" aria-hidden="true" />
           <div className="min-w-0">
             <h1 className="sr-only">{currentLabel}</h1>
             <AdminBreadcrumb items={trail?.items} />
@@ -353,7 +399,7 @@ export function AdminShell() {
           <button
             ref={buttonRef}
             type="button"
-            className="flex items-center gap-3 rounded-full border border-line bg-panel px-3 text-left shadow-card"
+            className="flex items-center gap-2 rounded-full border border-line bg-panel p-1.5 text-left shadow-card sm:gap-3 sm:px-3 sm:py-1.5"
             aria-expanded={open}
             aria-haspopup="menu"
             aria-controls={menuId}
@@ -362,16 +408,16 @@ export function AdminShell() {
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-violet text-on-primary">
               <User aria-hidden="true" size={18} />
             </span>
-            <span>
-              <span className="block font-semibold text-heading">{session.account.name}</span>
-              <span className="block text-muted">{session.account.role_label}</span>
+            <span className="hidden min-w-0 sm:block">
+              <span className="block max-w-40 truncate font-semibold text-heading">{session.account.name}</span>
+              <span className="block max-w-40 truncate text-muted">{session.account.role_label}</span>
             </span>
-            <ChevronDown aria-hidden="true" size={18} className={open ? "rotate-180" : ""} />
+            <ChevronDown aria-hidden="true" size={18} className={`hidden sm:block ${open ? "rotate-180" : ""}`} />
           </button>
           {open ? (
             <div
               ref={panelRef}
-              className="absolute right-0 z-30 mt-2 w-80 overflow-hidden rounded-panel border border-line bg-panel shadow-panel"
+              className="absolute right-0 z-40 mt-2 w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-panel border border-line bg-panel shadow-panel"
             >
               <div className="flex items-center gap-3 border-b border-line px-4 py-4">
                 <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-violet text-on-primary font-bold">
@@ -390,7 +436,7 @@ export function AdminShell() {
                 <p className="mb-2 text-meta font-semibold text-muted">Apparence</p>
                 <ThemeSelector />
               </div>
-              <div id={menuId} role="menu" className="grid p-2">
+              <div id={menuId} role="menu" className="grid max-h-[min(70vh,28rem)] overflow-y-auto p-2">
                 {ACCOUNT_LINKS.map((group, index) => (
                   <div key={group[0].to} className={index > 0 ? "mt-1 border-t border-line pt-1" : ""}>
                     {group.map((item) => {
@@ -457,9 +503,42 @@ export function AdminShell() {
           </div>
         </div>
       </header>
-      <aside className="sidebar flex flex-col bg-violet-dark text-on-bar lg:min-h-0 lg:overflow-y-auto">
-        <p className="px-5 pt-4 font-semibold tracking-wide text-on-bar/70">Espace d'administration</p>
-        <nav aria-label="Administration" className="grid flex-1 content-start gap-1 px-3 py-3">
+      {navOpen ? (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-scrim lg:hidden"
+          aria-label="Fermer le menu"
+          onClick={() => setNavOpen(false)}
+        />
+      ) : null}
+      <aside
+        id={navId}
+        className={[
+          "sidebar fixed inset-y-0 left-0 z-40 flex w-[min(17.5rem,88vw)] flex-col bg-violet-dark text-on-bar transition-transform duration-200 lg:static lg:z-auto lg:min-h-0 lg:w-auto lg:translate-x-0 lg:overflow-y-auto",
+          navOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        ].join(" ")}
+      >
+        <div className="flex items-center justify-between gap-3 px-4 pt-4 lg:block lg:px-0 lg:pt-0">
+          <img
+            src={`${import.meta.env.BASE_URL}images/logo.png`}
+            alt="Bibliothèque Totanga"
+            className="theme-logo h-12 w-auto rounded-control bg-panel px-2 py-1 lg:hidden"
+          />
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-control text-on-bar hover:bg-panel/10 lg:hidden"
+            aria-label="Fermer le menu"
+            onClick={() => {
+              setNavOpen(false)
+              navButtonRef.current?.focus()
+            }}
+          >
+            <X aria-hidden="true" size={22} />
+          </button>
+          <p className="hidden px-5 pt-4 font-semibold tracking-wide text-on-bar/70 lg:block">Espace d'administration</p>
+        </div>
+        <p className="px-5 pt-2 font-semibold tracking-wide text-on-bar/70 lg:hidden">Espace d'administration</p>
+        <nav aria-label="Administration" className="grid flex-1 content-start gap-1 overflow-y-auto px-3 py-3">
           {nav.map((entry) => {
             if (entry.children) {
               const Icon = ICONS[entry.id] ?? Library
@@ -484,6 +563,7 @@ export function AdminShell() {
                             key={child.id}
                             to={child.to}
                             className={({ isActive }) => `relative ${itemClass(isActive)}`}
+                            onClick={() => setNavOpen(false)}
                           >
                             <span aria-hidden="true" className="absolute top-1/2 -left-3 h-px w-3 bg-panel/40" />
                             <ChildIcon aria-hidden="true" size={18} />
@@ -503,6 +583,7 @@ export function AdminShell() {
                 to={entry.to}
                 end={entry.to === "/"}
                 className={({ isActive }) => itemClass(isActive)}
+                onClick={() => setNavOpen(false)}
               >
                 <Icon aria-hidden="true" size={20} />
                 {entry.label}
@@ -510,12 +591,12 @@ export function AdminShell() {
             )
           })}
         </nav>
-        <svg viewBox="0 0 76 48" aria-hidden="true" className="m-4 h-12 w-20 text-on-bar/20">
+        <svg viewBox="0 0 76 48" aria-hidden="true" className="m-4 h-12 w-20 shrink-0 text-on-bar/20">
           <path fill="currentColor" d="M38 12c-8.5-4.2-18.2-5.2-30-2.2v26c11.2-2.6 21-1.4 30 3.2V12z" />
           <path fill="currentColor" d="M38 12c8.5-4.2 18.2-5.2 30-2.2v26c-11.2-2.6-21-1.4-30 3.2V12z" />
         </svg>
       </aside>
-      <div id="contenu" className="bg-lavender px-4 py-4 sm:px-6 sm:pb-8 lg:min-h-0 lg:overflow-y-auto">
+      <div id="contenu" className="bg-lavender px-3 py-4 sm:px-6 sm:pb-8 lg:min-h-0 lg:overflow-y-auto">
         <Outlet />
       </div>
     </div>

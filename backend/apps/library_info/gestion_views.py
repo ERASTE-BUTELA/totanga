@@ -156,6 +156,33 @@ def _apply_general(library, data, files, user):
     if whatsapp_error:
         return whatsapp_error
 
+    youtube_url, youtube_error = _optional_http_url(
+        data.get("youtube_url", library.youtube_url or ""),
+        label="Le lien YouTube",
+    )
+    if youtube_error:
+        return youtube_error
+
+    instagram_url, instagram_error = _optional_http_url(
+        data.get("instagram_url", library.instagram_url or ""),
+        label="Le lien Instagram",
+    )
+    if instagram_error:
+        return instagram_error
+
+    tiktok_url, tiktok_error = _optional_http_url(
+        data.get("tiktok_url", library.tiktok_url or ""),
+        label="Le lien TikTok",
+    )
+    if tiktok_error:
+        return tiktok_error
+
+    hours_text = str(data.get("hours_text", library.hours_text or "")).strip()
+    if "<" in hours_text or ">" in hours_text:
+        return "Les horaires ne peuvent pas contenir de balises."
+    if len(hours_text) > 300:
+        return "Les horaires sont trop longs (300 caractères maximum)."
+
     maps_url, maps_error = _optional_maps_location(
         data.get("maps_url", library.maps_url or ""),
     )
@@ -231,6 +258,10 @@ def _apply_general(library, data, files, user):
     library.website = website
     library.facebook_url = facebook_url
     library.whatsapp_url = whatsapp_url
+    library.youtube_url = youtube_url
+    library.instagram_url = instagram_url
+    library.tiktok_url = tiktok_url
+    library.hours_text = hours_text
     library.maps_url = maps_url
     library.latitude = latitude
     library.longitude = longitude

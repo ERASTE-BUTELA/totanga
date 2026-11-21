@@ -130,8 +130,8 @@ export function CatalogListPage({
           ) : null}
         </div>
 
-        <div className={oneLine ? "mt-4 flex min-w-0 flex-nowrap items-center gap-2" : "mt-4 flex flex-wrap items-center gap-3"}>
-          <label className={oneLine ? "relative min-w-0 flex-1" : "relative min-w-60 flex-1"}>
+        <div className={oneLine ? "mt-4 flex min-w-0 flex-wrap items-center gap-2 xl:flex-nowrap" : "mt-4 flex flex-wrap items-center gap-3"}>
+          <label className={oneLine ? "relative min-w-0 flex-1 basis-full sm:basis-64" : "relative min-w-0 flex-1 basis-full sm:min-w-60 sm:basis-auto"}>
             <span className="sr-only">{placeholder}</span>
             <Search aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
             <input
@@ -145,7 +145,7 @@ export function CatalogListPage({
             />
           </label>
           {filters.map((filter) => (
-            <label key={filter.id} className={oneLine ? "flex shrink-0 items-center" : "grid gap-1"}>
+            <label key={filter.id} className={oneLine ? "flex min-w-0 flex-1 items-center sm:flex-none" : "grid min-w-0 flex-1 gap-1 sm:flex-none"}>
               <span className="sr-only">{filter.label}</span>
               <select
                 aria-label={filter.label}
@@ -154,7 +154,7 @@ export function CatalogListPage({
                   setChosen((current) => ({ ...current, [filter.id]: event.target.value }))
                   setPage(1)
                 }}
-                className={oneLine ? "w-28 max-w-28 rounded-control border border-line bg-panel px-2" : "rounded-control border border-line bg-panel px-3"}
+                className={oneLine ? "w-full min-w-0 rounded-control border border-line bg-panel px-2 sm:w-28 sm:max-w-28" : "w-full rounded-control border border-line bg-panel px-3"}
               >
                 {filter.options.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -165,9 +165,9 @@ export function CatalogListPage({
             </label>
           ))}
           {period ? (
-            <fieldset className={oneLine ? "flex shrink-0 items-center gap-2" : "grid gap-1"}>
+            <fieldset className={oneLine ? "flex min-w-0 flex-wrap items-center gap-2" : "grid min-w-0 gap-1"}>
               <legend className="font-semibold text-heading">Période</legend>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <input
                   type="date"
                   aria-label="Du"
@@ -176,7 +176,7 @@ export function CatalogListPage({
                     setFrom(event.target.value)
                     setPage(1)
                   }}
-                  className="rounded-control border border-line bg-panel px-3"
+                  className="min-w-0 flex-1 rounded-control border border-line bg-panel px-3 sm:flex-none"
                 />
                 <span className="text-muted">–</span>
                 <input
@@ -187,19 +187,19 @@ export function CatalogListPage({
                     setTo(event.target.value)
                     setPage(1)
                   }}
-                  className="rounded-control border border-line bg-panel px-3"
+                  className="min-w-0 flex-1 rounded-control border border-line bg-panel px-3 sm:flex-none"
                 />
               </div>
             </fieldset>
           ) : null}
           {showSort ? (
-            <label className={oneLine ? "flex shrink-0 items-center" : "grid gap-1"}>
+            <label className={oneLine ? "flex min-w-0 flex-1 items-center sm:flex-none" : "grid min-w-0 gap-1"}>
               <span className="sr-only">Ordre</span>
               <select
                 aria-label="Ordre"
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className={oneLine ? "w-32 max-w-32 rounded-control border border-line bg-panel px-2" : "rounded-control border border-line bg-panel px-3"}
+                className={oneLine ? "w-full min-w-0 rounded-control border border-line bg-panel px-2 sm:w-32 sm:max-w-32" : "w-full rounded-control border border-line bg-panel px-3"}
               >
                 <option value="az">Nom (A → Z)</option>
                 <option value="za">Nom (Z → A)</option>
@@ -208,12 +208,12 @@ export function CatalogListPage({
           ) : null}
           <button type="button" onClick={reset} aria-label="Réinitialiser" className="inline-flex shrink-0 items-center gap-2 self-end rounded-control border border-line px-3 font-semibold text-violet">
             <RotateCcw aria-hidden="true" size={18} />
-            Réinitialiser
+            <span className="hidden sm:inline">Réinitialiser</span>
           </button>
         </div>
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[52rem] text-left">
+        <div className="mt-4 -mx-1 overflow-x-auto px-1 sm:mx-0 sm:px-0">
+          <table className="w-full min-w-[40rem] text-left sm:min-w-[52rem]">
             <thead>
               <tr className="border-b border-line text-muted">
                 {columns.map((column) => (

@@ -66,7 +66,7 @@ export function PreferencesPage() {
         <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
           <h2 className="text-section text-heading">Thème</h2>
           <p className="mt-1 text-muted">Le violet clair est le thème de la bibliothèque.</p>
-          <div className="mt-4 grid grid-cols-3 gap-2">
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
             {THEMES.map((theme) => {
               const Icon = theme.icon
               const selected = form.theme === theme.id

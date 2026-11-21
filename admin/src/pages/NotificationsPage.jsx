@@ -173,7 +173,7 @@ function NotificationsPanel() {
           })}
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
-          <label className="relative min-w-60 flex-1">
+          <label className="relative min-w-0 flex-1 basis-full sm:min-w-60 sm:basis-auto">
             <span className="sr-only">Rechercher une notification</span>
             <Search aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
             <input
@@ -183,7 +183,7 @@ function NotificationsPanel() {
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-          <label className="min-w-52">
+          <label className="min-w-0 w-full sm:w-auto sm:min-w-52">
             <span className="sr-only">Catégorie</span>
             <select className={fieldClass} value={category} onChange={(event) => setCategory(event.target.value)}>
               <option value="">Toutes les catégories</option>

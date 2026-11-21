@@ -423,5 +423,9 @@ html[data-color-scheme="dark"] img.theme-logo {
     .alerts-badge {
       animation: none;
     }
+
+    .sidebar {
+      transition: none;
+    }
   }
 }

@@ -30,6 +30,10 @@ const EMPTY = {
   email: "",
   facebookUrl: "",
   whatsappUrl: "",
+  youtubeUrl: "",
+  instagramUrl: "",
+  tiktokUrl: "",
+  hoursText: "",
   mapsUrl: "",
   latitude: "",
   longitude: "",
@@ -100,6 +104,10 @@ function applyMapped(mapped, setters) {
     email: mapped.email,
     facebookUrl: mapped.facebookUrl,
     whatsappUrl: mapped.whatsappUrl,
+    youtubeUrl: mapped.youtubeUrl,
+    instagramUrl: mapped.instagramUrl,
+    tiktokUrl: mapped.tiktokUrl,
+    hoursText: mapped.hoursText,
     mapsUrl: mapped.mapsUrl,
     latitude: mapped.latitude,
     longitude: mapped.longitude,
@@ -210,9 +218,16 @@ export function SettingsPage() {
   async function save(event) {
     event.preventDefault()
     if (!editing || busy) return
-    if (form.facebookUrl && !/^https?:\/\//i.test(form.facebookUrl.trim())) {
-      setNotice("Le lien Facebook doit commencer par http:// ou https://.")
-      return
+    for (const [value, label] of [
+      [form.facebookUrl, "Facebook"],
+      [form.youtubeUrl, "YouTube"],
+      [form.instagramUrl, "Instagram"],
+      [form.tiktokUrl, "TikTok"],
+    ]) {
+      if (value && !/^https?:\/\//i.test(value.trim())) {
+        setNotice(`Le lien ${label} doit commencer par http:// ou https://.`)
+        return
+      }
     }
     if (/^https?:/i.test(form.mapsUrl.trim()) && !/^https?:\/\//i.test(form.mapsUrl.trim())) {
       setNotice("Le lien Google Maps doit commencer par http:// ou https://.")
@@ -237,6 +252,10 @@ export function SettingsPage() {
     body.set("email", form.email.trim())
     body.set("facebook_url", form.facebookUrl.trim())
     body.set("whatsapp_url", form.whatsappUrl.trim())
+    body.set("youtube_url", form.youtubeUrl.trim())
+    body.set("instagram_url", form.instagramUrl.trim())
+    body.set("tiktok_url", form.tiktokUrl.trim())
+    body.set("hours_text", form.hoursText.trim())
     body.set("maps_url", form.mapsUrl.trim())
     body.set("latitude", form.latitude)
     body.set("longitude", form.longitude)
@@ -306,7 +325,7 @@ export function SettingsPage() {
       </div>
       {tab === "general" ? (
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-          <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
+          <article className="rounded-panel border border-line bg-panel p-4 shadow-card sm:p-5">
             <h2 className="flex items-center gap-2 text-section text-heading">
               <Settings aria-hidden="true" className="text-violet" size={22} />
               Informations générales
@@ -349,6 +368,30 @@ export function SettingsPage() {
               <label className="grid gap-1">
                 <span className="font-semibold text-heading">WhatsApp (facultatif)</span>
                 <input className={fieldClass} value={form.whatsappUrl} onChange={(event) => set("whatsappUrl", event.target.value)} placeholder="+243800000000 ou https://wa.me/…" disabled={locked} />
+              </label>
+              <label className="grid gap-1">
+                <span className="font-semibold text-heading">YouTube (facultatif)</span>
+                <input className={fieldClass} value={form.youtubeUrl} onChange={(event) => set("youtubeUrl", event.target.value)} placeholder="https://youtube.com/…" disabled={locked} />
+              </label>
+              <label className="grid gap-1">
+                <span className="font-semibold text-heading">Instagram (facultatif)</span>
+                <input className={fieldClass} value={form.instagramUrl} onChange={(event) => set("instagramUrl", event.target.value)} placeholder="https://instagram.com/…" disabled={locked} />
+              </label>
+              <label className="grid gap-1">
+                <span className="font-semibold text-heading">TikTok (facultatif)</span>
+                <input className={fieldClass} value={form.tiktokUrl} onChange={(event) => set("tiktokUrl", event.target.value)} placeholder="https://tiktok.com/…" disabled={locked} />
+              </label>
+              <label className="grid gap-1 sm:col-span-2">
+                <span className="font-semibold text-heading">Horaires d’ouverture (facultatif)</span>
+                <input
+                  className={fieldClass}
+                  value={form.hoursText}
+                  onChange={(event) => set("hoursText", event.target.value)}
+                  placeholder="ex. Lundi à vendredi 8 h – 17 h"
+                  maxLength={300}
+                  disabled={locked}
+                />
+                <span className="text-muted">Texte libre affiché tel quel sur la page À propos.</span>
               </label>
               <div className="grid gap-2 sm:col-span-2">
                 <span className="font-semibold text-heading">Localisation Google Maps (facultatif)</span>

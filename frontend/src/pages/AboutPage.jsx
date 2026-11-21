@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, Mail, MapPin, Megaphone, Newspaper, Phone } from "lucide-react"
+import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, Clock, Mail, MapPin, Megaphone, Newspaper, Phone } from "lucide-react"
 import { Link } from "react-router"
 import { getAnnouncements, getBooks, getEvents, getLibraryInfo, getPublications } from "../api/client.js"
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
@@ -114,19 +114,21 @@ function AboutContent({ library, counts }) {
                 </ContactLink>
               </li>
             ) : null}
-          </ul>
-          <h3 id="horaires-bibliotheque" className="mt-6 text-card text-heading">
-            Horaires d'ouverture
-          </h3>
-          {library.hoursSummary ? <p className="mt-2 text-body text-ink">{library.hoursSummary}</p> : null}
-          <ul className="mt-3 space-y-2">
-            {library.hours.map((slot) => (
-              <li key={slot.label} className="flex justify-between gap-4 border-b border-line py-2 text-body last:border-b-0">
-                <span className="font-semibold text-heading">{slot.label}</span>
-                <span className="text-muted">{slot.closed ? "Fermé" : `${slot.opens} – ${slot.closes}`}</span>
+            {library.hoursSummary ? (
+              <li className="flex items-start gap-3 text-body text-heading">
+                <Clock className="mt-1 h-4 w-4 shrink-0 text-violet" aria-hidden="true" />
+                <span id="horaires-bibliotheque">{library.hoursSummary}</span>
               </li>
-            ))}
+            ) : null}
           </ul>
+          {!library.hoursSummary ? (
+            <div className="mt-6">
+              <h3 id="horaires-bibliotheque" className="text-card text-heading">
+                Horaires d'ouverture
+              </h3>
+              <p className="mt-2 text-body text-muted">Les horaires seront publiés prochainement.</p>
+            </div>
+          ) : null}
           {mapSrc ? (
             <iframe
               title="Localisation de la Bibliothèque Totanga"

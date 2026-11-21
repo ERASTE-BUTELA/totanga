@@ -14,6 +14,12 @@ def _social_links(library):
         links.append({"label": "Facebook", "url": library.facebook_url})
     if library.whatsapp_url:
         links.append({"label": "WhatsApp", "url": library.whatsapp_url})
+    if library.youtube_url:
+        links.append({"label": "YouTube", "url": library.youtube_url})
+    if library.instagram_url:
+        links.append({"label": "Instagram", "url": library.instagram_url})
+    if library.tiktok_url:
+        links.append({"label": "TikTok", "url": library.tiktok_url})
     return links
 
 
@@ -28,6 +34,9 @@ def library_payload(library, *, staff=False):
         "website": library.website or "",
         "facebook_url": library.facebook_url or "",
         "whatsapp_url": library.whatsapp_url or "",
+        "youtube_url": library.youtube_url or "",
+        "instagram_url": library.instagram_url or "",
+        "tiktok_url": library.tiktok_url or "",
         "maps_url": library.maps_url or "",
         "latitude": float(library.latitude) if library.latitude is not None else None,
         "longitude": float(library.longitude) if library.longitude is not None else None,
@@ -45,7 +54,7 @@ def library_payload(library, *, staff=False):
         "page_size": library.page_size,
         "maintenance": library.maintenance,
         "notice": "",
-        "hours_summary": "",
+        "hours_summary": library.hours_text or "",
         "opening_hours": [],
         "social_links": _social_links(library),
     }

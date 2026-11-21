@@ -137,7 +137,7 @@ export function DashboardPage() {
   return (
     <section className="grid gap-4">
       <article className="overflow-hidden rounded-panel bg-panel shadow-card lg:grid lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <h2 className="text-section text-violet">Bonjour, {name}</h2>
           <p className="mt-3 max-w-xl">
             Bienvenue dans l'espace d'administration de la Bibliothèque Totanga.
@@ -147,7 +147,7 @@ export function DashboardPage() {
         <img
           src={asset("images/bibliotheque.webp")}
           alt=""
-          className="h-44 w-full object-cover lg:h-full"
+          className="h-36 w-full object-cover sm:h-44 lg:h-full"
         />
       </article>
 
@@ -173,7 +173,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <article className="rounded-panel border border-line bg-panel p-6 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-4 shadow-card sm:p-6">
           <h2 className="text-section text-heading">Répartition des exemplaires</h2>
           {loading ? (
             <p className="mt-5 text-muted">Chargement…</p>
@@ -181,7 +181,7 @@ export function DashboardPage() {
             <p className="mt-5 text-muted">Aucun exemplaire pour le moment.</p>
           ) : (
             <div className="mt-5 flex flex-wrap items-center gap-6">
-              <div className="relative h-44 w-44 shrink-0">
+              <div className="relative mx-auto h-44 w-44 shrink-0 sm:mx-0">
                 <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90" aria-hidden="true">
                   {rings(copies).map((item) => (
                     <circle
@@ -204,13 +204,13 @@ export function DashboardPage() {
                   </span>
                 </p>
               </div>
-              <ul className="grid min-w-60 flex-1 gap-2">
+              <ul className="grid min-w-0 flex-1 basis-full gap-2 sm:min-w-60 sm:basis-auto">
                 {copies.map((item) => (
                   <li key={item.label} className="flex items-center gap-3">
                     <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: item.color }} />
-                    <span className="flex-1">{item.label}</span>
+                    <span className="min-w-0 flex-1">{item.label}</span>
                     <span className="font-semibold text-heading">{item.value}</span>
-                    <span className="w-16 text-right text-muted">({item.share})</span>
+                    <span className="w-14 shrink-0 text-right text-muted sm:w-16">({item.share})</span>
                   </li>
                 ))}
               </ul>
@@ -218,7 +218,7 @@ export function DashboardPage() {
           )}
         </article>
 
-        <article className="rounded-panel border border-line bg-panel p-6 shadow-card">
+        <article className="rounded-panel border border-line bg-panel p-4 shadow-card sm:p-6">
           <h2 className="text-section text-heading">Contenus par statut</h2>
           {loading ? (
             <p className="mt-5 text-muted">Chargement…</p>

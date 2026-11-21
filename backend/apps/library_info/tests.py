@@ -78,6 +78,10 @@ class LibrarySettingsApiTests(TestCase):
                 "email": "accueil@totanga.test",
                 "facebook_url": "https://facebook.com/totanga",
                 "whatsapp_url": "+243800000001",
+                "youtube_url": "https://youtube.com/@totanga",
+                "instagram_url": "https://instagram.com/totanga",
+                "tiktok_url": "https://tiktok.com/@totanga",
+                "hours_text": "Lundi à vendredi 8 h – 17 h",
                 "about": "<p>Présentation <em>officielle</em></p><script>x</script>",
                 "language": "Français",
                 "theme": "Violet (Totanga)",
@@ -103,17 +107,25 @@ class LibrarySettingsApiTests(TestCase):
         self.assertNotIn("<script>", library.about)
         self.assertEqual(library.facebook_url, "https://facebook.com/totanga")
         self.assertEqual(library.whatsapp_url, "https://wa.me/243800000001")
+        self.assertEqual(library.youtube_url, "https://youtube.com/@totanga")
+        self.assertEqual(library.instagram_url, "https://instagram.com/totanga")
+        self.assertEqual(library.tiktok_url, "https://tiktok.com/@totanga")
+        self.assertEqual(library.hours_text, "Lundi à vendredi 8 h – 17 h")
 
         public = self.client.get("/api/bibliotheque/")
         self.assertEqual(public.data["name"], "Bibliothèque Totanga Kinshasa")
         self.assertTrue(public.data["logo"].startswith("/media/"))
         self.assertEqual(public.data["facebook_url"], "https://facebook.com/totanga")
+        self.assertEqual(public.data["hours_summary"], "Lundi à vendredi 8 h – 17 h")
         self.assertEqual(public.data.get("hero_image"), "")
         self.assertEqual(
             public.data["social_links"],
             [
                 {"label": "Facebook", "url": "https://facebook.com/totanga"},
                 {"label": "WhatsApp", "url": "https://wa.me/243800000001"},
+                {"label": "YouTube", "url": "https://youtube.com/@totanga"},
+                {"label": "Instagram", "url": "https://instagram.com/totanga"},
+                {"label": "TikTok", "url": "https://tiktok.com/@totanga"},
             ],
         )
 
