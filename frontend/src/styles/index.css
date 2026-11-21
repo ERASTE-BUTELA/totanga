@@ -433,6 +433,17 @@ html[data-color-scheme="dark"] .page-hero img,
     margin-block: 0.75rem;
   }
 
+  .rich-text h3 {
+    margin-block: 1.25rem 0.5rem;
+    font-size: var(--text-card);
+    font-weight: 700;
+    color: var(--color-heading);
+  }
+
+  .rich-text h3:first-child {
+    margin-top: 0;
+  }
+
   .rich-text ul,
   .rich-text ol {
     margin-block: 0.75rem;

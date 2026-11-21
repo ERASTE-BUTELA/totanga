@@ -1,4 +1,4 @@
-const ALLOWED = new Set(["P", "BR", "STRONG", "EM", "U", "UL", "OL", "LI", "BLOCKQUOTE", "A", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD"])
+const ALLOWED = new Set(["P", "BR", "STRONG", "EM", "U", "H2", "H3", "UL", "OL", "LI", "BLOCKQUOTE", "A", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD"])
 
 function escapeText(value) {
   return value.replace(/[&<>"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character]))

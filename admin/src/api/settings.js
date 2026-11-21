@@ -59,6 +59,7 @@ export function mapLibrarySettings(raw) {
     latitude: raw?.latitude === null || raw?.latitude === undefined ? "" : String(raw.latitude),
     longitude: raw?.longitude === null || raw?.longitude === undefined ? "" : String(raw.longitude),
     about: String(raw?.about || ""),
+    functioning: String(raw?.functioning || ""),
     language: String(raw?.language || "Français"),
     theme: String(raw?.theme || "Violet (Totanga)"),
     darkMode: Boolean(raw?.dark_mode),

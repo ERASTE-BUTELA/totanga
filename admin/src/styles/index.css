@@ -236,6 +236,12 @@ html[data-color-scheme="dark"] img.theme-logo {
     font-size: 100%;
   }
 
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
   body {
     margin: 0;
     overflow-x: hidden;
@@ -245,6 +251,16 @@ html[data-color-scheme="dark"] img.theme-logo {
     font-size: var(--text-body);
     line-height: var(--text-body--line-height);
     overflow-wrap: break-word;
+  }
+
+  .admin-shell .sidebar {
+    scrollbar-width: thin;
+  }
+
+  @media (min-width: 1024px) {
+    .admin-shell .sidebar {
+      scrollbar-gutter: stable;
+    }
   }
 
   button,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, Clock, Mail, MapPin, Megaphone, Newspaper, Phone } from "lucide-react"
+import { BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, Mail, MapPin, Megaphone, Newspaper, Phone } from "lucide-react"
 import { Link } from "react-router"
 import { getAnnouncements, getBooks, getEvents, getLibraryInfo, getPublications } from "../api/client.js"
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
@@ -85,6 +85,23 @@ function AboutContent({ library, counts }) {
               </li>
             ))}
           </ul>
+        </section>
+
+        <section
+          id="fonctionnement-bibliotheque"
+          className="rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6"
+          aria-labelledby="fonctionnement"
+        >
+          <h2 id="fonctionnement" className="flex items-center gap-2 text-section text-heading">
+            <Building2 className="h-6 w-6 text-violet" aria-hidden="true" />
+            Fonctionnement de la bibliothèque
+          </h2>
+          <p className="mt-2 text-meta font-semibold uppercase tracking-wide text-violet">Structure et fonctionnement</p>
+          {richTextIsEmpty(library.functioning) ? (
+            <p className="mt-4 text-article text-muted">Les informations de fonctionnement seront publiées prochainement.</p>
+          ) : (
+            <SafeHtml html={library.functioning} className="rich-text mt-4 space-y-4 text-article text-ink" />
+          )}
         </section>
 
         <section id="contact-bibliotheque" className="rounded-2xl border border-line bg-panel p-5 shadow-card sm:p-6" aria-labelledby="nous-trouver">

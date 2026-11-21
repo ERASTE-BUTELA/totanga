@@ -11,15 +11,15 @@ def _media(field):
 def _social_links(library):
     links = []
     if library.facebook_url:
-        links.append({"label": "Facebook", "url": library.facebook_url})
+        links.append({"id": "facebook", "label": "Facebook", "url": library.facebook_url})
     if library.whatsapp_url:
-        links.append({"label": "WhatsApp", "url": library.whatsapp_url})
+        links.append({"id": "whatsapp", "label": "WhatsApp", "url": library.whatsapp_url})
     if library.youtube_url:
-        links.append({"label": "YouTube", "url": library.youtube_url})
+        links.append({"id": "youtube", "label": "YouTube", "url": library.youtube_url})
     if library.instagram_url:
-        links.append({"label": "Instagram", "url": library.instagram_url})
+        links.append({"id": "instagram", "label": "Instagram", "url": library.instagram_url})
     if library.tiktok_url:
-        links.append({"label": "TikTok", "url": library.tiktok_url})
+        links.append({"id": "tiktok", "label": "TikTok", "url": library.tiktok_url})
     return links
 
 
@@ -41,6 +41,7 @@ def library_payload(library, *, staff=False):
         "latitude": float(library.latitude) if library.latitude is not None else None,
         "longitude": float(library.longitude) if library.longitude is not None else None,
         "about": library.about,
+        "functioning": library.functioning,
         "logo": _media(library.logo.file) if library.logo_id else "",
         # Le favicon du site suit toujours le logo.
         "favicon": _media(library.logo.file) if library.logo_id else "",

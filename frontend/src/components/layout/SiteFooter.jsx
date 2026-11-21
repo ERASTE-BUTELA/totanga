@@ -23,11 +23,21 @@ const LEGAL_LINKS = [
 ]
 
 const SOCIAL_ICONS = {
-  Facebook: IconFacebook,
-  WhatsApp: IconWhatsApp,
-  YouTube: IconYouTube,
-  Instagram: IconInstagram,
-  TikTok: IconTikTok,
+  facebook: IconFacebook,
+  whatsapp: IconWhatsApp,
+  youtube: IconYouTube,
+  instagram: IconInstagram,
+  tiktok: IconTikTok,
+}
+
+function socialIconKey(item) {
+  const raw = String(item?.id || item?.label || "").toLowerCase().replace(/\s+/g, "")
+  if (raw.includes("facebook")) return "facebook"
+  if (raw.includes("whatsapp")) return "whatsapp"
+  if (raw.includes("youtube") || raw.includes("youtu")) return "youtube"
+  if (raw.includes("instagram")) return "instagram"
+  if (raw.includes("tiktok")) return "tiktok"
+  return raw
 }
 
 const linkClass = "inline-flex py-0.5 text-meta text-on-bar/80 hover:text-on-bar focus-visible:outline-gold-bright"
@@ -51,17 +61,18 @@ export function SiteFooter({ library, error }) {
             Un espace de savoir, de culture et de découverte au service de la communauté de Kinshasa.
           </p>
           {library?.socials?.length ? (
-            <ul className="mt-5 flex flex-wrap items-center gap-4">
+            <ul className="mt-5 flex flex-wrap items-center gap-3">
               {library.socials.map((item) => {
-                const Icon = SOCIAL_ICONS[item.label]
+                const key = socialIconKey(item)
+                const Icon = SOCIAL_ICONS[key]
                 return (
                   <li key={item.label}>
                     <ExternalLink
                       href={item.url}
                       label={item.label}
-                      className="inline-flex text-on-bar hover:text-gold-bright focus-visible:outline-gold-bright"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-on-bar/25 bg-on-bar/10 text-on-bar transition hover:border-gold-bright hover:bg-gold-bright hover:text-violet-dark focus-visible:outline-gold-bright"
                     >
-                      {Icon ? <Icon className="h-5 w-5" /> : <span className="text-badge">{item.label}</span>}
+                      {Icon ? <Icon className="h-5 w-5" /> : <span className="text-badge font-semibold">{item.label.slice(0, 2)}</span>}
                     </ExternalLink>
                   </li>
                 )
@@ -163,7 +174,7 @@ function mailHref(email) {
 function IconFacebook({ className }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
-      <path d="M14 8h3V4h-3c-2.8 0-5 2.2-5 5v2H7v4h2v7h4v-7h3l1-4h-4V9c0-.6.4-1 1-1z" />
+      <path d="M22 12.07C22 6.48 17.52 2 11.93 2S1.86 6.48 1.86 12.07c0 5.02 3.66 9.18 8.44 9.93v-7.03H7.9v-2.9h2.4V9.85c0-2.37 1.41-3.68 3.56-3.68 1.03 0 2.11.18 2.11.18v2.33h-1.19c-1.17 0-1.54.73-1.54 1.48v1.78h2.62l-.42 2.9h-2.2V22c4.78-.75 8.44-4.91 8.44-9.93z" />
     </svg>
   )
 }
@@ -171,7 +182,7 @@ function IconFacebook({ className }) {
 function IconWhatsApp({ className }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
-      <path d="M12 3.2c-4.8 0-8.7 3.9-8.7 8.7 0 1.5.4 3 1.1 4.3L3 21l4.9-1.3c1.3.7 2.7 1.1 4.1 1.1 4.8 0 8.7-3.9 8.7-8.7S16.8 3.2 12 3.2zm0 15.9c-1.3 0-2.6-.3-3.7-.9l-.3-.2-2.9.8.8-2.8-.2-.3c-.7-1.1-1-2.4-1-3.7 0-3.9 3.2-7.1 7.1-7.1s7.1 3.2 7.1 7.1-3.2 7.1-7.1 7.1zm4-5.3c-.2-.1-1.3-.6-1.5-.7-.2-.1-.4-.1-.5.1-.2.2-.6.7-.7.8-.1.1-.3.2-.5.1-.2-.1-.9-.3-1.7-1.1-.6-.6-1.1-1.3-1.2-1.5-.1-.2 0-.4.1-.5l.4-.5c.1-.1.2-.3.2-.4 0-.1 0-.3-.1-.4-.1-.1-.5-1.3-.7-1.8-.2-.5-.4-.4-.5-.4h-.4c-.1 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.3c.1.2 1.6 2.5 3.9 3.4.5.2.9.4 1.3.5.5.2 1 .1 1.3.1.4-.1 1.3-.5 1.5-1 .2-.5.2-.9.1-1 0-.1-.2-.2-.4-.3z" />
+      <path d="M20.5 3.5A10.5 10.5 0 0 0 3.4 17.7L2 22l4.4-1.3A10.5 10.5 0 1 0 20.5 3.5zM12 20.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-2.5.7.7-2.4-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-5.8c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.7.8-.8 1c-.1.1-.3.2-.6.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5l.4-.5c.1-.1.2-.3.3-.4.1-.1.1-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.4-.2.2-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.8 4.4 3.8.6.3 1.1.4 1.5.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.5-.3z" />
     </svg>
   )
 }
@@ -179,7 +190,7 @@ function IconWhatsApp({ className }) {
 function IconYouTube({ className }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
-      <path d="M23.5 7.2a3 3 0 0 0-2.1-2.1C19.5 4.6 12 4.6 12 4.6s-7.5 0-9.4.5A3 3 0 0 0 .5 7.2 31.5 31.5 0 0 0 0 12a31.5 31.5 0 0 0 .5 4.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.5 31.5 0 0 0 24 12a31.5 31.5 0 0 0-.5-4.8zM9.8 15.5v-7l6.3 3.5-6.3 3.5z" />
+      <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.75 15.5v-7L16 12l-6.25 3.5z" />
     </svg>
   )
 }
@@ -187,7 +198,7 @@ function IconYouTube({ className }) {
 function IconInstagram({ className }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
-      <path d="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zm5 4.5A4.5 4.5 0 1 0 16.5 12 4.5 4.5 0 0 0 12 7.5zm0 7.4A2.9 2.9 0 1 1 14.9 12 2.9 2.9 0 0 1 12 14.9zm5.1-8.6a1.1 1.1 0 1 0 1.1 1.1 1.1 1.1 0 0 0-1.1-1.1z" />
+      <path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2zm-.2 2A3.6 3.6 0 0 0 4 7.6v8.8A3.6 3.6 0 0 0 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6A3.6 3.6 0 0 0 16.4 4H7.6zm9.65 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
     </svg>
   )
 }
@@ -195,7 +206,7 @@ function IconInstagram({ className }) {
 function IconTikTok({ className }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
-      <path d="M14.5 3c.4 2.3 1.8 4.1 4 4.7v2.5c-1.4 0-2.7-.4-3.8-1.1v5.7a5.6 5.6 0 1 1-5.6-5.6c.3 0 .6 0 .9.1v2.6a3 3 0 1 0 2.1 2.9V3h2.4z" />
+      <path d="M19.6 7.3a6.5 6.5 0 0 1-3.8-1.2v8.1a5.9 5.9 0 1 1-5.1-5.8v3a2.9 2.9 0 1 0 2.1 2.8V2.5h3a6.5 6.5 0 0 0 3.8 3.7v1.1z" />
     </svg>
   )
 }

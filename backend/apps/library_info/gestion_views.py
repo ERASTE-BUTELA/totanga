@@ -226,6 +226,7 @@ def _apply_general(library, data, files, user):
     dark_mode = _truthy(data.get("dark_mode", library.dark_mode))
     maintenance = _truthy(data.get("maintenance", library.maintenance))
     about = sanitize_rich_text(data.get("about", library.about))
+    functioning = sanitize_rich_text(data.get("functioning", library.functioning))
 
     logo = library.logo
     if _truthy(data.get("clear_logo")):
@@ -266,6 +267,7 @@ def _apply_general(library, data, files, user):
     library.latitude = latitude
     library.longitude = longitude
     library.about = about
+    library.functioning = functioning
     library.logo = logo
     # Favicon = logo (plus de champ séparé dans l'interface).
     library.favicon = logo

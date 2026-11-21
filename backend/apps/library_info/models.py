@@ -43,7 +43,8 @@ class Library(models.Model):
         null=True,
         blank=True,
     )
-    about = models.TextField("à propos", blank=True)
+    about = models.TextField("histoire de la bibliothèque", blank=True)
+    functioning = models.TextField("structure et fonctionnement", blank=True)
     logo = models.ForeignKey(
         StoredImage,
         null=True,

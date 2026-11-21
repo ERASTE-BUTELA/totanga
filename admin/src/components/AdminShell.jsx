@@ -299,19 +299,42 @@ export function AdminShell() {
   }, [open])
 
   useEffect(() => {
-    if (!navOpen) return undefined
-    const previous = document.body.style.overflow
-    document.body.style.overflow = "hidden"
+    const html = document.documentElement
+    const body = document.body
+    const previousHtml = html.style.overflow
+    const previousBody = body.style.overflow
+    const media = window.matchMedia("(min-width: 1024px)")
+
+    function lockDesktopScroll() {
+      if (media.matches) {
+        html.style.overflow = "hidden"
+        body.style.overflow = "hidden"
+        return
+      }
+      if (!navOpen) {
+        html.style.overflow = previousHtml
+        body.style.overflow = previousBody
+      }
+    }
+
     function onKey(event) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && navOpen) {
         setNavOpen(false)
         navButtonRef.current?.focus()
       }
     }
+
+    lockDesktopScroll()
+    if (navOpen && !media.matches) {
+      body.style.overflow = "hidden"
+    }
+    media.addEventListener("change", lockDesktopScroll)
     document.addEventListener("keydown", onKey)
     return () => {
-      document.body.style.overflow = previous
+      media.removeEventListener("change", lockDesktopScroll)
       document.removeEventListener("keydown", onKey)
+      html.style.overflow = previousHtml
+      body.style.overflow = previousBody
     }
   }, [navOpen])
 
@@ -343,7 +366,7 @@ export function AdminShell() {
   const currentLabel = trail?.items?.[trail.items.length - 1]?.label || title
 
   return (
-    <div className="min-h-dvh lg:grid lg:h-dvh lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
+    <div className="admin-shell min-h-dvh lg:grid lg:h-dvh lg:max-h-dvh lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
       <a className="skip-link" href="#contenu">Aller au contenu</a>
       <div className="hidden items-center bg-violet-dark px-4 py-4 lg:flex">
         <img
@@ -352,7 +375,7 @@ export function AdminShell() {
           className="theme-logo h-16 w-auto rounded-control bg-panel px-2 py-1"
         />
       </div>
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-line bg-panel px-3 py-3 sm:gap-4 sm:px-6">
+      <header className="z-20 flex items-center justify-between gap-3 border-b border-line bg-panel px-3 py-3 sm:gap-4 sm:px-6 lg:sticky lg:top-0">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <button
             ref={navButtonRef}
@@ -514,11 +537,11 @@ export function AdminShell() {
       <aside
         id={navId}
         className={[
-          "sidebar fixed inset-y-0 left-0 z-40 flex w-[min(17.5rem,88vw)] flex-col bg-violet-dark text-on-bar transition-transform duration-200 lg:static lg:z-auto lg:min-h-0 lg:w-auto lg:translate-x-0 lg:overflow-y-auto",
+          "sidebar fixed inset-y-0 left-0 z-40 flex w-[min(17.5rem,88vw)] flex-col overflow-y-auto bg-violet-dark text-on-bar transition-transform duration-200 lg:static lg:z-auto lg:min-h-0 lg:w-auto lg:translate-x-0 lg:overflow-hidden",
           navOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         ].join(" ")}
       >
-        <div className="flex items-center justify-between gap-3 px-4 pt-4 lg:block lg:px-0 lg:pt-0">
+        <div className="flex shrink-0 items-center justify-between gap-3 px-4 pt-4 lg:block lg:px-0 lg:pt-0">
           <img
             src={`${import.meta.env.BASE_URL}images/logo.png`}
             alt="Bibliothèque Totanga"
@@ -537,8 +560,8 @@ export function AdminShell() {
           </button>
           <p className="hidden px-5 pt-4 font-semibold tracking-wide text-on-bar/70 lg:block">Espace d'administration</p>
         </div>
-        <p className="px-5 pt-2 font-semibold tracking-wide text-on-bar/70 lg:hidden">Espace d'administration</p>
-        <nav aria-label="Administration" className="grid flex-1 content-start gap-1 overflow-y-auto px-3 py-3">
+        <p className="shrink-0 px-5 pt-2 font-semibold tracking-wide text-on-bar/70 lg:hidden">Espace d'administration</p>
+        <nav aria-label="Administration" className="grid min-h-0 flex-1 content-start gap-1 overflow-y-auto overscroll-contain px-3 py-3">
           {nav.map((entry) => {
             if (entry.children) {
               const Icon = ICONS[entry.id] ?? Library
@@ -596,7 +619,7 @@ export function AdminShell() {
           <path fill="currentColor" d="M38 12c8.5-4.2 18.2-5.2 30-2.2v26c-11.2-2.6-21-1.4-30 3.2V12z" />
         </svg>
       </aside>
-      <div id="contenu" className="bg-lavender px-3 py-4 sm:px-6 sm:pb-8 lg:min-h-0 lg:overflow-y-auto">
+      <div id="contenu" className="bg-lavender px-3 py-4 sm:px-6 sm:pb-8 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain">
         <Outlet />
       </div>
     </div>

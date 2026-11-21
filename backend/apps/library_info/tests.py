@@ -25,7 +25,8 @@ def image_upload(name="logo.jpg"):
 
 class SanitizeTests(TestCase):
     def test_keeps_safe_markup(self):
-        html = sanitize_rich_text('<p>Bonjour <strong>Totanga</strong></p><script>alert(1)</script>')
+        html = sanitize_rich_text('<h3>Titre</h3><p>Bonjour <strong>Totanga</strong></p><script>alert(1)</script>')
+        self.assertIn("<h3>", html)
         self.assertIn("<p>", html)
         self.assertIn("<strong>", html)
         self.assertNotIn("<script>", html)
@@ -83,6 +84,7 @@ class LibrarySettingsApiTests(TestCase):
                 "tiktok_url": "https://tiktok.com/@totanga",
                 "hours_text": "Lundi à vendredi 8 h – 17 h",
                 "about": "<p>Présentation <em>officielle</em></p><script>x</script>",
+                "functioning": "<h3>La bibliothèque</h3><p>Salle de lecture <strong>climatisée</strong></p><script>x</script>",
                 "language": "Français",
                 "theme": "Violet (Totanga)",
                 "dark_mode": "true",
@@ -105,6 +107,8 @@ class LibrarySettingsApiTests(TestCase):
         self.assertTrue(library.logo_id)
         self.assertIn("<em>", library.about)
         self.assertNotIn("<script>", library.about)
+        self.assertIn("<strong>", library.functioning)
+        self.assertNotIn("<script>", library.functioning)
         self.assertEqual(library.facebook_url, "https://facebook.com/totanga")
         self.assertEqual(library.whatsapp_url, "https://wa.me/243800000001")
         self.assertEqual(library.youtube_url, "https://youtube.com/@totanga")
@@ -117,15 +121,16 @@ class LibrarySettingsApiTests(TestCase):
         self.assertTrue(public.data["logo"].startswith("/media/"))
         self.assertEqual(public.data["facebook_url"], "https://facebook.com/totanga")
         self.assertEqual(public.data["hours_summary"], "Lundi à vendredi 8 h – 17 h")
+        self.assertIn("climatisée", public.data["functioning"])
         self.assertEqual(public.data.get("hero_image"), "")
         self.assertEqual(
             public.data["social_links"],
             [
-                {"label": "Facebook", "url": "https://facebook.com/totanga"},
-                {"label": "WhatsApp", "url": "https://wa.me/243800000001"},
-                {"label": "YouTube", "url": "https://youtube.com/@totanga"},
-                {"label": "Instagram", "url": "https://instagram.com/totanga"},
-                {"label": "TikTok", "url": "https://tiktok.com/@totanga"},
+                {"id": "facebook", "label": "Facebook", "url": "https://facebook.com/totanga"},
+                {"id": "whatsapp", "label": "WhatsApp", "url": "https://wa.me/243800000001"},
+                {"id": "youtube", "label": "YouTube", "url": "https://youtube.com/@totanga"},
+                {"id": "instagram", "label": "Instagram", "url": "https://instagram.com/totanga"},
+                {"id": "tiktok", "label": "TikTok", "url": "https://tiktok.com/@totanga"},
             ],
         )
 

@@ -133,6 +133,7 @@ export function mapLibraryInfo(raw) {
     logo: text(raw.logo) || "/images/logo.png",
     heroImage: text(raw.hero_image),
     about: text(raw.about),
+    functioning: text(raw.functioning),
     facebookUrl: text(raw.facebook_url),
     whatsappUrl: text(raw.whatsapp_url),
     youtubeUrl: text(raw.youtube_url),
@@ -144,7 +145,11 @@ export function mapLibraryInfo(raw) {
     maintenance: Boolean(raw.maintenance),
     hoursSummary: text(raw.hours_summary),
     socials: (Array.isArray(raw.social_links) ? raw.social_links : [])
-      .map((item) => ({ label: text(item.label), url: toSafeExternalUrl(item.url) }))
+      .map((item) => ({
+        id: text(item.id || item.label).toLowerCase(),
+        label: text(item.label),
+        url: toSafeExternalUrl(item.url),
+      }))
       .filter((item) => item.url),
     hours: hours.map((item) => ({
       label: text(item.label),

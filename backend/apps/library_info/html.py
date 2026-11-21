@@ -11,6 +11,8 @@ ALLOWED_TAGS = frozenset(
         "strong",
         "em",
         "u",
+        "h2",
+        "h3",
         "ul",
         "ol",
         "li",

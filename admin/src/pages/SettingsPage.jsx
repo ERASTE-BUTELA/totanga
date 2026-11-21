@@ -38,6 +38,7 @@ const EMPTY = {
   latitude: "",
   longitude: "",
   about: "",
+  functioning: "",
   language: "Français",
   theme: "Violet (Totanga)",
   darkMode: false,
@@ -112,6 +113,7 @@ function applyMapped(mapped, setters) {
     latitude: mapped.latitude,
     longitude: mapped.longitude,
     about: mapped.about,
+    functioning: mapped.functioning,
     language: mapped.language,
     theme: mapped.theme,
     darkMode: mapped.darkMode,
@@ -260,6 +262,7 @@ export function SettingsPage() {
     body.set("latitude", form.latitude)
     body.set("longitude", form.longitude)
     body.set("about", form.about)
+    body.set("functioning", form.functioning)
     body.set("language", form.language)
     body.set("theme", form.theme)
     body.set("dark_mode", form.darkMode ? "true" : "false")
@@ -552,12 +555,6 @@ export function SettingsPage() {
               {editing ? <p className="mt-2 text-muted">Formats : JPG, PNG, WebP. Taille max. : 5 Mo. Préférez une image large (environ 1600×700).</p> : null}
               {heroError ? <p role="alert" className="mt-2 text-unavailable">{heroError}</p> : null}
             </div>
-            <div className="mt-4">
-              <p className="font-semibold text-heading">À propos de la bibliothèque</p>
-              <div className="mt-2">
-                <RichTextEditor key={`${version}-${editing ? "edit" : "view"}`} label="À propos de la bibliothèque" value={form.about} onChange={(about) => set("about", about)} disabled={locked} />
-              </div>
-            </div>
           </article>
           <div className="grid content-start gap-4">
             <article className="rounded-panel border border-line bg-panel p-5 shadow-card">
@@ -616,6 +613,34 @@ export function SettingsPage() {
               </div>
             </article>
           </div>
+          <div className="grid items-stretch gap-4 xl:grid-cols-2">
+            <article className="flex min-h-0 flex-col rounded-panel border border-line bg-panel p-4 shadow-card sm:p-5">
+              <h2 className="text-section text-heading">Histoire de la bibliothèque</h2>
+              <p className="mt-1 text-muted">Texte affiché dans la colonne « Histoire » de la page À propos.</p>
+              <div className="mt-3 max-h-[28rem] min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <RichTextEditor
+                  key={`about-${version}-${editing ? "edit" : "view"}`}
+                  label="Histoire de la bibliothèque"
+                  value={form.about}
+                  onChange={(about) => set("about", about)}
+                  disabled={locked}
+                />
+              </div>
+            </article>
+            <article className="flex min-h-0 flex-col rounded-panel border border-line bg-panel p-4 shadow-card sm:p-5">
+              <h2 className="text-section text-heading">Structure et fonctionnement</h2>
+              <p className="mt-1 text-muted">Texte affiché dans la section « Fonctionnement » de la page À propos.</p>
+              <div className="mt-3 max-h-[28rem] min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <RichTextEditor
+                  key={`functioning-${version}-${editing ? "edit" : "view"}`}
+                  label="Structure et fonctionnement"
+                  value={form.functioning}
+                  onChange={(functioning) => set("functioning", functioning)}
+                  disabled={locked}
+                />
+              </div>
+            </article>
+          </div>
         </div>
       ) : (
         <article className="rounded-panel border border-line bg-panel p-6 shadow-card">
@@ -624,7 +649,7 @@ export function SettingsPage() {
         </article>
       )}
       {tab === "general" && editing ? (
-        <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="fixed inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-end gap-3 border-t border-line bg-panel px-4 py-3 shadow-card sm:px-6 lg:left-[17.5rem]">
           <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-panel px-4 font-semibold text-heading" onClick={cancelEdit} disabled={busy}>
             <X aria-hidden="true" size={18} />
             Annuler
@@ -635,6 +660,7 @@ export function SettingsPage() {
           </button>
         </div>
       ) : null}
+      {tab === "general" && editing ? <div className="h-20" aria-hidden="true" /> : null}
       {notice ? <p className={notice.includes("enregistr") ? "text-muted" : "text-unavailable"} role={notice.includes("enregistr") ? undefined : "alert"}>{notice}</p> : null}
     </form>
   )
