@@ -136,15 +136,17 @@ const REPLY_MESSAGES = new Set([
   "Vous n'avez pas l'autorisation d'effectuer cette action.",
   "Ce message n'existe pas.",
   "Ce message n'a pas d'adresse électronique.",
+  "Ce message n'a pas de numéro WhatsApp.",
+  "Canal de réponse inconnu.",
   "Indiquez une réponse (2 000 caractères maximum).",
   "L'envoi de courriel n'est pas encore configuré.",
   "Le courriel n'a pas pu être envoyé. Réessayez plus tard.",
 ])
 
-export function replyToMessage(id, body) {
+export function replyToMessage(id, body, channel = "email") {
   return request(`/api/gestion/messages/${id}/repondre/`, {
     method: "POST",
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ body, channel }),
   }).then(async (response) => {
     const result = await finish(response)
     if (result.ok) return result
@@ -152,7 +154,7 @@ export function replyToMessage(id, body) {
     if (response?.status === 503) {
       return { ok: false, error: "L'envoi de courriel n'est pas encore configuré." }
     }
-    return { ok: false, error: result.error || "Le courriel n'a pas pu être envoyé. Réessayez plus tard." }
+    return { ok: false, error: result.error || "La réponse n'a pas pu être enregistrée. Réessayez plus tard." }
   })
 }
 

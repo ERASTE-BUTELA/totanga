@@ -539,23 +539,12 @@ class StaffMessageListView(APIView):
         if not request.user.has_perm("visitor_messages.view_visitormessage"):
             return Response({"detail": "Vous n'avez pas l'autorisation d'effectuer cette action."}, status=403)
         from apps.visitor_messages.models import VisitorMessage
+        from apps.visitor_messages.staff_serializers import serialize_message
 
-        rows = []
-        for message in VisitorMessage.objects.order_by("-created_at")[:100]:
-            rows.append(
-                {
-                    "id": message.pk,
-                    "kind": message.kind,
-                    "kind_label": message.get_kind_display(),
-                    "name": message.name,
-                    "email": message.email or "",
-                    "whatsapp": message.whatsapp or "",
-                    "subject": message.get_subject_display(),
-                    "body": message.body,
-                    "is_read": bool(message.is_read),
-                    "created_at": message.created_at.isoformat(),
-                }
-            )
+        rows = [
+            serialize_message(message)
+            for message in VisitorMessage.objects.prefetch_related("replies").order_by("-created_at")[:100]
+        ]
         return Response(
             {
                 "results": rows,

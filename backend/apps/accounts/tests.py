@@ -793,6 +793,14 @@ class StaffVisitorMessageReadTests(TestCase):
         self.assertEqual(action.target_id, str(message.pk))
         message.refresh_from_db()
         self.assertTrue(message.is_read)
+        from apps.visitor_messages.models import VisitorMessageReply
+
+        self.assertEqual(VisitorMessageReply.objects.filter(message=message).count(), 1)
+        stored = VisitorMessageReply.objects.get(message=message)
+        self.assertEqual(stored.channel, VisitorMessageReply.CHANNEL_EMAIL)
+        self.assertIn("catalogue", stored.body)
+        self.assertEqual(replied.json()["reply"]["channel"], "email")
+        self.assertEqual(replied.json()["message"]["reply_count"], 1)
 
     def test_reply_without_email_is_refused(self):
         message = VisitorMessage.objects.create(
@@ -810,6 +818,35 @@ class StaffVisitorMessageReadTests(TestCase):
             HTTP_X_CSRFTOKEN=token,
         )
         self.assertEqual(refused.status_code, 400)
+
+    def test_whatsapp_reply_is_stored_without_email(self):
+        from apps.visitor_messages.models import VisitorMessageReply
+
+        message = VisitorMessage.objects.create(
+            name="Sans mail",
+            email="",
+            whatsapp="243800000000",
+            subject="generale",
+            body="Contact WhatsApp seulement.",
+        )
+        token = self.token()
+        replied = self.client.post(
+            f"/api/gestion/messages/{message.pk}/repondre/",
+            {"body": "Voici les horaires du samedi.", "channel": "whatsapp"},
+            format="json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(replied.status_code, 200)
+        stored = VisitorMessageReply.objects.get(message=message)
+        self.assertEqual(stored.channel, VisitorMessageReply.CHANNEL_WHATSAPP)
+        self.assertEqual(stored.body, "Voici les horaires du samedi.")
+        listed = self.client.get("/api/gestion/messages/")
+        self.assertEqual(listed.status_code, 200)
+        row = next(item for item in listed.json()["results"] if item["id"] == message.pk)
+        self.assertEqual(row["whatsapp"], "243800000000")
+        self.assertEqual(row["reply_count"], 1)
+        self.assertEqual(row["replies"][0]["channel"], "whatsapp")
+        self.assertEqual(row["contact_key"], "whatsapp:243800000000")
 
 
 class StaffPasswordResetTests(TestCase):

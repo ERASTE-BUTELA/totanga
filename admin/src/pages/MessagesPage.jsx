@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react"
-import { Check, Inbox, Mail, Send, X } from "lucide-react"
+import { Check, Inbox, Mail, MessageCircle, Search, Send, X } from "lucide-react"
 import { listMessages, markAllMessagesRead, markMessageRead, replyToMessage } from "../api/content.js"
 import { setUnreadMessages } from "../lib/alertsStore.js"
 
@@ -14,6 +14,65 @@ function formatWhen(value) {
     minute: "2-digit",
     timeZone: "Africa/Kinshasa",
   })
+}
+
+function dateSearchBits(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return []
+  const parts = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Africa/Kinshasa",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).formatToParts(date)
+  const day = parts.find((part) => part.type === "day")?.value || ""
+  const month = parts.find((part) => part.type === "month")?.value || ""
+  const year = parts.find((part) => part.type === "year")?.value || ""
+  const monthLong = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Africa/Kinshasa",
+    month: "long",
+  }).format(date)
+  const monthShort = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Africa/Kinshasa",
+    month: "short",
+  }).format(date)
+  return [
+    formatWhen(value),
+    `${day}/${month}/${year}`,
+    `${day}-${month}-${year}`,
+    `${year}-${month}-${day}`,
+    `${day} ${monthShort} ${year}`,
+    `${day} ${monthLong} ${year}`,
+    monthLong,
+    monthShort,
+    year,
+  ]
+}
+
+function normalizeSearch(value) {
+  return String(value || "")
+    .toLocaleLowerCase("fr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+}
+
+function messageSearchText(row) {
+  const replies = Array.isArray(row?.replies) ? row.replies.map((item) => item.body || "").join(" ") : ""
+  return normalizeSearch(
+    [
+      row?.name,
+      row?.email,
+      row?.whatsapp,
+      row?.subject,
+      row?.kind_label,
+      row?.body,
+      replies,
+      ...dateSearchBits(row?.created_at),
+      ...(Array.isArray(row?.replies) ? row.replies.flatMap((item) => dateSearchBits(item.created_at)) : []),
+    ]
+      .filter(Boolean)
+      .join(" "),
+  )
 }
 
 function contactLine(row) {
@@ -35,15 +94,20 @@ function contactLine(row) {
   return <span className="text-muted">Contact non indiqué</span>
 }
 
-function MessageModal({ row, onClose, onReplied }) {
+function MessageModal({ row, thread, onClose, onReplied, onSelectRelated }) {
   const titleId = useId()
   const closeRef = useRef(null)
   const [replyOpen, setReplyOpen] = useState(false)
+  const [replyChannel, setReplyChannel] = useState(row?.email ? "email" : "whatsapp")
   const [reply, setReply] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
   const canEmail = Boolean(row?.email)
+  const canWhatsapp = Boolean(row?.whatsapp)
+  const canReply = canEmail || canWhatsapp
+  const replies = Array.isArray(row?.replies) ? row.replies : []
+  const related = (thread || []).filter((item) => item.id !== row?.id)
 
   useEffect(() => {
     closeRef.current?.focus()
@@ -64,13 +128,23 @@ function MessageModal({ row, onClose, onReplied }) {
     setReply("")
     setError("")
     setNotice("")
-  }, [row?.id])
+    setReplyChannel(row?.email ? "email" : "whatsapp")
+  }, [row?.id, row?.email])
 
   if (!row) return null
 
   async function sendReply(event) {
     event.preventDefault()
-    if (!canEmail || busy) return
+    if (!canReply || busy) return
+    const channel = replyChannel === "whatsapp" && canWhatsapp ? "whatsapp" : "email"
+    if (channel === "email" && !canEmail) {
+      setError("Ce message n'a pas d'adresse électronique.")
+      return
+    }
+    if (channel === "whatsapp" && !canWhatsapp) {
+      setError("Ce message n'a pas de numéro WhatsApp.")
+      return
+    }
     const body = reply.trim()
     if (!body) {
       setError("Indiquez une réponse.")
@@ -83,13 +157,13 @@ function MessageModal({ row, onClose, onReplied }) {
     setBusy(true)
     setError("")
     setNotice("")
-    const result = await replyToMessage(row.id, body)
+    const result = await replyToMessage(row.id, body, channel)
     setBusy(false)
     if (!result.ok) {
       setError(result.error)
       return
     }
-    setNotice("La réponse a été envoyée par courriel.")
+    setNotice(channel === "email" ? "Réponse envoyée par courriel et enregistrée." : "Réponse WhatsApp enregistrée dans l'historique.")
     setReply("")
     setReplyOpen(false)
     onReplied?.(result.data)
@@ -101,7 +175,7 @@ function MessageModal({ row, onClose, onReplied }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="form-save-card grid max-h-[90vh] w-full max-w-lg gap-4 overflow-y-auto rounded-panel bg-panel p-5 shadow-panel sm:p-6"
+        className="form-save-card grid max-h-[90vh] w-full max-w-2xl gap-4 overflow-y-auto rounded-panel bg-panel p-5 shadow-panel sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -124,27 +198,104 @@ function MessageModal({ row, onClose, onReplied }) {
             <X aria-hidden="true" size={20} />
           </button>
         </div>
-        <p className="text-muted">Contact : {contactLine(row)}</p>
-        <p className="whitespace-pre-wrap text-heading">{row.body}</p>
+
+        <div className="rounded-control border border-line bg-canvas px-3 py-2 text-heading">
+          <p className="text-meta font-semibold text-muted">Contact conservé</p>
+          <p className="mt-1">{contactLine(row)}</p>
+          {row.email && row.whatsapp ? <p className="mt-1 text-muted">WhatsApp {row.whatsapp}</p> : null}
+        </div>
+
+        <section className="grid gap-3" aria-label="Discussion">
+          <p className="font-semibold text-heading">Discussion</p>
+          <article className="rounded-control border border-line bg-lavender/30 px-3 py-3">
+            <p className="text-meta font-semibold text-violet">Visiteur · {row.name}</p>
+            <p className="mt-1 whitespace-pre-wrap text-heading">{row.body}</p>
+            <p className="mt-2 text-muted">{formatWhen(row.created_at)}</p>
+          </article>
+          {replies.map((item) => (
+            <article key={item.id} className="rounded-control border border-violet/30 bg-panel px-3 py-3">
+              <p className="text-meta font-semibold text-violet">
+                Bibliothèque
+                {item.actor_name ? ` · ${item.actor_name}` : ""}
+                {item.channel_label ? ` · ${item.channel_label}` : ""}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-heading">{item.body}</p>
+              <p className="mt-2 text-muted">{formatWhen(item.created_at)}</p>
+            </article>
+          ))}
+        </section>
+
+        {related.length > 0 ? (
+          <section className="grid gap-2" aria-label="Autres messages du même contact">
+            <p className="font-semibold text-heading">Autres messages de ce contact</p>
+            {related.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="rounded-control border border-line bg-canvas px-3 py-2 text-left"
+                onClick={() => onSelectRelated?.(item)}
+              >
+                <span className="font-semibold text-heading">{item.subject || "Message"}</span>
+                <span className="mt-1 block text-muted">
+                  {formatWhen(item.created_at)}
+                  {item.reply_count ? ` · ${item.reply_count} réponse${item.reply_count > 1 ? "s" : ""}` : ""}
+                </span>
+              </button>
+            ))}
+          </section>
+        ) : null}
 
         {error ? <p role="alert" className="rounded-control border border-unavailable bg-unavailable-soft px-3 py-2 text-unavailable">{error}</p> : null}
         {notice ? <p role="status" className="rounded-control border border-available bg-available-soft px-3 py-2 text-available">{notice}</p> : null}
 
-        {canEmail && replyOpen ? (
+        {canReply && replyOpen ? (
           <form className="grid gap-3 rounded-control border border-line bg-canvas p-4" onSubmit={sendReply}>
+            {canEmail && canWhatsapp ? (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={`inline-flex min-h-10 items-center gap-2 rounded-control px-3 font-semibold ${replyChannel === "email" ? "bg-violet text-on-primary" : "border border-line bg-panel text-violet"}`}
+                  onClick={() => setReplyChannel("email")}
+                >
+                  <Mail aria-hidden="true" size={16} />
+                  Courriel
+                </button>
+                <button
+                  type="button"
+                  className={`inline-flex min-h-10 items-center gap-2 rounded-control px-3 font-semibold ${replyChannel === "whatsapp" ? "bg-violet text-on-primary" : "border border-line bg-panel text-violet"}`}
+                  onClick={() => setReplyChannel("whatsapp")}
+                >
+                  <MessageCircle aria-hidden="true" size={16} />
+                  WhatsApp
+                </button>
+              </div>
+            ) : null}
             <label className="grid gap-1">
-              <span className="font-semibold text-heading">Réponse à {row.email}</span>
+              <span className="font-semibold text-heading">
+                {replyChannel === "whatsapp" && canWhatsapp
+                  ? `Réponse WhatsApp à ${row.whatsapp}`
+                  : `Réponse e-mail à ${row.email}`}
+              </span>
               <textarea
                 className="min-h-32 w-full rounded-control border border-line bg-panel px-3 py-2 text-heading"
                 value={reply}
                 maxLength={2000}
                 required
                 disabled={busy}
-                placeholder="Écrivez votre réponse…"
+                placeholder={
+                  replyChannel === "whatsapp" && canWhatsapp
+                    ? "Texte de la réponse WhatsApp (enregistré dans l'historique)…"
+                    : "Écrivez votre réponse…"
+                }
                 onChange={(event) => setReply(event.target.value)}
               />
               <span className="text-muted">{reply.trim().length}/2000</span>
             </label>
+            {replyChannel === "whatsapp" && canWhatsapp ? (
+              <p className="text-muted">
+                Ouvrez WhatsApp via le lien du contact, envoyez le message, puis enregistrez-le ici pour garder l'historique.
+              </p>
+            ) : null}
             <div className="flex flex-wrap justify-end gap-2">
               <button
                 type="button"
@@ -163,14 +314,14 @@ function MessageModal({ row, onClose, onReplied }) {
                 disabled={busy || !reply.trim()}
               >
                 <Send aria-hidden="true" size={18} />
-                {busy ? "Envoi…" : "Envoyer"}
+                {busy ? "Envoi…" : replyChannel === "whatsapp" && canWhatsapp ? "Enregistrer" : "Envoyer"}
               </button>
             </div>
           </form>
         ) : null}
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {canEmail && !replyOpen ? (
+          {canReply && !replyOpen ? (
             <button
               type="button"
               className="inline-flex min-h-11 items-center gap-2 rounded-control border border-violet px-4 font-semibold text-violet"
@@ -180,15 +331,11 @@ function MessageModal({ row, onClose, onReplied }) {
                 setError("")
               }}
             >
-              <Mail aria-hidden="true" size={18} />
-              Répondre par e-mail
+              {canEmail ? <Mail aria-hidden="true" size={18} /> : <MessageCircle aria-hidden="true" size={18} />}
+              {canEmail ? "Répondre" : "Enregistrer une réponse WhatsApp"}
             </button>
           ) : null}
-          {!canEmail ? (
-            <p className="mr-auto text-muted">
-              {row.whatsapp ? "Pas d’e-mail : utilisez le lien WhatsApp ci-dessus." : "Aucun moyen de réponse enregistré."}
-            </p>
-          ) : null}
+          {!canReply ? <p className="mr-auto text-muted">Aucun moyen de réponse enregistré.</p> : null}
           <button type="button" className="inline-flex min-h-11 items-center rounded-control bg-violet px-4 font-semibold text-on-primary" disabled={busy} onClick={onClose}>
             Fermer
           </button>
@@ -198,12 +345,13 @@ function MessageModal({ row, onClose, onReplied }) {
   )
 }
 
-/** Liste des messages visiteurs (onglet Alertes), avec lu / non lu. */
+/** Liste des messages visiteurs (onglet Alertes), avec lu / non lu et historique. */
 export function VisitorMessagesPanel() {
   const [rows, setRows] = useState(null)
   const [error, setError] = useState("")
   const [selected, setSelected] = useState(null)
   const [filter, setFilter] = useState("toutes")
+  const [query, setQuery] = useState("")
   const [busy, setBusy] = useState(false)
 
   function applyPayload(data) {
@@ -233,10 +381,28 @@ export function VisitorMessagesPanel() {
   const unread = useMemo(() => (rows || []).filter((row) => !row.is_read).length, [rows])
   const visible = useMemo(() => {
     if (!rows) return []
-    if (filter === "non-lues") return rows.filter((row) => !row.is_read)
-    if (filter === "lues") return rows.filter((row) => row.is_read)
+    const words = normalizeSearch(query)
+      .split(/[\s,;]+/)
+      .filter(Boolean)
+    return rows.filter((row) => {
+      if (filter === "non-lues" && row.is_read) return false
+      if (filter === "lues" && !row.is_read) return false
+      if (filter === "repondues" && !(Number(row.reply_count) > 0)) return false
+      if (words.length === 0) return true
+      const haystack = messageSearchText(row)
+      return words.every((word) => haystack.includes(word))
+    })
+  }, [rows, filter, query])
+
+  const selectedThread = useMemo(() => {
+    if (!selected || !rows) return []
+    const key = selected.contact_key
+    if (!key) return [selected]
     return rows
-  }, [rows, filter])
+      .filter((row) => row.contact_key === key)
+      .slice()
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  }, [rows, selected])
 
   async function openMessage(row) {
     setSelected(row)
@@ -257,10 +423,19 @@ export function VisitorMessagesPanel() {
   }
 
   function onReplied(data) {
+    const updated = data?.message
     setRows((current) =>
-      (current || []).map((item) => (item.id === selected?.id ? { ...item, is_read: true } : item)),
+      (current || []).map((item) => {
+        if (updated && item.id === updated.id) return { ...item, ...updated, is_read: true }
+        if (item.id === selected?.id) return { ...item, is_read: true }
+        return item
+      }),
     )
-    setSelected((current) => (current ? { ...current, is_read: true } : current))
+    setSelected((current) => {
+      if (!current) return current
+      if (updated && current.id === updated.id) return { ...current, ...updated, is_read: true }
+      return { ...current, is_read: true }
+    })
     const remaining = Number(data?.unread_count)
     if (Number.isFinite(remaining)) setUnreadMessages(remaining)
   }
@@ -288,10 +463,12 @@ export function VisitorMessagesPanel() {
   }
   if (!rows) return <p>Chargement…</p>
 
+  const repliedCount = rows.filter((row) => Number(row.reply_count) > 0).length
   const tabs = [
     { id: "toutes", label: `Toutes (${rows.length})`, icon: Inbox },
     { id: "non-lues", label: `Non lues (${unread})`, icon: Mail },
     { id: "lues", label: `Lues (${rows.length - unread})`, icon: Check },
+    { id: "repondues", label: `Répondues (${repliedCount})`, icon: MessageCircle },
   ]
 
   return (
@@ -325,6 +502,16 @@ export function VisitorMessagesPanel() {
           Marquer tout comme lu
         </button>
       </div>
+      <label className="relative min-w-0">
+        <span className="sr-only">Rechercher un message</span>
+        <Search aria-hidden="true" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Rechercher par nom, e-mail ou date (ex. 21/11/2026)…"
+          className="w-full rounded-control border border-line bg-panel py-2.5 pr-3 pl-10"
+        />
+      </label>
       {error ? (
         <p role="alert" className="rounded-panel border border-unavailable bg-unavailable-soft p-3 text-unavailable">
           {error}
@@ -332,7 +519,11 @@ export function VisitorMessagesPanel() {
       ) : null}
       {visible.length === 0 ? (
         <p className="rounded-control bg-lavender px-4 py-8 text-center text-heading">
-          {rows.length === 0 ? "Aucun message pour le moment." : "Aucun message dans ce filtre."}
+          {rows.length === 0
+            ? "Aucun message pour le moment."
+            : query.trim()
+              ? "Aucun message ne correspond à cette recherche."
+              : "Aucun message dans ce filtre."}
         </p>
       ) : (
         <div className="grid gap-3">
@@ -351,9 +542,17 @@ export function VisitorMessagesPanel() {
                     {!row.is_read ? (
                       <span className="rounded-full bg-violet px-2 py-0.5 text-meta font-semibold text-on-primary">Non lu</span>
                     ) : null}
+                    {Number(row.reply_count) > 0 ? (
+                      <span className="rounded-full bg-available-soft px-2 py-0.5 text-meta font-semibold text-available">
+                        {row.reply_count} réponse{Number(row.reply_count) > 1 ? "s" : ""}
+                      </span>
+                    ) : null}
                   </span>
-                  <span className="text-muted">
-                    {row.name} · {formatWhen(row.created_at)}
+                  <span className="mt-1 block text-muted">
+                    {row.name}
+                    {row.email ? ` · ${row.email}` : row.whatsapp ? ` · WhatsApp ${row.whatsapp}` : ""}
+                    {" · "}
+                    {formatWhen(row.created_at)}
                   </span>
                 </span>
                 <span className="font-semibold text-violet">Lire</span>
@@ -366,7 +565,15 @@ export function VisitorMessagesPanel() {
         {visible.length} affichée{visible.length > 1 ? "s" : ""}
         {unread > 0 ? ` · ${unread} non lue${unread > 1 ? "s" : ""}` : ""}
       </p>
-      {selected ? <MessageModal row={selected} onClose={() => setSelected(null)} onReplied={onReplied} /> : null}
+      {selected ? (
+        <MessageModal
+          row={selected}
+          thread={selectedThread}
+          onClose={() => setSelected(null)}
+          onReplied={onReplied}
+          onSelectRelated={(item) => openMessage(item)}
+        />
+      ) : null}
     </div>
   )
 }
