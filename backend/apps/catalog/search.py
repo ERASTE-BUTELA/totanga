@@ -21,6 +21,16 @@ def _token_clause(token):
         | Q(publisher__name__unaccent__icontains=token)
         | Q(keywords__label__unaccent__icontains=token)
         | Q(isbn__icontains=token)
+        | Q(copies__inventory_number__icontains=token)
+        | Q(copies__call_number__icontains=token)
+        | Q(copies__code1__icontains=token)
+        | Q(copies__code2__icontains=token)
+        | Q(copies__code3__icontains=token)
+        | Q(copies__code4__icontains=token)
+        | Q(copies__dewey__icontains=token)
+        | Q(copies__register_row__classe__unaccent__icontains=token)
+        | Q(copies__register_row__subclass__unaccent__icontains=token)
+        | Q(copies__register_row__division1__unaccent__icontains=token)
     )
 
 

@@ -18,19 +18,15 @@ function pageNumber(value) {
   return page
 }
 
-function buildParams({ q, categorie }) {
+function buildParams({ q }) {
   const params = new URLSearchParams()
   const query = String(q || "").trim()
   if (query) params.set("q", query)
-  if (categorie) params.set("categorie", categorie)
   return params
 }
 
 function sameFilters(a, b) {
-  for (const key of ["q", "categorie"]) {
-    if ((a.get(key) || "") !== (b.get(key) || "")) return false
-  }
-  return true
+  return (a.get("q") || "") === (b.get("q") || "")
 }
 
 export default function CatalogPage() {
@@ -38,23 +34,26 @@ export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [state, setState] = useState({ status: "loading", data: null, error: "" })
   const [q, setQ] = useState(() => searchParams.get("q") || "")
-  const [categorie, setCategorie] = useState(() => searchParams.get("categorie") || "")
 
   useEffect(() => {
     setQ(searchParams.get("q") || "")
-    setCategorie(searchParams.get("categorie") || "")
   }, [searchParams])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setSearchParams((current) => {
-        const next = buildParams({ q, categorie })
-        if (sameFilters(current, next)) return current
+        const next = buildParams({ q })
+        // Ne pas écraser un éventuel lien ?categorie= tant que la recherche texte est vide.
+        const category = current.get("categorie")
+        if (!next.get("q") && category) next.set("categorie", category)
+        if (sameFilters(current, next) && (current.get("categorie") || "") === (next.get("categorie") || "")) {
+          return current
+        }
         return next
       }, { replace: true })
     }, 220)
     return () => window.clearTimeout(timer)
-  }, [q, categorie, setSearchParams])
+  }, [q, setSearchParams])
 
   useEffect(() => {
     let active = true
@@ -72,20 +71,19 @@ export default function CatalogPage() {
   }, [searchParams])
 
   const books = state.data?.books || []
-  const categories = state.data?.categories || []
   const pageCount = state.data?.pages || 1
   const page = Math.min(pageNumber(searchParams.get("page")), pageCount)
   const visible = books
 
   function goToPage(next) {
-    const params = buildParams({ q, categorie })
+    const params = new URLSearchParams(searchParams)
     if (next > 1) params.set("page", String(next))
+    else params.delete("page")
     setSearchParams(params)
   }
 
   function reset() {
     setQ("")
-    setCategorie("")
     setSearchParams(new URLSearchParams())
   }
 
@@ -106,50 +104,30 @@ export default function CatalogPage() {
         <QueryState status={state.data ? "ready" : state.status} error={state.error}>
           {state.data ? (
             <div className="mt-5 sm:mt-6">
-              <div className="grid gap-3" role="search">
+              <div className="flex min-w-0 items-center gap-2" role="search">
                 <label htmlFor="recherche-catalogue" className="sr-only">
                   Rechercher un livre
                 </label>
-                <div className="relative min-w-0">
+                <div className="relative min-w-0 flex-1">
                   <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted sm:left-4" aria-hidden="true" />
                   <input
                     id="recherche-catalogue"
                     type="search"
                     value={q}
                     onChange={(event) => setQ(event.target.value)}
-                    placeholder="Rechercher un livre…"
+                    placeholder="Recherche par auteur, titre, éditeur, numéro d'enregistrement, Dewey…"
                     className="w-full rounded-full border border-line bg-panel py-3 pl-11 pr-4 text-body text-ink sm:pl-12"
                     autoComplete="off"
                   />
                 </div>
-                <div className="flex min-w-0 items-center gap-2">
-                  <label htmlFor="filtre-categorie" className="hidden shrink-0 text-meta font-semibold text-ink sm:inline">
-                    Catégorie
-                  </label>
-                  <select
-                    id="filtre-categorie"
-                    aria-label="Catégorie"
-                    value={categorie}
-                    onChange={(event) => setCategorie(event.target.value)}
-                    className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-panel px-3 text-body text-ink"
-                  >
-                    <option value="">Toutes les catégories</option>
-                    {categories.map((item) => (
-                      <option key={item.id || item.slug} value={item.slug}>
-                        {item.name}
-                        {item.count != null ? ` (${item.count})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    aria-label="Réinitialiser la recherche"
-                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-panel text-ink"
-                    onClick={reset}
-                  >
-                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  aria-label="Réinitialiser la recherche"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-panel text-ink"
+                  onClick={reset}
+                >
+                  <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                </button>
               </div>
 
               <p className="mt-4 text-meta font-semibold text-ink sm:mt-5 sm:text-body" aria-live="polite">

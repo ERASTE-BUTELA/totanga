@@ -79,13 +79,13 @@ export function BooksPage() {
         noun="livres"
         addLabel="Ajouter un livre"
         addTo="/catalogue/livres/nouveau"
-        placeholder="Rechercher un livre (titre, auteur, éditeur, ISBN…)"
+        placeholder="Recherche par auteur, titre, éditeur, numéro d'enregistrement, Dewey…"
         rows={rows}
         loading={!data && !error}
         onPageRequest={onPageRequest}
         totalCount={data?.count || 0}
         pageCount={data?.pages || 1}
-        searchOf={(row) => `${row.title} ${row.authors || ""} ${row.publisher || ""} ${row.isbn || ""}`}
+        searchOf={(row) => `${row.title} ${row.authors || ""} ${row.publisher || ""} ${row.isbn || ""} ${row.call_number || ""} ${row.inventory_number || ""} ${row.dewey || ""}`}
         sortOf={(row) => row.title}
         stats={[
           { label: "Livres", value: figure(stats, "books"), trend: "dans le catalogue", icon: BookOpen, chip: "bg-lavender text-violet" },

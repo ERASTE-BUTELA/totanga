@@ -531,3 +531,36 @@ class PublicCatalogApiTests(BookCatalogTests):
         found = self.api.get("/api/catalogue/livres/", {"q": "ete"})
         self.assertEqual(found.status_code, 200)
         self.assertEqual(found.json()["count"], 1)
+
+    def test_search_matches_inventory_and_dewey_codes(self):
+        by_inventory = self.make_book(title="Livre inventaire")
+        Copy.objects.create(
+            book=by_inventory,
+            call_number="302.1 DEF",
+            inventory_number="NE-4242",
+            code1="302",
+            code2="1",
+            dewey="DEF",
+            status=CopyStatus.AVAILABLE,
+        )
+        by_code = self.make_book(title="Autre ouvrage")
+        Copy.objects.create(
+            book=by_code,
+            call_number="658 ABC",
+            inventory_number="NE-9999",
+            code1="658",
+            code2="",
+            dewey="ABC",
+            status=CopyStatus.AVAILABLE,
+        )
+        inventory = self.api.get("/api/catalogue/livres/", {"q": "NE-4242"})
+        self.assertEqual(inventory.status_code, 200)
+        self.assertEqual(inventory.json()["count"], 1)
+        self.assertEqual(inventory.json()["results"][0]["title"], "Livre inventaire")
+        dewey = self.api.get("/api/catalogue/livres/", {"q": "302"})
+        self.assertEqual(dewey.status_code, 200)
+        self.assertEqual(dewey.json()["count"], 1)
+        self.assertEqual(dewey.json()["results"][0]["title"], "Livre inventaire")
+        letters = self.api.get("/api/catalogue/livres/", {"q": "DEF"})
+        self.assertEqual(letters.status_code, 200)
+        self.assertEqual(letters.json()["count"], 1)
