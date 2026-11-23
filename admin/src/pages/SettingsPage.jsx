@@ -347,17 +347,20 @@ export function SettingsPage() {
                 <span className="font-semibold text-heading">Nom de la bibliothèque *</span>
                 <input className={fieldClass} value={form.name} onChange={(event) => set("name", event.target.value)} required disabled={locked} />
               </label>
-              <label className="grid gap-1">
+              <label className="grid gap-1 sm:col-span-2">
                 <span className="font-semibold text-heading">Slogan (bandeau d'accueil)</span>
-                <input
-                  className={fieldClass}
+                <textarea
+                  className={`${fieldClass} min-h-36 py-2`}
                   value={form.slogan}
                   onChange={(event) => set("slogan", event.target.value)}
-                  maxLength={255}
-                  placeholder="Un espace de savoir, de culture et de découverte à Kinshasa."
+                  maxLength={2000}
+                  rows={6}
+                  placeholder={"Un espace de savoir, de culture et de découverte à Kinshasa.\n\nUn lieu propice à l'étude…"}
                   disabled={locked}
                 />
-                <span className="text-muted">Texte affiché sous le nom, sur la page d'accueil publique.</span>
+                <span className="text-muted">
+                  Texte affiché sous le nom, sur la page d'accueil publique. {form.slogan.length}/2&nbsp;000
+                </span>
               </label>
               <label className="grid gap-1">
                 <span className="font-semibold text-heading">Adresse</span>

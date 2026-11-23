@@ -109,7 +109,7 @@ export default function HomePage() {
   return (
     <>
       <div>
-      <section className="page-hero relative overflow-hidden bg-[#140e12] text-on-bar md:h-[clamp(26rem,calc(100svh-16.5rem),34rem)]">
+      <section className="page-hero relative overflow-hidden bg-[#140e12] text-on-bar md:min-h-[clamp(26rem,calc(100svh-16.5rem),34rem)]">
         <img
           src={heroSrc}
           srcSet={customHero ? undefined : DEFAULT_HERO_SRCSET}
@@ -122,7 +122,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-black/50 md:bg-transparent md:bg-gradient-to-r md:from-black/75 md:via-black/40 md:to-transparent" aria-hidden="true" />
           <div className="relative flex h-full flex-col justify-center px-4 py-8 sm:px-8 sm:py-10 lg:px-14">
             <h1 className="max-w-4xl text-display">{libraryName}</h1>
-            <p className="mt-3 max-w-3xl text-lead md:mt-4">{slogan}</p>
+            <p className="mt-3 max-w-3xl whitespace-pre-line text-lead md:mt-4">{slogan}</p>
             <span className="mt-4 hidden h-1 w-16 rounded-full bg-brand-accent md:block" aria-hidden="true" />
             <form onSubmit={onSearch} className="mt-5 w-full max-w-4xl md:mt-6" role="search">
               <label htmlFor="recherche-accueil" className="sr-only">

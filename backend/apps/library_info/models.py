@@ -11,7 +11,12 @@ class Library(models.Model):
 
     id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
     name = models.CharField("nom", max_length=200)
-    slogan = models.CharField("slogan", max_length=255, blank=True)
+    slogan = models.TextField(
+        "slogan",
+        blank=True,
+        max_length=2000,
+        help_text="Texte du bandeau d'accueil (jusqu'à 2 000 caractères).",
+    )
     address = models.CharField("adresse", max_length=300)
     city = models.CharField("ville", max_length=120, default="Kinshasa")
     phone = models.CharField("téléphone", max_length=40)

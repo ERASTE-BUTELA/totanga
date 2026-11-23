@@ -113,9 +113,9 @@ def _apply_general(library, data, files, user):
     if len(name) > 200:
         return "Le nom est trop long."
 
-    slogan = str(data.get("slogan", library.slogan)).strip()
-    if len(slogan) > 255:
-        return "Le slogan est trop long."
+    slogan = str(data.get("slogan", library.slogan)).replace("\r\n", "\n").replace("\r", "\n").strip()
+    if len(slogan) > 2000:
+        return "Le slogan est trop long (2 000 caractères maximum)."
 
     address = str(data.get("address", library.address)).strip()
     if len(address) > 300:
