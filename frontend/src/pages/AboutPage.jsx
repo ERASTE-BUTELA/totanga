@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
-import { BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, Mail, MapPin, Megaphone, Newspaper, Phone } from "lucide-react"
+import { BookOpen, Building2, ChevronLeft, ChevronRight, Clock, Mail, MapPin, Phone } from "lucide-react"
 import { Link } from "react-router"
-import { getAnnouncements, getBooks, getEvents, getLibraryInfo, getPublications } from "../api/client.js"
+import { getLibraryInfo } from "../api/client.js"
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
 import { QueryState } from "../components/ui/QueryState.jsx"
 import { SafeHtml } from "../components/ui/SafeHtml.jsx"
@@ -17,25 +17,9 @@ const DEFAULT_PHOTOS = [
   "/images/annonces/acquisitions.webp",
 ]
 
-const numberFormat = new Intl.NumberFormat("fr-FR")
-
-function loadAbout() {
-  return Promise.all([getLibraryInfo(), getBooks(), getEvents(), getAnnouncements(), getPublications()]).then(
-    ([library, catalog, events, announcements, publications]) => ({
-      library,
-      counts: [
-        { label: "Livres", value: catalog.count, icon: BookOpen },
-        { label: "Événements", value: events.length, icon: CalendarDays },
-        { label: "Annonces", value: announcements.length, icon: Megaphone },
-        { label: "Publications", value: publications.length, icon: Newspaper },
-      ],
-    }),
-  )
-}
-
 export default function AboutPage() {
   usePageTitle("À propos")
-  const state = useAsync(loadAbout, [])
+  const state = useAsync(getLibraryInfo, [])
 
   return (
     <div className="bg-canvas">
@@ -51,14 +35,14 @@ export default function AboutPage() {
       <div className="px-4 py-6 sm:px-8 lg:px-14">
         <Breadcrumb withHome items={[{ label: "Accueil", to: "/" }, { label: "À propos" }]} />
         <QueryState status={state.status} error={state.error}>
-          {state.data ? <AboutContent library={state.data.library} counts={state.data.counts} /> : null}
+          {state.data ? <AboutContent library={state.data} /> : null}
         </QueryState>
       </div>
     </div>
   )
 }
 
-function AboutContent({ library, counts }) {
+function AboutContent({ library }) {
   const place = [library.address, library.city].filter(Boolean).join(", ")
   const mapSrc = mapsEmbedSrc({
     mapsUrl: library.mapsUrl,
@@ -72,21 +56,6 @@ function AboutContent({ library, counts }) {
       <div className="order-2 flex min-h-0 min-w-0 flex-col gap-8 lg:order-1 lg:h-full">
         <PhotoCarousel photos={library.carouselImages} />
 
-        <section aria-labelledby="chiffres" className="shrink-0">
-          <h2 id="chiffres" className="text-section text-heading">
-            La bibliothèque en chiffres
-          </h2>
-          <ul className="mt-4 grid gap-4 sm:grid-cols-2">
-            {counts.map((item) => (
-              <li key={item.label} className="rounded-2xl border border-line bg-panel p-5 text-center shadow-card">
-                <item.icon className="mx-auto h-6 w-6 text-violet" aria-hidden="true" />
-                <p className="mt-3 text-section text-violet">{numberFormat.format(item.value)}</p>
-                <p className="mt-1 text-meta text-muted">{item.label}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-
         <section
           id="fonctionnement-bibliotheque"
           className="flex min-h-[22rem] flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-card"
@@ -97,7 +66,6 @@ function AboutContent({ library, counts }) {
               <Building2 className="h-6 w-6 text-violet" aria-hidden="true" />
               Fonctionnement de la bibliothèque
             </h2>
-            <p className="mt-2 text-meta font-semibold uppercase tracking-wide text-violet">Structure et fonctionnement</p>
           </div>
           <PanelScroll className="mt-4 min-h-0 flex-1 px-5 pb-5 sm:px-6 sm:pb-6">
             {richTextIsEmpty(library.functioning) ? (
