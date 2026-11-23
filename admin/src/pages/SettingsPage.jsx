@@ -353,13 +353,13 @@ export function SettingsPage() {
                   className={`${fieldClass} min-h-36 py-2`}
                   value={form.slogan}
                   onChange={(event) => set("slogan", event.target.value)}
-                  maxLength={2000}
+                  maxLength={1500}
                   rows={6}
                   placeholder={"Un espace de savoir, de culture et de découverte à Kinshasa.\n\nUn lieu propice à l'étude…"}
                   disabled={locked}
                 />
                 <span className="text-muted">
-                  Texte affiché sous le nom, sur la page d'accueil publique. {form.slogan.length}/2&nbsp;000
+                  Texte affiché sous le nom, sur la page d'accueil publique. {form.slogan.length}/1&nbsp;500
                 </span>
               </label>
               <label className="grid gap-1">

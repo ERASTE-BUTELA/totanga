@@ -14,8 +14,8 @@ class Library(models.Model):
     slogan = models.TextField(
         "slogan",
         blank=True,
-        max_length=2000,
-        help_text="Texte du bandeau d'accueil (jusqu'à 2 000 caractères).",
+        max_length=1500,
+        help_text="Texte du bandeau d'accueil (jusqu'à 1 500 caractères).",
     )
     address = models.CharField("adresse", max_length=300)
     city = models.CharField("ville", max_length=120, default="Kinshasa")
