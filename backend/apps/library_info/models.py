@@ -115,7 +115,7 @@ class Library(models.Model):
             pk=1,
             defaults={
                 "name": "Bibliothèque Totanga",
-                "slogan": "Centre de lecture, de savoir et de culture",
+                "slogan": "Un espace de savoir, de culture et de découverte à Kinshasa.",
                 "address": "12, avenue des Exemples, Kinshasa",
                 "city": "Kinshasa",
                 "phone": "+243 800 000 000",

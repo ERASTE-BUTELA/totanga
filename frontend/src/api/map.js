@@ -125,6 +125,7 @@ export function mapLibraryInfo(raw) {
   const hours = Array.isArray(raw.opening_hours) ? raw.opening_hours : []
   return {
     name: text(raw.name),
+    slogan: text(raw.slogan),
     address: text(raw.address),
     city: text(raw.city),
     phone: text(raw.phone),

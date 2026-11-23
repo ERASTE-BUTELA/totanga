@@ -11,6 +11,7 @@ import { usePageTitle } from "../lib/usePageTitle.js"
 
 const DEFAULT_HERO = "/images/hero/hero-1024.webp"
 const DEFAULT_HERO_SRCSET = "/images/hero/hero-640.webp 640w, /images/hero/hero-960.webp 960w, /images/hero/hero-1024.webp 1024w"
+const DEFAULT_SLOGAN = "Un espace de savoir, de culture et de découverte à Kinshasa."
 
 const CATEGORY_ICONS = {
   roman: BookOpen,
@@ -72,6 +73,8 @@ export default function HomePage() {
   const { library } = useOutletContext() || {}
   const heroSrc = library?.heroImage || DEFAULT_HERO
   const customHero = Boolean(library?.heroImage)
+  const libraryName = library?.name?.trim() || "Bibliothèque Totanga"
+  const slogan = library?.slogan?.trim() || DEFAULT_SLOGAN
   // Chargement séparé : le catalogue n'attend plus les annonces / publications / événements.
   const booksState = useAsync(getBooks, [])
   const categoriesState = useAsync(getCategories, [])
@@ -118,8 +121,8 @@ export default function HomePage() {
         />
           <div className="absolute inset-0 bg-black/50 md:bg-transparent md:bg-gradient-to-r md:from-black/75 md:via-black/40 md:to-transparent" aria-hidden="true" />
           <div className="relative flex h-full flex-col justify-center px-4 py-8 sm:px-8 sm:py-10 lg:px-14">
-            <h1 className="max-w-4xl text-display">Bibliothèque Totanga</h1>
-            <p className="mt-3 max-w-3xl text-lead md:mt-4">Un espace de savoir, de culture et de découverte à Kinshasa.</p>
+            <h1 className="max-w-4xl text-display">{libraryName}</h1>
+            <p className="mt-3 max-w-3xl text-lead md:mt-4">{slogan}</p>
             <span className="mt-4 hidden h-1 w-16 rounded-full bg-brand-accent md:block" aria-hidden="true" />
             <form onSubmit={onSearch} className="mt-5 w-full max-w-4xl md:mt-6" role="search">
               <label htmlFor="recherche-accueil" className="sr-only">
@@ -212,7 +215,7 @@ export default function HomePage() {
               ) : (
                 <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-6 lg:grid-cols-4 lg:gap-6">
                   {books.slice(0, 8).map((book, index) => (
-                    <li key={book.id} className="min-w-0">
+                    <li key={book.id} className={`min-w-0 ${index >= 6 ? "hidden lg:block" : ""}`}>
                       <BookCard book={book} plain priority={index < 4} />
                     </li>
                   ))}

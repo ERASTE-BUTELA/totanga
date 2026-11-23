@@ -348,8 +348,16 @@ export function SettingsPage() {
                 <input className={fieldClass} value={form.name} onChange={(event) => set("name", event.target.value)} required disabled={locked} />
               </label>
               <label className="grid gap-1">
-                <span className="font-semibold text-heading">Slogan</span>
-                <input className={fieldClass} value={form.slogan} onChange={(event) => set("slogan", event.target.value)} disabled={locked} />
+                <span className="font-semibold text-heading">Slogan (bandeau d'accueil)</span>
+                <input
+                  className={fieldClass}
+                  value={form.slogan}
+                  onChange={(event) => set("slogan", event.target.value)}
+                  maxLength={255}
+                  placeholder="Un espace de savoir, de culture et de découverte à Kinshasa."
+                  disabled={locked}
+                />
+                <span className="text-muted">Texte affiché sous le nom, sur la page d'accueil publique.</span>
               </label>
               <label className="grid gap-1">
                 <span className="font-semibold text-heading">Adresse</span>
