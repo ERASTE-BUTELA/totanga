@@ -189,34 +189,37 @@ export default function CatalogPage() {
         <QueryState status={state.data ? "ready" : state.status} error={state.error}>
           {state.data ? (
             <div className="mt-5 sm:mt-6">
-              <div className="grid gap-3" role="search">
-                <div className="flex min-w-0 items-center gap-2">
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:gap-2" role="search">
+                <div className="flex min-w-0 items-end gap-2 xl:min-w-[16rem] xl:flex-1">
                   <label htmlFor="recherche-catalogue" className="sr-only">
                     Rechercher un livre
                   </label>
                   <div className="relative min-w-0 flex-1">
-                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted sm:left-4" aria-hidden="true" />
-                    <input
-                      id="recherche-catalogue"
-                      type="search"
-                      value={q}
-                      onChange={(event) => setQ(event.target.value)}
-                      placeholder="Recherche par auteur, titre, éditeur, numéro d'enregistrement, Dewey…"
-                      className="w-full rounded-full border border-line bg-panel py-3 pl-11 pr-4 text-body text-ink sm:pl-12"
-                      autoComplete="off"
-                    />
+                    <span className="mb-1 block text-meta font-semibold text-ink xl:invisible xl:h-5">Recherche</span>
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted sm:left-4" aria-hidden="true" />
+                      <input
+                        id="recherche-catalogue"
+                        type="search"
+                        value={q}
+                        onChange={(event) => setQ(event.target.value)}
+                        placeholder="Recherche par auteur, titre, éditeur, n° d'enregistrement, Dewey…"
+                        className="h-11 w-full rounded-full border border-line bg-panel py-2.5 pl-11 pr-4 text-body text-ink sm:pl-12"
+                        autoComplete="off"
+                      />
+                    </div>
                   </div>
                   <button
                     type="button"
                     aria-label="Réinitialiser la recherche"
-                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-panel text-ink"
+                    className="mb-0 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-panel text-ink"
                     onClick={reset}
                   >
                     <RotateCcw className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4 xl:gap-2">
                   <AutocompleteField
                     label="Classe"
                     value={classe}
@@ -225,14 +228,14 @@ export default function CatalogPage() {
                       setSousClasse(null)
                     }}
                     search={searchClasses}
-                    placeholder="Filtrer par classe…"
+                    placeholder="Classe…"
                   />
                   <AutocompleteField
                     label="Sous-classe"
                     value={sousClasse}
                     onChange={setSousClasse}
                     search={searchSubclasses}
-                    placeholder={classe ? "Filtrer par sous-classe…" : "Choisir une classe d'abord"}
+                    placeholder={classe ? "Sous-classe…" : "Classe d'abord"}
                     disabled={!classe}
                   />
                   <AutocompleteField
@@ -240,14 +243,14 @@ export default function CatalogPage() {
                     value={auteur}
                     onChange={setAuteur}
                     search={searchAuthors}
-                    placeholder="Filtrer par auteur…"
+                    placeholder="Auteur…"
                   />
                   <AutocompleteField
                     label="Éditeur"
                     value={editeur}
                     onChange={setEditeur}
                     search={searchPublishers}
-                    placeholder="Filtrer par éditeur…"
+                    placeholder="Éditeur…"
                   />
                 </div>
               </div>

@@ -101,10 +101,10 @@ export function AutocompleteField({
       {open && !disabled ? (
         <div
           id={listId}
-          className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-line bg-panel shadow-card"
+          className="absolute z-30 mt-1 flex max-h-60 w-full flex-col overflow-hidden rounded-xl border border-line bg-panel shadow-card"
           role="listbox"
         >
-          <div className="border-b border-line p-2">
+          <div className="shrink-0 border-b border-line bg-panel p-2">
             <input
               autoFocus
               type="search"
@@ -114,26 +114,28 @@ export function AutocompleteField({
               className="w-full rounded-lg border border-line bg-canvas px-3 py-2 text-body text-ink outline-none"
             />
           </div>
-          {loading ? (
-            <p className="px-3 py-3 text-meta text-muted">Recherche…</p>
-          ) : hits.length === 0 ? (
-            <p className="px-3 py-3 text-meta text-muted">{emptyLabel}</p>
-          ) : (
-            <ul>
-              {hits.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    role="option"
-                    className="w-full px-3 py-2 text-left text-body text-ink hover:bg-lavender"
-                    onClick={() => pick(item)}
-                  >
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            {loading ? (
+              <p className="px-3 py-3 text-meta text-muted">Recherche…</p>
+            ) : hits.length === 0 ? (
+              <p className="px-3 py-3 text-meta text-muted">{emptyLabel}</p>
+            ) : (
+              <ul>
+                {hits.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      className="w-full px-3 py-2 text-left text-body text-ink hover:bg-lavender"
+                      onClick={() => pick(item)}
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       ) : null}
     </div>
