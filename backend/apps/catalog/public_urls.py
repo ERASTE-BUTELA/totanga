@@ -5,6 +5,7 @@ from .public_views import (
     PublicBookDetailView,
     PublicBookListView,
     PublicCategoryListView,
+    PublicPublisherListView,
 )
 
 urlpatterns = [
@@ -12,4 +13,5 @@ urlpatterns = [
     path("livres/<slug:slug>/", PublicBookDetailView.as_view(), name="public-book"),
     path("categories/", PublicCategoryListView.as_view(), name="public-categories"),
     path("auteurs/", PublicAuthorListView.as_view(), name="public-authors"),
+    path("editeurs/", PublicPublisherListView.as_view(), name="public-publishers"),
 ]

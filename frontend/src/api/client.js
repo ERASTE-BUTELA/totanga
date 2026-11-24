@@ -69,6 +69,77 @@ export async function getCategories() {
   return asList(payload).map(mapCategory)
 }
 
+function mapChoice(item) {
+  return {
+    id: item.id,
+    label: String(item.name || item.label || ""),
+    slug: String(item.slug || ""),
+    parent_id: item.parent_id ?? null,
+    is_class: Boolean(item.is_class),
+  }
+}
+
+/** Autocomplete public : classes (sans parent) ou sous-classes (parent = id/slug). */
+export async function searchCatalogCategories(query = "", parent = "", id = "") {
+  if (catalogUsesFixtures()) {
+    const rows = fixtures.categories.map(mapCategory).map((item) => ({
+      id: item.id,
+      label: item.name,
+      slug: item.slug,
+      parent_id: item.parent_id || null,
+      is_class: !item.parent_id,
+    }))
+    if (id) return rows.filter((item) => String(item.id) === String(id))
+    const needle = String(query || "").trim().toLocaleLowerCase("fr")
+    return rows
+      .filter((item) => {
+        if (parent) return String(item.parent_id || "") === String(parent)
+        return item.is_class
+      })
+      .filter((item) => !needle || item.label.toLocaleLowerCase("fr").includes(needle))
+      .slice(0, 20)
+  }
+  const params = new URLSearchParams()
+  if (id) params.set("id", String(id))
+  if (query) params.set("q", query)
+  if (parent) params.set("parent", String(parent))
+  params.set("page_size", "20")
+  const payload = await catalogRequest(`/api/catalogue/categories/?${params}`)
+  return asList(payload).map(mapChoice)
+}
+
+export async function searchCatalogAuthors(query = "", id = "") {
+  if (catalogUsesFixtures()) {
+    const names = [...new Set(fixtures.books.flatMap((book) => (book.authors || []).map((author) => author.name || author)))]
+    const rows = names.map((name, index) => ({ id: index + 1, label: String(name) }))
+    if (id) return rows.filter((item) => String(item.id) === String(id))
+    const needle = String(query || "").trim().toLocaleLowerCase("fr")
+    return rows.filter((item) => !needle || item.label.toLocaleLowerCase("fr").includes(needle)).slice(0, 20)
+  }
+  const params = new URLSearchParams()
+  if (id) params.set("id", String(id))
+  if (query) params.set("q", query)
+  params.set("page_size", "20")
+  const payload = await catalogRequest(`/api/catalogue/auteurs/?${params}`)
+  return asList(payload).map(mapChoice)
+}
+
+export async function searchCatalogPublishers(query = "", id = "") {
+  if (catalogUsesFixtures()) {
+    const names = [...new Set(fixtures.books.map((book) => book.publisher).filter(Boolean))]
+    const rows = names.map((name, index) => ({ id: index + 1, label: String(name) }))
+    if (id) return rows.filter((item) => String(item.id) === String(id))
+    const needle = String(query || "").trim().toLocaleLowerCase("fr")
+    return rows.filter((item) => !needle || item.label.toLocaleLowerCase("fr").includes(needle)).slice(0, 20)
+  }
+  const params = new URLSearchParams()
+  if (id) params.set("id", String(id))
+  if (query) params.set("q", query)
+  params.set("page_size", "20")
+  const payload = await catalogRequest(`/api/catalogue/editeurs/?${params}`)
+  return asList(payload).map(mapChoice)
+}
+
 export async function getBooks() {
   if (catalogUsesFixtures()) {
     const books = fixtures.books.map(mapBook).filter((book) => !book.archived)
@@ -99,12 +170,16 @@ export async function getCatalog(search) {
   const params = new URLSearchParams()
   const query = incoming.get("q")
   const category = incoming.get("categorie")
+  const author = incoming.get("auteur")
+  const publisher = incoming.get("editeur")
   const availability = incoming.get("dispo")
   const yearMin = incoming.get("anneeMin")
   const yearMax = incoming.get("anneeMax")
   const sort = incoming.get("tri")
   if (query) params.set("q", query)
   if (category) params.set("categorie", category)
+  if (author) params.set("auteur", author)
+  if (publisher) params.set("editeur", publisher)
   if (availability) params.set("disponibilite", availability)
   if (yearMin) params.set("annee_min", yearMin)
   if (yearMax) params.set("annee_max", yearMax)

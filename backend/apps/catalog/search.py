@@ -35,6 +35,8 @@ def _token_clause(token):
 
 
 def filter_books(queryset, text):
+    """Filtre d'abord (index), puis calcule la similarité seulement sur les résultats."""
+
     folded = fold_text(text).strip()
     if not folded:
         return queryset
@@ -42,11 +44,17 @@ def filter_books(queryset, text):
     if not tokens:
         return queryset
 
+    matched = queryset
+    for token in tokens:
+        matched = matched.filter(_token_clause(token))
+    matched = matched.distinct()
+
+    # Similarité uniquement sur le sous-ensemble déjà filtré (évite un scan du catalogue).
     title_similarity = TrigramSimilarity(Unaccent(Lower("title")), folded)
     author_similarity = TrigramSimilarity(Unaccent(Lower("authors__name")), folded)
     keyword_similarity = TrigramSimilarity(Unaccent(Lower("keywords__label")), folded)
     publisher_similarity = TrigramSimilarity(Unaccent(Lower("publisher__name")), folded)
-    ranked = queryset.annotate(
+    return matched.annotate(
         search_similarity=Greatest(
             Coalesce(title_similarity, Value(0.0)),
             Coalesce(author_similarity, Value(0.0)),
@@ -54,14 +62,3 @@ def filter_books(queryset, text):
             Coalesce(publisher_similarity, Value(0.0)),
         )
     )
-
-    # Chaque mot doit apparaître quelque part (recherche précise).
-    matched = ranked
-    for token in tokens:
-        matched = matched.filter(_token_clause(token))
-
-    # Requêtes courtes : strictes. Plus longues : ajoute un rappel flou limité.
-    if len(folded) < 4:
-        return matched.distinct()
-    fuzzy = ranked.filter(search_similarity__gt=0.45)
-    return (matched | fuzzy).distinct()

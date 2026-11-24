@@ -1,9 +1,15 @@
 import { ChevronLeft, ChevronRight, RotateCcw, Search } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useSearchParams } from "react-router"
-import { getCatalog } from "../api/client.js"
+import {
+  getCatalog,
+  searchCatalogAuthors,
+  searchCatalogCategories,
+  searchCatalogPublishers,
+} from "../api/client.js"
 import { BookCard } from "../components/cards/BookCard.jsx"
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
+import { AutocompleteField } from "../components/ui/AutocompleteField.jsx"
 import { QueryState } from "../components/ui/QueryState.jsx"
 import { usePageTitle } from "../lib/usePageTitle.js"
 
@@ -18,15 +24,23 @@ function pageNumber(value) {
   return page
 }
 
-function buildParams({ q }) {
+function buildParams({ q, classe, sousClasse, auteur, editeur }) {
   const params = new URLSearchParams()
   const query = String(q || "").trim()
   if (query) params.set("q", query)
+  const category = sousClasse?.slug || sousClasse?.id || classe?.slug || classe?.id
+  if (category) params.set("categorie", String(category))
+  if (classe?.id && (sousClasse?.id || sousClasse?.slug)) params.set("classe", String(classe.id))
+  if (auteur?.id) params.set("auteur", String(auteur.id))
+  if (editeur?.id) params.set("editeur", String(editeur.id))
   return params
 }
 
-function sameFilters(a, b) {
-  return (a.get("q") || "") === (b.get("q") || "")
+function sameSearch(a, b) {
+  for (const key of ["q", "categorie", "classe", "auteur", "editeur"]) {
+    if ((a.get(key) || "") !== (b.get(key) || "")) return false
+  }
+  return true
 }
 
 export default function CatalogPage() {
@@ -34,26 +48,87 @@ export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [state, setState] = useState({ status: "loading", data: null, error: "" })
   const [q, setQ] = useState(() => searchParams.get("q") || "")
+  const [classe, setClasse] = useState(null)
+  const [sousClasse, setSousClasse] = useState(null)
+  const [auteur, setAuteur] = useState(null)
+  const [editeur, setEditeur] = useState(null)
+  const [filtersReady, setFiltersReady] = useState(false)
+
+  const categoryKey = searchParams.get("categorie") || ""
+  const classKey = searchParams.get("classe") || ""
+  const authorId = searchParams.get("auteur") || ""
+  const publisherId = searchParams.get("editeur") || ""
 
   useEffect(() => {
     setQ(searchParams.get("q") || "")
   }, [searchParams])
 
   useEffect(() => {
+    let active = true
+
+    async function hydrate() {
+      const [classRows, authorRows, publisherRows] = await Promise.all([
+        classKey ? searchCatalogCategories("", "", classKey) : Promise.resolve([]),
+        authorId ? searchCatalogAuthors("", authorId) : Promise.resolve([]),
+        publisherId ? searchCatalogPublishers("", publisherId) : Promise.resolve([]),
+      ])
+      let nextClasse = classRows[0] || null
+      let nextSous = null
+      if (categoryKey) {
+        let chosen = null
+        if (/^\d+$/.test(categoryKey)) {
+          const categoryRows = await searchCatalogCategories("", "", categoryKey)
+          chosen = categoryRows[0] || null
+        } else {
+          const fromClasses = await searchCatalogCategories(categoryKey)
+          chosen = fromClasses.find((item) => item.slug === categoryKey) || null
+          if (!chosen) {
+            const children = await searchCatalogCategories(categoryKey, nextClasse?.id || "")
+            chosen = children.find((item) => item.slug === categoryKey) || null
+          }
+        }
+        if (chosen && (chosen.is_class || !chosen.parent_id)) {
+          nextClasse = chosen
+          nextSous = null
+        } else if (chosen) {
+          nextSous = chosen
+          if (!nextClasse && chosen.parent_id) {
+            const parents = await searchCatalogCategories("", "", String(chosen.parent_id))
+            nextClasse = parents[0] || null
+          }
+        }
+      } else {
+        nextClasse = classKey ? nextClasse : null
+        nextSous = null
+      }
+      if (!active) return
+      setClasse(nextClasse)
+      setSousClasse(nextSous)
+      setAuteur(authorRows[0] || null)
+      setEditeur(publisherRows[0] || null)
+      setFiltersReady(true)
+    }
+
+    hydrate().catch(() => {
+      if (!active) return
+      setFiltersReady(true)
+    })
+    return () => {
+      active = false
+    }
+  }, [categoryKey, classKey, authorId, publisherId])
+
+  useEffect(() => {
+    if (!filtersReady) return undefined
     const timer = window.setTimeout(() => {
       setSearchParams((current) => {
-        const next = buildParams({ q })
-        // Ne pas écraser un éventuel lien ?categorie= tant que la recherche texte est vide.
-        const category = current.get("categorie")
-        if (!next.get("q") && category) next.set("categorie", category)
-        if (sameFilters(current, next) && (current.get("categorie") || "") === (next.get("categorie") || "")) {
-          return current
-        }
+        const next = buildParams({ q, classe, sousClasse, auteur, editeur })
+        if (sameSearch(current, next) && (current.get("page") || "1") === "1") return current
         return next
       }, { replace: true })
     }, 220)
     return () => window.clearTimeout(timer)
-  }, [q, setSearchParams])
+  }, [q, classe, sousClasse, auteur, editeur, filtersReady, setSearchParams])
 
   useEffect(() => {
     let active = true
@@ -70,20 +145,30 @@ export default function CatalogPage() {
     }
   }, [searchParams])
 
+  const searchClasses = useCallback((query) => searchCatalogCategories(query), [])
+  const searchSubclasses = useCallback(
+    (query) => (classe?.id ? searchCatalogCategories(query, classe.id) : Promise.resolve([])),
+    [classe?.id],
+  )
+  const searchAuthors = useCallback((query) => searchCatalogAuthors(query), [])
+  const searchPublishers = useCallback((query) => searchCatalogPublishers(query), [])
+
   const books = state.data?.books || []
   const pageCount = state.data?.pages || 1
   const page = Math.min(pageNumber(searchParams.get("page")), pageCount)
-  const visible = books
 
   function goToPage(next) {
-    const params = new URLSearchParams(searchParams)
+    const params = buildParams({ q, classe, sousClasse, auteur, editeur })
     if (next > 1) params.set("page", String(next))
-    else params.delete("page")
     setSearchParams(params)
   }
 
   function reset() {
     setQ("")
+    setClasse(null)
+    setSousClasse(null)
+    setAuteur(null)
+    setEditeur(null)
     setSearchParams(new URLSearchParams())
   }
 
@@ -104,41 +189,78 @@ export default function CatalogPage() {
         <QueryState status={state.data ? "ready" : state.status} error={state.error}>
           {state.data ? (
             <div className="mt-5 sm:mt-6">
-              <div className="flex min-w-0 items-center gap-2" role="search">
-                <label htmlFor="recherche-catalogue" className="sr-only">
-                  Rechercher un livre
-                </label>
-                <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted sm:left-4" aria-hidden="true" />
-                  <input
-                    id="recherche-catalogue"
-                    type="search"
-                    value={q}
-                    onChange={(event) => setQ(event.target.value)}
-                    placeholder="Recherche par auteur, titre, éditeur, numéro d'enregistrement, Dewey…"
-                    className="w-full rounded-full border border-line bg-panel py-3 pl-11 pr-4 text-body text-ink sm:pl-12"
-                    autoComplete="off"
+              <div className="grid gap-3" role="search">
+                <div className="flex min-w-0 items-center gap-2">
+                  <label htmlFor="recherche-catalogue" className="sr-only">
+                    Rechercher un livre
+                  </label>
+                  <div className="relative min-w-0 flex-1">
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted sm:left-4" aria-hidden="true" />
+                    <input
+                      id="recherche-catalogue"
+                      type="search"
+                      value={q}
+                      onChange={(event) => setQ(event.target.value)}
+                      placeholder="Recherche par auteur, titre, éditeur, numéro d'enregistrement, Dewey…"
+                      className="w-full rounded-full border border-line bg-panel py-3 pl-11 pr-4 text-body text-ink sm:pl-12"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Réinitialiser la recherche"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-panel text-ink"
+                    onClick={reset}
+                  >
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <AutocompleteField
+                    label="Classe"
+                    value={classe}
+                    onChange={(next) => {
+                      setClasse(next)
+                      setSousClasse(null)
+                    }}
+                    search={searchClasses}
+                    placeholder="Filtrer par classe…"
+                  />
+                  <AutocompleteField
+                    label="Sous-classe"
+                    value={sousClasse}
+                    onChange={setSousClasse}
+                    search={searchSubclasses}
+                    placeholder={classe ? "Filtrer par sous-classe…" : "Choisir une classe d'abord"}
+                    disabled={!classe}
+                  />
+                  <AutocompleteField
+                    label="Auteur"
+                    value={auteur}
+                    onChange={setAuteur}
+                    search={searchAuthors}
+                    placeholder="Filtrer par auteur…"
+                  />
+                  <AutocompleteField
+                    label="Éditeur"
+                    value={editeur}
+                    onChange={setEditeur}
+                    search={searchPublishers}
+                    placeholder="Filtrer par éditeur…"
                   />
                 </div>
-                <button
-                  type="button"
-                  aria-label="Réinitialiser la recherche"
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-panel text-ink"
-                  onClick={reset}
-                >
-                  <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                </button>
               </div>
 
               <p className="mt-4 text-meta font-semibold text-ink sm:mt-5 sm:text-body" aria-live="polite">
                 {state.status === "loading" ? "Recherche…" : countLabel(state.data.count)}
               </p>
 
-              {visible.length === 0 ? (
+              {books.length === 0 ? (
                 <p className="mt-6 text-muted">Aucun livre ne correspond à cette recherche.</p>
               ) : (
                 <ul className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 sm:mt-5 sm:grid-cols-3 sm:gap-x-4 sm:gap-y-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                  {visible.map((book) => (
+                  {books.map((book) => (
                     <li key={book.id} className="min-w-0">
                       <BookCard book={book} dense />
                     </li>

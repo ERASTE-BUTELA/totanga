@@ -1,6 +1,6 @@
 """Consultation publique du catalogue. Lecture seule, livres publiés seulement."""
 
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Exists, OuterRef, Q
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
@@ -9,8 +9,8 @@ from rest_framework.views import APIView
 from apps.accounts.authentication import CsrfEnforcedAuthentication
 
 from .gestion_views import _bounds, _cover_url
-from .models import Author, Book, BookState, Category, Copy, CopyStatus
-from .search import filter_books
+from .models import Author, Book, BookState, Category, Copy, CopyStatus, Publisher
+from .search import filter_books, fold_text
 
 
 class CatalogReadThrottle(SimpleRateThrottle):
@@ -37,8 +37,10 @@ def _public_category(category):
         "name": category.name,
         "slug": category.slug,
         "description": category.description,
+        "parent_id": parent.pk if parent else None,
         "parent_name": parent.name if parent else "",
         "parent_slug": parent.slug if parent else "",
+        "is_class": parent is None,
     }
 
 
@@ -58,6 +60,10 @@ def _public_copy(copy):
 
 def _public_author(author):
     return {"id": author.id, "name": author.name, "biography": author.biography, "photo": ""}
+
+
+def _public_publisher(publisher):
+    return {"id": publisher.pk, "name": publisher.name}
 
 
 def _public_book(book, *, with_copies=False, brief=False):
@@ -91,6 +97,23 @@ def _public_book(book, *, with_copies=False, brief=False):
     return payload
 
 
+def _autocomplete_limit(request, default=20):
+    try:
+        return min(50, max(1, int(request.GET.get("page_size", default))))
+    except (TypeError, ValueError):
+        return default
+
+
+def _name_query(queryset, field, raw):
+    folded = fold_text(raw).strip()
+    if not folded:
+        return queryset
+    tokens = [part for part in folded.split() if part]
+    for token in tokens:
+        queryset = queryset.filter(**{f"{field}__unaccent__icontains": token})
+    return queryset
+
+
 def _public_filters(request, books):
     query = str(request.GET.get("q", "")).strip()
     if query:
@@ -100,6 +123,11 @@ def _public_filters(request, books):
         books = books.filter(authors__id=int(author))
     elif author:
         books = books.filter(authors__name__unaccent__icontains=author)
+    publisher = str(request.GET.get("editeur", "")).strip()
+    if publisher.isdigit():
+        books = books.filter(publisher_id=int(publisher))
+    elif publisher:
+        books = books.filter(publisher__name__unaccent__icontains=publisher)
     language = str(request.GET.get("langue", "")).strip()
     if language:
         books = books.filter(language=language)
@@ -110,53 +138,6 @@ def _public_filters(request, books):
     if year_max.isdigit():
         books = books.filter(publication_year__lte=int(year_max))
     return books.distinct()
-
-
-def _category_facets(books):
-    rows = list(
-        books.order_by()
-        .values(
-            "category_id",
-            "category__name",
-            "category__slug",
-            "category__parent_id",
-            "category__parent__name",
-            "category__parent__slug",
-        )
-        .annotate(count=Count("id", distinct=True))
-    )
-    by_id = {item["category_id"]: item for item in rows}
-    missing = {item["category__parent_id"] for item in rows if item["category__parent_id"]} - set(by_id)
-    if missing:
-        for parent in Category.objects.filter(pk__in=missing):
-            by_id[parent.pk] = {
-                "category_id": parent.pk,
-                "category__name": parent.name,
-                "category__slug": parent.slug,
-                "category__parent_id": None,
-                "category__parent__name": "",
-                "category__parent__slug": "",
-                "count": 0,
-            }
-    child_counts = {}
-    for item in rows:
-        parent_id = item["category__parent_id"]
-        if parent_id:
-            child_counts[parent_id] = child_counts.get(parent_id, 0) + item["count"]
-    facets = []
-    for item in by_id.values():
-        facets.append(
-            {
-                "id": item["category_id"],
-                "name": item["category__name"],
-                "slug": item["category__slug"],
-                "count": item["count"] + child_counts.get(item["category_id"], 0),
-                "parent_name": item["category__parent__name"] or "",
-                "parent_slug": item["category__parent__slug"] or "",
-            }
-        )
-    facets.sort(key=lambda row: ((row["parent_name"] or row["name"]).casefold(), bool(row["parent_name"]), row["name"].casefold()))
-    return facets
 
 
 class PublicBookListView(APIView):
@@ -176,7 +157,10 @@ class PublicBookListView(APIView):
             selected = None
         if selected is not None:
             ids = list(selected.values_list("pk", flat=True))
-            ids.extend(Category.objects.filter(parent_id__in=ids).values_list("pk", flat=True))
+            # Une classe inclut ses sous-classes ; une sous-classe reste exacte.
+            class_ids = list(selected.filter(parent__isnull=True).values_list("pk", flat=True))
+            if class_ids:
+                ids.extend(Category.objects.filter(parent_id__in=class_ids).values_list("pk", flat=True))
             books = books.filter(category_id__in=ids)
         availability = str(request.GET.get("disponibilite", "")).strip()
         in_stock = Copy.objects.filter(book_id=OuterRef("pk"), status=CopyStatus.AVAILABLE)
@@ -251,15 +235,32 @@ class PublicCategoryListView(APIView):
     throttle_classes = [CatalogReadThrottle]
 
     def get(self, request):
-        # Les identifiants publiés évitent le DISTINCT sur la jointure de tout le catalogue.
         published_ids = Book.objects.filter(state=BookState.PUBLISHED).values("category_id")
-        parent_ids = Category.objects.filter(pk__in=published_ids, parent__isnull=False).values("parent_id")
-        categories = (
-            Category.objects.filter(parent__isnull=True)
-            .filter(Q(pk__in=published_ids) | Q(pk__in=parent_ids))
-            .order_by("name")
-        )
-        return Response([_public_category(item) for item in categories])
+        parent = str(request.GET.get("parent", "")).strip()
+        query = str(request.GET.get("q", "")).strip()
+        limit = _autocomplete_limit(request)
+
+        selected_id = str(request.GET.get("id", "")).strip()
+        if selected_id.isdigit():
+            row = Category.objects.filter(pk=int(selected_id)).select_related("parent").first()
+            return Response({"results": [_public_category(row)] if row else []})
+
+        if parent.isdigit():
+            categories = Category.objects.filter(parent_id=int(parent), pk__in=published_ids)
+        elif parent:
+            parent_row = Category.objects.filter(slug=parent, parent__isnull=True).first()
+            if parent_row is None:
+                return Response({"results": []})
+            categories = Category.objects.filter(parent_id=parent_row.pk, pk__in=published_ids)
+        else:
+            # Classes (racines) présentes directement ou via une sous-classe publiée.
+            parent_ids = Category.objects.filter(pk__in=published_ids, parent__isnull=False).values("parent_id")
+            categories = Category.objects.filter(parent__isnull=True).filter(
+                Q(pk__in=published_ids) | Q(pk__in=parent_ids)
+            )
+
+        categories = _name_query(categories, "name", query).order_by("name")[:limit]
+        return Response({"results": [_public_category(item) for item in categories]})
 
 
 class PublicAuthorListView(APIView):
@@ -268,5 +269,29 @@ class PublicAuthorListView(APIView):
     throttle_classes = [CatalogReadThrottle]
 
     def get(self, request):
-        authors = Author.objects.filter(books__state=BookState.PUBLISHED).distinct().order_by("name")
-        return Response([_public_author(author) for author in authors])
+        selected_id = str(request.GET.get("id", "")).strip()
+        if selected_id.isdigit():
+            row = Author.objects.filter(pk=int(selected_id), books__state=BookState.PUBLISHED).first()
+            return Response({"results": [_public_author(row)] if row else []})
+        query = str(request.GET.get("q", "")).strip()
+        limit = _autocomplete_limit(request)
+        authors = Author.objects.filter(books__state=BookState.PUBLISHED).distinct()
+        authors = _name_query(authors, "name", query).order_by("name")[:limit]
+        return Response({"results": [_public_author(author) for author in authors]})
+
+
+class PublicPublisherListView(APIView):
+    authentication_classes = [CsrfEnforcedAuthentication]
+    permission_classes = [AllowAny]
+    throttle_classes = [CatalogReadThrottle]
+
+    def get(self, request):
+        selected_id = str(request.GET.get("id", "")).strip()
+        if selected_id.isdigit():
+            row = Publisher.objects.filter(pk=int(selected_id), books__state=BookState.PUBLISHED).first()
+            return Response({"results": [_public_publisher(row)] if row else []})
+        query = str(request.GET.get("q", "")).strip()
+        limit = _autocomplete_limit(request)
+        publishers = Publisher.objects.filter(books__state=BookState.PUBLISHED).distinct()
+        publishers = _name_query(publishers, "name", query).order_by("name")[:limit]
+        return Response({"results": [_public_publisher(item) for item in publishers]})

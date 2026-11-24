@@ -564,3 +564,36 @@ class PublicCatalogApiTests(BookCatalogTests):
         letters = self.api.get("/api/catalogue/livres/", {"q": "DEF"})
         self.assertEqual(letters.status_code, 200)
         self.assertEqual(letters.json()["count"], 1)
+
+    def test_public_autocomplete_and_filters(self):
+        from apps.catalog.models import Publisher
+
+        parent = Category.objects.create(name="Sciences sociales")
+        child = Category.objects.create(name="Education", parent=parent)
+        publisher = Publisher.objects.create(name="Presence Africaine")
+        book = self.make_book(title="Manuel scolaire", category=child, publisher=publisher)
+        Copy.objects.create(book=book, call_number="370 A", status=CopyStatus.AVAILABLE)
+
+        classes = self.api.get("/api/catalogue/categories/", {"q": "Sciences"})
+        self.assertEqual(classes.status_code, 200)
+        self.assertTrue(any(item["name"] == "Sciences sociales" for item in classes.json()["results"]))
+
+        children = self.api.get("/api/catalogue/categories/", {"parent": parent.pk, "q": "Educ"})
+        self.assertEqual(children.status_code, 200)
+        self.assertEqual(children.json()["results"][0]["name"], "Education")
+
+        authors = self.api.get("/api/catalogue/auteurs/", {"q": "Sony"})
+        self.assertEqual(authors.status_code, 200)
+        self.assertTrue(any(item["name"] == "Sony Labou Tansi" for item in authors.json()["results"]))
+
+        publishers = self.api.get("/api/catalogue/editeurs/", {"q": "Presence"})
+        self.assertEqual(publishers.status_code, 200)
+        self.assertEqual(publishers.json()["results"][0]["name"], "Presence Africaine")
+
+        filtered = self.api.get(
+            "/api/catalogue/livres/",
+            {"categorie": child.slug, "auteur": self.author.pk, "editeur": publisher.pk},
+        )
+        self.assertEqual(filtered.status_code, 200)
+        self.assertEqual(filtered.json()["count"], 1)
+        self.assertEqual(filtered.json()["results"][0]["title"], "Manuel scolaire")
