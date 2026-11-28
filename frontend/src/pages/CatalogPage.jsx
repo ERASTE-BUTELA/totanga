@@ -23,13 +23,22 @@ function pageNumber(value) {
   return page
 }
 
-function writeFilterParams(params, { q, classe, auteur }) {
+function categoryParam(classe, sousClasse) {
+  if (sousClasse?.slug) return { slug: sousClasse.slug, id: sousClasse.id }
+  if (sousClasse?.id) return { slug: "", id: sousClasse.id }
+  if (classe?.slug) return { slug: classe.slug, id: classe.id }
+  if (classe?.id) return { slug: "", id: classe.id }
+  return null
+}
+
+function writeFilterParams(params, { q, classe, sousClasse, auteur }) {
   const query = String(q || "").trim()
   if (query) params.set("q", query)
   else params.delete("q")
 
-  if (classe?.slug) params.set("categorie", classe.slug)
-  else if (classe?.id) params.set("categorie", String(classe.id))
+  const category = categoryParam(classe, sousClasse)
+  if (category?.slug) params.set("categorie", category.slug)
+  else if (category?.id) params.set("categorie", String(category.id))
   else params.delete("categorie")
 
   if (auteur?.id != null && auteur.id !== "") params.set("auteur", String(auteur.id))
@@ -46,6 +55,7 @@ export default function CatalogPage() {
   const [state, setState] = useState({ status: "loading", data: null, error: "" })
   const [q, setQ] = useState(() => searchParams.get("q") || "")
   const [classe, setClasse] = useState(null)
+  const [sousClasse, setSousClasse] = useState(null)
   const [auteur, setAuteur] = useState(null)
   const hydratedKey = useRef("")
   const skipQSync = useRef(false)
@@ -63,18 +73,40 @@ export default function CatalogPage() {
     async function hydrate() {
       const tasks = [
         categoryKey
-          ? searchCatalogCategories("", "", categoryKey).then((rows) => ({ type: "classe", rows }))
-          : Promise.resolve({ type: "classe", rows: [] }),
+          ? searchCatalogCategories("", "", categoryKey).then((rows) => ({ type: "categorie", rows }))
+          : Promise.resolve({ type: "categorie", rows: [] }),
         authorId
           ? searchCatalogAuthors("", authorId).then((rows) => ({ type: "auteur", rows }))
           : Promise.resolve({ type: "auteur", rows: [] }),
       ]
       const results = await Promise.all(tasks)
       if (!active) return
-      for (const item of results) {
-        if (item.type === "classe") setClasse(item.rows[0] || null)
-        if (item.type === "auteur") setAuteur(item.rows[0] || null)
+
+      const categoryHit = results.find((item) => item.type === "categorie")?.rows?.[0] || null
+      const authorHit = results.find((item) => item.type === "auteur")?.rows?.[0] || null
+      setAuteur(authorHit)
+
+      if (!categoryHit) {
+        setClasse(null)
+        setSousClasse(null)
+        return
       }
+
+      if (categoryHit.is_class || !categoryHit.parent_id) {
+        setClasse(categoryHit)
+        setSousClasse(null)
+        return
+      }
+
+      setSousClasse({
+        ...categoryHit,
+        label: categoryHit.label?.includes(" — ")
+          ? categoryHit.label.split(" — ").slice(1).join(" — ")
+          : categoryHit.label,
+      })
+      const parents = await searchCatalogCategories("", "", String(categoryHit.parent_id))
+      if (!active) return
+      setClasse(parents[0] || null)
     }
     hydrate().catch(() => {})
     return () => {
@@ -129,23 +161,61 @@ export default function CatalogPage() {
     }
   }, [searchParams])
 
-  const searchClasses = useCallback((query) => searchCatalogCategories(query), [])
+  const searchClasses = useCallback(
+    async (query) => {
+      const rows = await searchCatalogCategories(query)
+      return rows.filter((item) => item.is_class || !item.parent_id)
+    },
+    [],
+  )
+
+  const searchSubclasses = useCallback(
+    async (query) => {
+      if (!classe?.id) return []
+      const rows = await searchCatalogCategories(query, classe.id)
+      return rows.map((item) => ({
+        ...item,
+        label: item.label?.includes(" — ") ? item.label.split(" — ").slice(1).join(" — ") : item.label,
+      }))
+    },
+    [classe?.id],
+  )
+
   const searchAuthors = useCallback((query) => searchCatalogAuthors(query), [])
 
-  function applyFilters({ nextClasse = classe, nextAuteur = auteur }) {
-    setClasse(nextClasse)
+  function applyFilters({
+    nextClasse = classe,
+    nextSousClasse = sousClasse,
+    nextAuteur = auteur,
+  }) {
+    let resolvedClasse = nextClasse
+    let resolvedSous = nextSousClasse
+
+    // Changer de classe → on efface la sous-classe.
+    if (nextClasse?.id !== classe?.id) {
+      resolvedSous = null
+    }
+    // Choisir une sous-classe hors de la classe courante → on aligne la classe.
+    if (resolvedSous?.parent_id && resolvedClasse?.id && String(resolvedSous.parent_id) !== String(resolvedClasse.id)) {
+      resolvedClasse = null
+    }
+
+    setClasse(resolvedClasse)
+    setSousClasse(resolvedSous)
     setAuteur(nextAuteur)
-    hydratedKey.current = [nextClasse?.slug || nextClasse?.id || "", nextAuteur?.id || ""].join("|")
-    // Les filtres Classe / Auteur remplacent la recherche texte pour éviter 0 résultat par combinaison.
+    hydratedKey.current = [
+      resolvedSous?.slug || resolvedSous?.id || resolvedClasse?.slug || resolvedClasse?.id || "",
+      nextAuteur?.id || "",
+    ].join("|")
     setQ("")
-    setSearchParams(() => {
-      const params = writeFilterParams(new URLSearchParams(), {
+    setSearchParams(() =>
+      writeFilterParams(new URLSearchParams(), {
         q: "",
-        classe: nextClasse,
+        classe: resolvedClasse,
+        sousClasse: resolvedSous,
         auteur: nextAuteur,
-      })
-      return params
-    })
+      }),
+    )
   }
 
   function goToPage(next) {
@@ -160,6 +230,7 @@ export default function CatalogPage() {
   function reset() {
     setQ("")
     setClasse(null)
+    setSousClasse(null)
     setAuteur(null)
     hydratedKey.current = ""
     setSearchParams(new URLSearchParams())
@@ -216,13 +287,21 @@ export default function CatalogPage() {
                   </button>
                 </div>
 
-                <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-[14rem_14rem] sm:gap-3 xl:shrink-0 xl:gap-2">
+                <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-[14rem_14rem_14rem] sm:gap-3 xl:shrink-0 xl:gap-2">
                   <AutocompleteField
                     label="Classe"
                     value={classe}
-                    onChange={(next) => applyFilters({ nextClasse: next })}
+                    onChange={(next) => applyFilters({ nextClasse: next, nextSousClasse: null })}
                     search={searchClasses}
                     placeholder="Classe…"
+                  />
+                  <AutocompleteField
+                    label="Sous-classe"
+                    value={sousClasse}
+                    onChange={(next) => applyFilters({ nextSousClasse: next })}
+                    search={searchSubclasses}
+                    placeholder={classe ? "Sous-classe…" : "Classe d'abord"}
+                    disabled={!classe}
                   />
                   <AutocompleteField
                     label="Auteur"
