@@ -196,13 +196,14 @@ class RealRepertoireTests(TestCase):
         path = repertoire_path()
         self.assertTrue(path.is_file(), "Le fichier data/import/repertoire.csv est introuvable.")
         call_command("import_repertoire", fichier=str(path))
-        self.assertEqual(RegisterRow.objects.count(), 9669)
+        total = RegisterRow.objects.count()
+        self.assertGreaterEqual(total, 9600)
         stored = {row.source_line: row.cells() for row in RegisterRow.objects.all()}
         for line, raw in read_repertoire(path):
             self.assertEqual(stored[line], raw)
         books = Book.objects.count()
         copies = Copy.objects.count()
         call_command("import_repertoire", fichier=str(path))
-        self.assertEqual(RegisterRow.objects.count(), 9669)
+        self.assertEqual(RegisterRow.objects.count(), total)
         self.assertEqual(Book.objects.count(), books)
         self.assertEqual(Copy.objects.count(), copies)

@@ -23,6 +23,15 @@ from apps.catalog.repertoire import (
     tidy,
 )
 
+# Anciens libellés du CSV → noms Dewey du fichier Excel.
+CLASS_RENAMES = {
+    "géographie, histoire, sciences auxiliaires de l'histoire": "Géographie et histoire",
+    "les arts, beaux arts et arts decoratifs": "Arts Beaux-arts et arts décoratifs",
+    "littérature (belles - lettres) et techniques d'écriture": "Littérature et techniques d'écriture",
+    "sciences de la nature et mathématiques": "Sciences naturelles et mathématiques",
+    "technologie (sciences appliquées)": "Technologie (Sciences appliquées)",
+}
+
 
 class Command(BaseCommand):
     help = "Copie le répertoire puis construit le catalogue. --essai n'écrit rien."
@@ -65,6 +74,7 @@ class Command(BaseCommand):
             _print_totals(self.stdout, totals, report)
             return
         with transaction.atomic():
+            _rename_legacy_classes()
             _store_register(decisions)
             _build_catalog(decisions)
         publishers = sync_publishers(path)
@@ -102,6 +112,25 @@ def _write_report(path, decisions, totals):
             ("sans_classe", "Lignes sans classe"),
         ):
             writer.writerow({"type": "total", "ligne": "", "numero": totals[key], "detail": label})
+
+
+def _rename_legacy_classes():
+    """Aligne les anciennes racines sur les libellés Dewey du nouveau fichier."""
+
+    roots = list(Category.objects.filter(parent__isnull=True))
+    by_name = {tidy(item.name).casefold(): item for item in roots}
+    for old_key, new_name in CLASS_RENAMES.items():
+        row = by_name.get(old_key)
+        if row is None:
+            continue
+        target = tidy(new_name)[:120]
+        if tidy(row.name).casefold() == target.casefold():
+            continue
+        clash = Category.objects.filter(parent__isnull=True, name__iexact=target).exclude(pk=row.pk).first()
+        if clash is not None:
+            continue
+        row.name = target
+        row.save(update_fields=["name"])
 
 
 def _store_register(decisions):
@@ -143,11 +172,11 @@ def _build_catalog(decisions):
         book_locked = book is not None and _diverged(book)
         if book is None:
             book = _new_book(cells, categories, publishers)
-            book.authors.add(_author(cells["Auteur"], authors))
+            book.authors.set([_author(cells["Auteur"], authors)])
             touched_books.add(book.pk)
         elif not book_locked:
             _fill_book(book, cells, categories, publishers)
-            book.authors.add(_author(cells["Auteur"], authors))
+            book.authors.set([_author(cells["Auteur"], authors)])
             touched_books.add(book.pk)
         if not book_locked:
             _keyword(book, cells["SOUS-DIVISION 1"])
@@ -229,14 +258,26 @@ def _new_book(cells, categories, publishers):
 
 
 def _fill_book(book, cells, categories, publishers):
+    book.title = tidy(cells["Titre"])[:400]
     proposed = _category_of(cells, categories)
-    if proposed.parent_id == book.category_id:
+    current = book.category
+    subclass = tidy(cells["SOUS-CLASSE"])
+    if subclass:
         book.category = proposed
-    if not book.summary:
-        book.summary = summary_text(cells["Resumé"])
+    elif current is None:
+        book.category = proposed
+    elif current.parent_id is None:
+        book.category = proposed
+    elif proposed.pk not in {current.pk, current.parent_id}:
+        # Autre famille Dewey : on reclasse.
+        book.category = proposed
+    summary = summary_text(cells["Resumé"])
+    if summary:
+        book.summary = summary
     if book.publication_year is None:
         year, _invalid = publication_year(cells["Date publ."])
-        book.publication_year = year
+        if year is not None:
+            book.publication_year = year
     book.publisher = get_or_create_publisher(cells["Editeur"], publishers)
     book.save()
 

@@ -1,17 +1,20 @@
 ﻿type,ligne,numero,detail
-annee,6203,6548,Valeur brute : 26/11/2088
-annee,6228,6573,Valeur brute : 07/10/2209
-annee,6319,6664,Valeur brute : 14/102020
-annee,6564,6931,Valeur brute : 
-annee,6831,7200,Valeur brute : 27/082020
-doublon,7204,7273,Déjà vu à la ligne 6904
-annee,8149,8518,Valeur brute : xx
-annee,9536,9905,Valeur brute : 1/1/1656
-ignoree,9670,99999,Ligne de test ignorée
-total,,9669,Lignes lues
+annee,6204,6548,Valeur brute : 26/11/2088
+annee,6229,6573,Valeur brute : 113141
+annee,6320,6664,Valeur brute : 14/102020
+annee,6565,6931,Valeur brute : 
+annee,6832,7200,Valeur brute : 27/082020
+annee,6963,7331,Valeur brute : 15
+doublon,7205,7273,Déjà vu à la ligne 6905
+annee,7402,7770,Valeur brute : 1
+annee,8150,8518,Valeur brute : xx
+annee,9537,9905,Valeur brute : 1/1/1656
+annee,9775,10143,Valeur brute : 1
+ignoree,9788,99999,Ligne de test ignorée
+total,,9787,Lignes lues
 total,,1,Lignes ignorées
 total,,1,Numéros en double
-total,,7,Années invalides
-total,,9383,Livres prévus
-total,,9667,Exemplaires prévus
-total,,1,Lignes sans classe
+total,,10,Années invalides
+total,,9499,Livres prévus
+total,,9785,Exemplaires prévus
+total,,0,Lignes sans classe

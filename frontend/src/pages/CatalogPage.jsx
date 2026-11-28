@@ -5,7 +5,6 @@ import {
   getCatalog,
   searchCatalogAuthors,
   searchCatalogCategories,
-  searchCatalogPublishers,
 } from "../api/client.js"
 import { BookCard } from "../components/cards/BookCard.jsx"
 import { Breadcrumb } from "../components/layout/Breadcrumb.jsx"
@@ -24,7 +23,7 @@ function pageNumber(value) {
   return page
 }
 
-function writeFilterParams(params, { q, classe, auteur, editeur }) {
+function writeFilterParams(params, { q, classe, auteur }) {
   const query = String(q || "").trim()
   if (query) params.set("q", query)
   else params.delete("q")
@@ -36,9 +35,7 @@ function writeFilterParams(params, { q, classe, auteur, editeur }) {
   if (auteur?.id) params.set("auteur", String(auteur.id))
   else params.delete("auteur")
 
-  if (editeur?.id) params.set("editeur", String(editeur.id))
-  else params.delete("editeur")
-
+  params.delete("editeur")
   return params
 }
 
@@ -49,45 +46,33 @@ export default function CatalogPage() {
   const [q, setQ] = useState(() => searchParams.get("q") || "")
   const [classe, setClasse] = useState(null)
   const [auteur, setAuteur] = useState(null)
-  const [editeur, setEditeur] = useState(null)
   const hydratedKey = useRef("")
   const skipQSync = useRef(false)
 
   const page = pageNumber(searchParams.get("page"))
 
-  // Hydrate les libellés des filtres depuis l'URL (une fois par combinaison).
   useEffect(() => {
     const categoryKey = searchParams.get("categorie") || ""
     const authorId = searchParams.get("auteur") || ""
-    const publisherId = searchParams.get("editeur") || ""
-    const key = `${categoryKey}|${authorId}|${publisherId}`
+    const key = `${categoryKey}|${authorId}`
     if (hydratedKey.current === key) return undefined
     hydratedKey.current = key
 
     let active = true
     async function hydrate() {
-      const tasks = []
-      if (categoryKey) {
-        tasks.push(searchCatalogCategories("", "", categoryKey).then((rows) => ({ type: "classe", rows })))
-      } else {
-        tasks.push(Promise.resolve({ type: "classe", rows: [] }))
-      }
-      tasks.push(
+      const tasks = [
+        categoryKey
+          ? searchCatalogCategories("", "", categoryKey).then((rows) => ({ type: "classe", rows }))
+          : Promise.resolve({ type: "classe", rows: [] }),
         authorId
           ? searchCatalogAuthors("", authorId).then((rows) => ({ type: "auteur", rows }))
           : Promise.resolve({ type: "auteur", rows: [] }),
-      )
-      tasks.push(
-        publisherId
-          ? searchCatalogPublishers("", publisherId).then((rows) => ({ type: "editeur", rows }))
-          : Promise.resolve({ type: "editeur", rows: [] }),
-      )
+      ]
       const results = await Promise.all(tasks)
       if (!active) return
       for (const item of results) {
         if (item.type === "classe") setClasse(item.rows[0] || null)
         if (item.type === "auteur") setAuteur(item.rows[0] || null)
-        if (item.type === "editeur") setEditeur(item.rows[0] || null)
       }
     }
     hydrate().catch(() => {})
@@ -96,7 +81,6 @@ export default function CatalogPage() {
     }
   }, [searchParams])
 
-  // Debounce la saisie texte → met à jour q dans l'URL sans toucher aux autres filtres.
   useEffect(() => {
     const urlQ = searchParams.get("q") || ""
     if (q === urlQ) return undefined
@@ -109,6 +93,7 @@ export default function CatalogPage() {
           if (trimmed) params.set("q", trimmed)
           else params.delete("q")
           params.delete("page")
+          params.delete("editeur")
           return params
         },
         { replace: true },
@@ -145,23 +130,16 @@ export default function CatalogPage() {
 
   const searchClasses = useCallback((query) => searchCatalogCategories(query), [])
   const searchAuthors = useCallback((query) => searchCatalogAuthors(query), [])
-  const searchPublishers = useCallback((query) => searchCatalogPublishers(query), [])
 
-  function applyFilters({ nextClasse = classe, nextAuteur = auteur, nextEditeur = editeur }) {
+  function applyFilters({ nextClasse = classe, nextAuteur = auteur }) {
     setClasse(nextClasse)
     setAuteur(nextAuteur)
-    setEditeur(nextEditeur)
-    hydratedKey.current = [
-      nextClasse?.slug || nextClasse?.id || "",
-      nextAuteur?.id || "",
-      nextEditeur?.id || "",
-    ].join("|")
+    hydratedKey.current = [nextClasse?.slug || nextClasse?.id || "", nextAuteur?.id || ""].join("|")
     setSearchParams((current) => {
       const params = writeFilterParams(new URLSearchParams(current), {
         q,
         classe: nextClasse,
         auteur: nextAuteur,
-        editeur: nextEditeur,
       })
       params.delete("page")
       return params
@@ -181,7 +159,6 @@ export default function CatalogPage() {
     setQ("")
     setClasse(null)
     setAuteur(null)
-    setEditeur(null)
     hydratedKey.current = ""
     setSearchParams(new URLSearchParams())
   }
@@ -237,7 +214,7 @@ export default function CatalogPage() {
                   </button>
                 </div>
 
-                <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-3 xl:gap-2">
+                <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3 xl:gap-2">
                   <AutocompleteField
                     label="Classe"
                     value={classe}
@@ -251,13 +228,6 @@ export default function CatalogPage() {
                     onChange={(next) => applyFilters({ nextAuteur: next })}
                     search={searchAuthors}
                     placeholder="Auteur…"
-                  />
-                  <AutocompleteField
-                    label="Éditeur"
-                    value={editeur}
-                    onChange={(next) => applyFilters({ nextEditeur: next })}
-                    search={searchPublishers}
-                    placeholder="Éditeur…"
                   />
                 </div>
               </div>
