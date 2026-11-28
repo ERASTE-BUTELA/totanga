@@ -612,6 +612,9 @@ class PublicCatalogApiTests(BookCatalogTests):
         self.assertEqual(by_class.status_code, 200)
         self.assertEqual(by_class.json()["count"], 1)
 
+        self.make_book(title="Second titre publie", category=child, publisher=publisher)
         page_two = self.api.get("/api/catalogue/livres/", {"page": 2, "page_size": 1})
         self.assertEqual(page_two.status_code, 200)
+        self.assertEqual(page_two.json()["pages"], 2)
         self.assertEqual(page_two.json()["page"], 2)
+        self.assertEqual(len(page_two.json()["results"]), 1)
