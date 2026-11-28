@@ -16,6 +16,7 @@ export function AutocompleteField({
 }) {
   const listId = useId()
   const root = useRef(null)
+  const requestId = useRef(0)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [hits, setHits] = useState([])
@@ -24,17 +25,22 @@ export function AutocompleteField({
   useEffect(() => {
     if (!open || disabled) return undefined
     let gone = false
+    const currentRequest = ++requestId.current
     setLoading(true)
     const timer = window.setTimeout(() => {
       Promise.resolve(search(query.trim()))
         .then((rows) => {
-          if (gone) return
+          if (gone || currentRequest !== requestId.current) return
           setLoading(false)
           const list = Array.isArray(rows) ? rows : []
-          setHits(list.filter((item) => item && item.id != null && item.id !== value?.id))
+          setHits(
+            list.filter(
+              (item) => item && item.id != null && String(item.id) !== String(value?.id ?? ""),
+            ),
+          )
         })
         .catch(() => {
-          if (gone) return
+          if (gone || currentRequest !== requestId.current) return
           setLoading(false)
           setHits([])
         })
@@ -65,10 +71,10 @@ export function AutocompleteField({
   }
 
   return (
-    <div ref={root} className={`relative min-w-0 ${disabled ? "opacity-60" : ""}`}>
+    <div ref={root} className={`relative w-full min-w-0 ${disabled ? "opacity-60" : ""}`}>
       <span className="mb-1 block text-meta font-semibold text-ink">{label}</span>
       <div
-        className={`flex min-h-11 items-center gap-1 rounded-xl border border-line bg-panel px-2 ${disabled ? "cursor-not-allowed" : ""}`}
+        className={`flex h-11 w-full items-center gap-1 rounded-xl border border-line bg-panel px-2 ${disabled ? "cursor-not-allowed" : ""}`}
       >
         <button
           type="button"
@@ -86,17 +92,19 @@ export function AutocompleteField({
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
         </button>
-        {value ? (
-          <button
-            type="button"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted hover:bg-lavender hover:text-violet"
-            aria-label={`Effacer ${label}`}
-            disabled={disabled}
-            onClick={() => onChange(null)}
-          >
-            <X className="h-4 w-4" aria-hidden="true" />
-          </button>
-        ) : null}
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center">
+          {value ? (
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-lavender hover:text-violet"
+              aria-label={`Effacer ${label}`}
+              disabled={disabled}
+              onClick={() => onChange(null)}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          ) : null}
+        </span>
       </div>
       {open && !disabled ? (
         <div

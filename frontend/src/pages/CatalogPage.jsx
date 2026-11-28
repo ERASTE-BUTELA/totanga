@@ -32,7 +32,8 @@ function writeFilterParams(params, { q, classe, auteur }) {
   else if (classe?.id) params.set("categorie", String(classe.id))
   else params.delete("categorie")
 
-  if (auteur?.id) params.set("auteur", String(auteur.id))
+  if (auteur?.id != null && auteur.id !== "") params.set("auteur", String(auteur.id))
+  else if (auteur?.label) params.set("auteur", auteur.label)
   else params.delete("auteur")
 
   params.delete("editeur")
@@ -135,13 +136,14 @@ export default function CatalogPage() {
     setClasse(nextClasse)
     setAuteur(nextAuteur)
     hydratedKey.current = [nextClasse?.slug || nextClasse?.id || "", nextAuteur?.id || ""].join("|")
-    setSearchParams((current) => {
-      const params = writeFilterParams(new URLSearchParams(current), {
-        q,
+    // Les filtres Classe / Auteur remplacent la recherche texte pour éviter 0 résultat par combinaison.
+    setQ("")
+    setSearchParams(() => {
+      const params = writeFilterParams(new URLSearchParams(), {
+        q: "",
         classe: nextClasse,
         auteur: nextAuteur,
       })
-      params.delete("page")
       return params
     })
   }
@@ -214,7 +216,7 @@ export default function CatalogPage() {
                   </button>
                 </div>
 
-                <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3 xl:gap-2">
+                <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-[14rem_14rem] sm:gap-3 xl:shrink-0 xl:gap-2">
                   <AutocompleteField
                     label="Classe"
                     value={classe}
