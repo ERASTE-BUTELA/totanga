@@ -578,15 +578,17 @@ class PublicCatalogApiTests(BookCatalogTests):
         self.assertEqual(classes.status_code, 200)
         self.assertTrue(any(item["name"] == "Sciences sociales" for item in classes.json()["results"]))
 
-        # Sans parent : classes et sous-classes avec livres publiés.
-        mixed = self.api.get("/api/catalogue/categories/", {"q": "Educ"})
-        self.assertEqual(mixed.status_code, 200)
-        education = next(item for item in mixed.json()["results"] if item["name"] == "Education")
-        self.assertEqual(education["label"], "Sciences sociales — Education")
+        # Sans parent : seulement les classes racines.
+        roots = self.api.get("/api/catalogue/categories/")
+        self.assertEqual(roots.status_code, 200)
+        root_names = [item["name"] for item in roots.json()["results"]]
+        self.assertIn("Sciences sociales", root_names)
+        self.assertNotIn("Education", root_names)
 
         by_slug = self.api.get("/api/catalogue/categories/", {"slug": child.slug})
         self.assertEqual(by_slug.status_code, 200)
         self.assertEqual(by_slug.json()["results"][0]["slug"], child.slug)
+        self.assertEqual(by_slug.json()["results"][0]["label"], "Sciences sociales — Education")
 
         children = self.api.get("/api/catalogue/categories/", {"parent": parent.pk, "q": "Educ"})
         self.assertEqual(children.status_code, 200)

@@ -267,11 +267,11 @@ class PublicCategoryListView(APIView):
                 return Response({"results": []})
             categories = Category.objects.filter(parent_id=parent_row.pk, pk__in=published_ids)
         else:
-            # Classes racines + catégories avec livres publiés (feuilles comprises).
+            # Filtre « Classe » : uniquement les racines présentes (directement ou via sous-classe).
             parent_ids = Category.objects.filter(pk__in=published_ids, parent__isnull=False).values("parent_id")
-            categories = Category.objects.filter(
-                Q(pk__in=published_ids) | Q(pk__in=parent_ids, parent__isnull=True)
-            ).select_related("parent")
+            categories = Category.objects.filter(parent__isnull=True).filter(
+                Q(pk__in=published_ids) | Q(pk__in=parent_ids)
+            )
 
         categories = _name_query(categories, "name", query).order_by("name")[:limit]
         return Response({"results": [_public_category(item) for item in categories]})

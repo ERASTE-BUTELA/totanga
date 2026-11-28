@@ -161,13 +161,7 @@ export default function CatalogPage() {
     }
   }, [searchParams])
 
-  const searchClasses = useCallback(
-    async (query) => {
-      const rows = await searchCatalogCategories(query)
-      return rows.filter((item) => item.is_class || !item.parent_id)
-    },
-    [],
-  )
+  const searchClasses = useCallback((query) => searchCatalogCategories(query), [])
 
   const searchSubclasses = useCallback(
     async (query) => {

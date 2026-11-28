@@ -97,7 +97,7 @@ export async function searchCatalogCategories(query = "", parent = "", id = "") 
     return rows
       .filter((item) => {
         if (parent) return String(item.parent_id || "") === String(parent)
-        return true
+        return item.is_class
       })
       .filter((item) => !needle || item.label.toLocaleLowerCase("fr").includes(needle))
       .slice(0, 20)
@@ -109,7 +109,7 @@ export async function searchCatalogCategories(query = "", parent = "", id = "") 
   }
   if (query) params.set("q", query)
   if (parent) params.set("parent", String(parent))
-  params.set("page_size", "20")
+  params.set("page_size", parent ? "50" : "20")
   const payload = await catalogRequest(`/api/catalogue/categories/?${params}`)
   return asList(payload).map(mapChoice)
 }
