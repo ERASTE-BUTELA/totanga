@@ -32,9 +32,12 @@ def _published():
 
 def _public_category(category):
     parent = category.parent if getattr(category, "parent_id", None) else None
+    name = category.name
+    label = f"{parent.name} — {name}" if parent else name
     return {
         "id": category.pk,
-        "name": category.name,
+        "name": name,
+        "label": label,
         "slug": category.slug,
         "description": category.description,
         "parent_id": parent.pk if parent else None,
@@ -59,11 +62,17 @@ def _public_copy(copy):
 
 
 def _public_author(author):
-    return {"id": author.id, "name": author.name, "biography": author.biography, "photo": ""}
+    return {
+        "id": author.id,
+        "name": author.name,
+        "label": author.name,
+        "biography": author.biography,
+        "photo": "",
+    }
 
 
 def _public_publisher(publisher):
-    return {"id": publisher.pk, "name": publisher.name}
+    return {"id": publisher.pk, "name": publisher.name, "label": publisher.name}
 
 
 def _public_book(book, *, with_copies=False, brief=False):
@@ -245,6 +254,11 @@ class PublicCategoryListView(APIView):
             row = Category.objects.filter(pk=int(selected_id)).select_related("parent").first()
             return Response({"results": [_public_category(row)] if row else []})
 
+        selected_slug = str(request.GET.get("slug", "")).strip()
+        if selected_slug:
+            row = Category.objects.filter(slug=selected_slug).select_related("parent").first()
+            return Response({"results": [_public_category(row)] if row else []})
+
         if parent.isdigit():
             categories = Category.objects.filter(parent_id=int(parent), pk__in=published_ids)
         elif parent:
@@ -253,11 +267,11 @@ class PublicCategoryListView(APIView):
                 return Response({"results": []})
             categories = Category.objects.filter(parent_id=parent_row.pk, pk__in=published_ids)
         else:
-            # Classes (racines) présentes directement ou via une sous-classe publiée.
+            # Classes racines + catégories avec livres publiés (feuilles comprises).
             parent_ids = Category.objects.filter(pk__in=published_ids, parent__isnull=False).values("parent_id")
-            categories = Category.objects.filter(parent__isnull=True).filter(
-                Q(pk__in=published_ids) | Q(pk__in=parent_ids)
-            )
+            categories = Category.objects.filter(
+                Q(pk__in=published_ids) | Q(pk__in=parent_ids, parent__isnull=True)
+            ).select_related("parent")
 
         categories = _name_query(categories, "name", query).order_by("name")[:limit]
         return Response({"results": [_public_category(item) for item in categories]})

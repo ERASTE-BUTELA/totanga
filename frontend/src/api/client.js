@@ -72,35 +72,41 @@ export async function getCategories() {
 function mapChoice(item) {
   return {
     id: item.id,
-    label: String(item.name || item.label || ""),
+    label: String(item.label || item.name || ""),
     slug: String(item.slug || ""),
     parent_id: item.parent_id ?? null,
     is_class: Boolean(item.is_class),
   }
 }
 
-/** Autocomplete public : classes (sans parent) ou sous-classes (parent = id/slug). */
+/** Autocomplete public : classes / catégories avec livres publiés. */
 export async function searchCatalogCategories(query = "", parent = "", id = "") {
   if (catalogUsesFixtures()) {
     const rows = fixtures.categories.map(mapCategory).map((item) => ({
       id: item.id,
-      label: item.name,
+      label: item.parent_name ? `${item.parent_name} — ${item.name}` : item.name,
       slug: item.slug,
       parent_id: item.parent_id || null,
       is_class: !item.parent_id,
     }))
-    if (id) return rows.filter((item) => String(item.id) === String(id))
+    if (id) {
+      if (/^\d+$/.test(String(id))) return rows.filter((item) => String(item.id) === String(id))
+      return rows.filter((item) => item.slug === id)
+    }
     const needle = String(query || "").trim().toLocaleLowerCase("fr")
     return rows
       .filter((item) => {
         if (parent) return String(item.parent_id || "") === String(parent)
-        return item.is_class
+        return true
       })
       .filter((item) => !needle || item.label.toLocaleLowerCase("fr").includes(needle))
       .slice(0, 20)
   }
   const params = new URLSearchParams()
-  if (id) params.set("id", String(id))
+  if (id) {
+    if (/^\d+$/.test(String(id))) params.set("id", String(id))
+    else params.set("slug", String(id))
+  }
   if (query) params.set("q", query)
   if (parent) params.set("parent", String(parent))
   params.set("page_size", "20")

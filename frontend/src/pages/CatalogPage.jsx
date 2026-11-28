@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, RotateCcw, Search } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useSearchParams } from "react-router"
 import {
   getCatalog,
@@ -24,23 +24,22 @@ function pageNumber(value) {
   return page
 }
 
-function buildParams({ q, classe, sousClasse, auteur, editeur }) {
-  const params = new URLSearchParams()
+function writeFilterParams(params, { q, classe, auteur, editeur }) {
   const query = String(q || "").trim()
   if (query) params.set("q", query)
-  const category = sousClasse?.slug || sousClasse?.id || classe?.slug || classe?.id
-  if (category) params.set("categorie", String(category))
-  if (classe?.id && (sousClasse?.id || sousClasse?.slug)) params.set("classe", String(classe.id))
-  if (auteur?.id) params.set("auteur", String(auteur.id))
-  if (editeur?.id) params.set("editeur", String(editeur.id))
-  return params
-}
+  else params.delete("q")
 
-function sameSearch(a, b) {
-  for (const key of ["q", "categorie", "classe", "auteur", "editeur"]) {
-    if ((a.get(key) || "") !== (b.get(key) || "")) return false
-  }
-  return true
+  if (classe?.slug) params.set("categorie", classe.slug)
+  else if (classe?.id) params.set("categorie", String(classe.id))
+  else params.delete("categorie")
+
+  if (auteur?.id) params.set("auteur", String(auteur.id))
+  else params.delete("auteur")
+
+  if (editeur?.id) params.set("editeur", String(editeur.id))
+  else params.delete("editeur")
+
+  return params
 }
 
 export default function CatalogPage() {
@@ -49,86 +48,83 @@ export default function CatalogPage() {
   const [state, setState] = useState({ status: "loading", data: null, error: "" })
   const [q, setQ] = useState(() => searchParams.get("q") || "")
   const [classe, setClasse] = useState(null)
-  const [sousClasse, setSousClasse] = useState(null)
   const [auteur, setAuteur] = useState(null)
   const [editeur, setEditeur] = useState(null)
-  const [filtersReady, setFiltersReady] = useState(false)
+  const hydratedKey = useRef("")
+  const skipQSync = useRef(false)
 
-  const categoryKey = searchParams.get("categorie") || ""
-  const classKey = searchParams.get("classe") || ""
-  const authorId = searchParams.get("auteur") || ""
-  const publisherId = searchParams.get("editeur") || ""
+  const page = pageNumber(searchParams.get("page"))
 
+  // Hydrate les libellés des filtres depuis l'URL (une fois par combinaison).
   useEffect(() => {
-    setQ(searchParams.get("q") || "")
-  }, [searchParams])
+    const categoryKey = searchParams.get("categorie") || ""
+    const authorId = searchParams.get("auteur") || ""
+    const publisherId = searchParams.get("editeur") || ""
+    const key = `${categoryKey}|${authorId}|${publisherId}`
+    if (hydratedKey.current === key) return undefined
+    hydratedKey.current = key
 
-  useEffect(() => {
     let active = true
-
     async function hydrate() {
-      const [classRows, authorRows, publisherRows] = await Promise.all([
-        classKey ? searchCatalogCategories("", "", classKey) : Promise.resolve([]),
-        authorId ? searchCatalogAuthors("", authorId) : Promise.resolve([]),
-        publisherId ? searchCatalogPublishers("", publisherId) : Promise.resolve([]),
-      ])
-      let nextClasse = classRows[0] || null
-      let nextSous = null
+      const tasks = []
       if (categoryKey) {
-        let chosen = null
-        if (/^\d+$/.test(categoryKey)) {
-          const categoryRows = await searchCatalogCategories("", "", categoryKey)
-          chosen = categoryRows[0] || null
-        } else {
-          const fromClasses = await searchCatalogCategories(categoryKey)
-          chosen = fromClasses.find((item) => item.slug === categoryKey) || null
-          if (!chosen) {
-            const children = await searchCatalogCategories(categoryKey, nextClasse?.id || "")
-            chosen = children.find((item) => item.slug === categoryKey) || null
-          }
-        }
-        if (chosen && (chosen.is_class || !chosen.parent_id)) {
-          nextClasse = chosen
-          nextSous = null
-        } else if (chosen) {
-          nextSous = chosen
-          if (!nextClasse && chosen.parent_id) {
-            const parents = await searchCatalogCategories("", "", String(chosen.parent_id))
-            nextClasse = parents[0] || null
-          }
-        }
+        tasks.push(searchCatalogCategories("", "", categoryKey).then((rows) => ({ type: "classe", rows })))
       } else {
-        nextClasse = classKey ? nextClasse : null
-        nextSous = null
+        tasks.push(Promise.resolve({ type: "classe", rows: [] }))
       }
+      tasks.push(
+        authorId
+          ? searchCatalogAuthors("", authorId).then((rows) => ({ type: "auteur", rows }))
+          : Promise.resolve({ type: "auteur", rows: [] }),
+      )
+      tasks.push(
+        publisherId
+          ? searchCatalogPublishers("", publisherId).then((rows) => ({ type: "editeur", rows }))
+          : Promise.resolve({ type: "editeur", rows: [] }),
+      )
+      const results = await Promise.all(tasks)
       if (!active) return
-      setClasse(nextClasse)
-      setSousClasse(nextSous)
-      setAuteur(authorRows[0] || null)
-      setEditeur(publisherRows[0] || null)
-      setFiltersReady(true)
+      for (const item of results) {
+        if (item.type === "classe") setClasse(item.rows[0] || null)
+        if (item.type === "auteur") setAuteur(item.rows[0] || null)
+        if (item.type === "editeur") setEditeur(item.rows[0] || null)
+      }
     }
-
-    hydrate().catch(() => {
-      if (!active) return
-      setFiltersReady(true)
-    })
+    hydrate().catch(() => {})
     return () => {
       active = false
     }
-  }, [categoryKey, classKey, authorId, publisherId])
+  }, [searchParams])
 
+  // Debounce la saisie texte → met à jour q dans l'URL sans toucher aux autres filtres.
   useEffect(() => {
-    if (!filtersReady) return undefined
+    const urlQ = searchParams.get("q") || ""
+    if (q === urlQ) return undefined
     const timer = window.setTimeout(() => {
-      setSearchParams((current) => {
-        const next = buildParams({ q, classe, sousClasse, auteur, editeur })
-        if (sameSearch(current, next) && (current.get("page") || "1") === "1") return current
-        return next
-      }, { replace: true })
+      skipQSync.current = true
+      setSearchParams(
+        (current) => {
+          const params = new URLSearchParams(current)
+          const trimmed = String(q || "").trim()
+          if (trimmed) params.set("q", trimmed)
+          else params.delete("q")
+          params.delete("page")
+          return params
+        },
+        { replace: true },
+      )
     }, 220)
     return () => window.clearTimeout(timer)
-  }, [q, classe, sousClasse, auteur, editeur, filtersReady, setSearchParams])
+  }, [q, searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (skipQSync.current) {
+      skipQSync.current = false
+      return
+    }
+    const next = searchParams.get("q") || ""
+    setQ((current) => (current === next ? current : next))
+  }, [searchParams])
 
   useEffect(() => {
     let active = true
@@ -138,7 +134,9 @@ export default function CatalogPage() {
         if (active) setState({ status: "ready", data, error: "" })
       })
       .catch(() => {
-        if (active) setState({ status: "error", data: null, error: "Le catalogue n'a pas pu être chargé. Réessayez." })
+        if (active) {
+          setState({ status: "error", data: null, error: "Le catalogue n'a pas pu être chargé. Réessayez." })
+        }
       })
     return () => {
       active = false
@@ -146,31 +144,51 @@ export default function CatalogPage() {
   }, [searchParams])
 
   const searchClasses = useCallback((query) => searchCatalogCategories(query), [])
-  const searchSubclasses = useCallback(
-    (query) => (classe?.id ? searchCatalogCategories(query, classe.id) : Promise.resolve([])),
-    [classe?.id],
-  )
   const searchAuthors = useCallback((query) => searchCatalogAuthors(query), [])
   const searchPublishers = useCallback((query) => searchCatalogPublishers(query), [])
 
-  const books = state.data?.books || []
-  const pageCount = state.data?.pages || 1
-  const page = Math.min(pageNumber(searchParams.get("page")), pageCount)
+  function applyFilters({ nextClasse = classe, nextAuteur = auteur, nextEditeur = editeur }) {
+    setClasse(nextClasse)
+    setAuteur(nextAuteur)
+    setEditeur(nextEditeur)
+    hydratedKey.current = [
+      nextClasse?.slug || nextClasse?.id || "",
+      nextAuteur?.id || "",
+      nextEditeur?.id || "",
+    ].join("|")
+    setSearchParams((current) => {
+      const params = writeFilterParams(new URLSearchParams(current), {
+        q,
+        classe: nextClasse,
+        auteur: nextAuteur,
+        editeur: nextEditeur,
+      })
+      params.delete("page")
+      return params
+    })
+  }
 
   function goToPage(next) {
-    const params = buildParams({ q, classe, sousClasse, auteur, editeur })
-    if (next > 1) params.set("page", String(next))
-    setSearchParams(params)
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current)
+      if (next > 1) params.set("page", String(next))
+      else params.delete("page")
+      return params
+    })
   }
 
   function reset() {
     setQ("")
     setClasse(null)
-    setSousClasse(null)
     setAuteur(null)
     setEditeur(null)
+    hydratedKey.current = ""
     setSearchParams(new URLSearchParams())
   }
+
+  const books = state.data?.books || []
+  const pageCount = state.data?.pages || 1
+  const currentPage = Math.min(page, pageCount)
 
   return (
     <div className="bg-canvas">
@@ -219,36 +237,25 @@ export default function CatalogPage() {
                   </button>
                 </div>
 
-                <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4 xl:gap-2">
+                <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-3 xl:gap-2">
                   <AutocompleteField
                     label="Classe"
                     value={classe}
-                    onChange={(next) => {
-                      setClasse(next)
-                      setSousClasse(null)
-                    }}
+                    onChange={(next) => applyFilters({ nextClasse: next })}
                     search={searchClasses}
                     placeholder="Classe…"
                   />
                   <AutocompleteField
-                    label="Sous-classe"
-                    value={sousClasse}
-                    onChange={setSousClasse}
-                    search={searchSubclasses}
-                    placeholder={classe ? "Sous-classe…" : "Classe d'abord"}
-                    disabled={!classe}
-                  />
-                  <AutocompleteField
                     label="Auteur"
                     value={auteur}
-                    onChange={setAuteur}
+                    onChange={(next) => applyFilters({ nextAuteur: next })}
                     search={searchAuthors}
                     placeholder="Auteur…"
                   />
                   <AutocompleteField
                     label="Éditeur"
                     value={editeur}
-                    onChange={setEditeur}
+                    onChange={(next) => applyFilters({ nextEditeur: next })}
                     search={searchPublishers}
                     placeholder="Éditeur…"
                   />
@@ -271,7 +278,7 @@ export default function CatalogPage() {
                 </ul>
               )}
 
-              <PageField page={page} pageCount={pageCount} onPage={goToPage} />
+              <PageField page={currentPage} pageCount={pageCount} onPage={goToPage} />
             </div>
           ) : null}
         </QueryState>
