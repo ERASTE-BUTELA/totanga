@@ -31,3 +31,6 @@ verrou.json
 # Frontend
 node_modules/
 dist/
+data/import/_xlsx_probe/
+data/import/*.zip
+data/import/rapport-essai.csv
